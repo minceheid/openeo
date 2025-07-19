@@ -69,3 +69,10 @@ The software is configured by a json configuration file, an example is provided.
 
 ~~~~
 
+## Debugging
+All logs are written to the linux journal, and can be viewed using the ```journalctl``` command. Additionally, if you set ```log_level``` in the chargeroptions statement in config.json to ```debug```, and restart (reboot the pi) then additional debug messages are logged
+~~~~
+  "chargeroptions" : { "log_level" : "debug" },
+~~~~
+
+
