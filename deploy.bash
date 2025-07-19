@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-echo "@reboot boot.bash" >/tmp/crontab 
+echo "@reboot openeo/boot.bash" >/tmp/crontab 
 crontab /tmp/crontab
 sudo apt-get install -y python3-serial python3-websockets python3-jsonschema
 sudo cp /boot/firmware/config.txt /tmp/config.txt
