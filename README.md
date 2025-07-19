@@ -1,8 +1,10 @@
 # openeo
 Cloudless software install for the EO Mini 2 EV charger
 
-<img width="502" height="765" src="https://github.com/user-attachments/assets/e4592063-7f7b-485f-af75-c6b6009f6c96" />
-<img width="502" height="765" src="https://github.com/user-attachments/assets/43ccdd18-a288-481f-b623-c05f28d6a6d3" />
+<p align="center">
+<img src="https://github.com/user-attachments/assets/e4592063-7f7b-485f-af75-c6b6009f6c96" style="width:25%; height:auto;"  />
+<img src="https://github.com/user-attachments/assets/43ccdd18-a288-481f-b623-c05f28d6a6d3" style="width:25%; height:auto;"  />
+</p>
 
 ## Install Instructions
 This software can be installed onto a Raspberry OS Lite install. We recommend that you keep your original EO SD card safe and separate, so that you can revert easily, should things don't work out for you.
