@@ -1,0 +1,4 @@
+__pycache__/
+config.json
+openeo.log
+tools/remote_id.txt

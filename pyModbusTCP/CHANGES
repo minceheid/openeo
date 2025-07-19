@@ -1,0 +1,175 @@
+Revision history for pyModbusTCP
+
+0.3.0 2024-09-04
+
+    - pyModbusTCP.client: now use the standard logging method as in the server part.
+    - ModbusClient: debug flag is removed (see examples/client_debug.py).
+
+0.2.2 2024-07-31
+
+    - fix ModbusServer: wrong check of discrete inputs length in DataBank (thanks to OTnetproj).
+    - updated compatibility test (python versions): remove 3.7, add 3.12.
+
+0.2.1 2023-11-21
+
+    - fix ModbusServer: wrong check of input registers length in DataBank (thanks to monsieurvor).
+    - improve hostname validation in utils (thanks to MCXIV and schmocker).
+    - experimental add of read_device_identification() (over modbus encapsulated interface) to client and server.
+    - experimental add of write_read_multiple_registers() function (code 0x17) to client and server (thanks to tanj).
+    - updated compatibility test (python versions): remove 3.5/3.6, add 3.11.
+
+0.2.0 2022-06-05
+
+    - ModbusClient: parameters are now properties instead of methods (more intuitive).
+    - ModbusClient: now TCP auto open mode is active by default (auto_open=True, auto_close=False).
+    - ModbusClient: add custom_request method for send user define PDU to modbus server.
+    - ModbusClient: remove RTU mode.
+    - ModbusClient: clarify some things (private methods and internal vars rename).
+    - ModbusServer: big redesign to improve readability and maintainability.
+    - ModbusServer: no longer use hard linked class DataBank (it now return a deprecation warn).
+    - ModbusServer: add of ModbusServerDataHandler and DefaultDataBank class for easy customize.
+    - add or update server examples for new modbus server design.
+    - some updates on tests, fix random arrays generation on client test part.
+    - clarify usage of root privilege for open tcp/502 (avoid Errno 13) in server example.
+    - python 2 end of support.
+
+0.1.10 2021-03-02
+
+    - word_list_to_long() and long_list_to_word(), now support 64 bits long long with opt long_long.
+    - encode_ieee() and decode_ieee(), now support double-precision format with opt double.
+    - add shortcut alias for functions with long names in utils.
+    - rewrite of some functions in utils.
+    - improve test_utils readability.
+    - server DataBank enforce type check on set data methods to avoid server crash (thanks to xuantw).
+    - now get_2comp can deal with negative python int.
+    - remove reference to devel github branch.
+    - improve last_error_txt() and last_except_txt().
+
+0.1.9 2021-02-26
+
+    - add module error MB_SOCK_CLOSE_ERR (occur if frame send on close socket).
+    - add modbus exception EXP_NEGATIVE_ACKNOWLEDGE (code 0x07) to constants.
+    - add last_error_txt() and last_except_txt() for produce human readable status.
+    - add EXP_TXT, EXP_DETAILS and MB_ERR_TXT dicts to constants (text representation of codes).
+    - update of the compatibility test for python version: remove 2.6/3.2/3.3, add 3.7/3.8/3.9.
+    - conform to PEP 396 (add pyModbusTCP.__version__ field).
+
+0.1.8 2018-10-15
+
+    - fix ModbusServer: avoid hard coded TCP port (thanks to akobyl).
+    - add stop() and is_run property to ModbusServer (thanks to Rugiewitz).
+
+0.1.7 2018-08-20
+
+    - fix ModbusServer issue on Windows (thanks to andreascian).
+
+0.1.6 2018-05-14
+
+    - fix multiple TCP packets recv issue in ModbusClient and ModbusServer (thanks Farin94).
+
+0.1.5 2017-11-23
+
+    - add long_list_to_word to utils.
+    - add float support as example.
+
+0.1.4 2017-11-13
+
+    - fix port and host accessors, change check now use "==" and not "is".
+
+0.1.3 2017-09-29
+
+    - setup now use setuptools.
+
+0.1.2 2017-09-28
+
+    - fix 'Rx' label on error.
+    - change file mode for server.py example.
+    - fix compatibility with modbus unit_id = 0 (thanks to mfkenney).
+    - fix compatibility for modbus frame with garbage.
+
+0.1.1 2016-05-30
+
+    - add toggle_bit() to utils.
+    - add server.py example.
+    - add HOWTO for safe PyPI upload.
+
+0.1.0 2016-05-30
+
+    - fix some issues in PEP 8 conformance and inline doc.
+    - client modbus RTU: move crc16 compute to utils.
+    - add write_multiple_coils() function (code 0x0f).
+    - add test_bit(), set_bit(), reset_bit() to utils.
+    - add a modbus/TCP multithreaded server through ModbusServer class (for test only).
+
+0.0.13 2015-12-24
+
+    - add auto_open and auto_close to README.rst and quickstart doc.
+    - add example min_read_bit.py for show minimal code approach.
+
+0.0.12 2015-12-11
+
+    - add auto_open and auto_close mode to ModbusClient.
+    - add accessor function for socket timeout.
+    - close TCP socket if hostname change
+    - close TCP socket if port change
+
+0.0.11 2015-03-27
+
+    - fix sock.settimeout missing (thanks to bonaime).
+    - fix PEP 8 style (thanks to bonaime).
+
+0.0.10 2015-01-22
+
+    - Add timeout parameter to ModbusClient constructor (thanks to bonaime).
+
+0.0.9 2014-10-10
+
+    - Fix rx_byte_count check in ModbusClient class.
+
+0.0.8 2014-09-23
+
+    - Catch excepts on socket send/recv.
+    - Sphinx documentation include a quickstart and examples.
+
+0.0.7 2014-08-31
+
+    - Add unit test (see test/).
+    - Add params host/port/unit_id/debug on ModbusClient constructor.
+    - Add utils module for modbus data mangling.
+
+0.0.6 2014-08-25
+
+    - Fix "socket error" message when call open() on dual stack IPv6/4 host.
+    - Check rx byte count field in functions 1 to 4.
+    - Fix max bit number problem in functions 1 and 2 (from 125 to 2000).
+    - Add debug message, if _send() call on close socket.
+    - Rename module name from const to constants.
+    - Update MANIFEST.in to remove docs and examples from sdist archive.
+    - Update README.rst sample code for Python3.
+
+0.0.5 2014-08-08
+
+    - Now deal with IPv6 host.
+    - Fix Python3 issue in _crc().
+    - Improve modbus RTU receive code.
+    - Secure frame size before struct.unpack invocation.
+
+0.0.4 2014-08-07
+
+    - Add class documentation (add doc/ and sphinx/ directory).
+    - Add sphinx docstring in client.py.
+
+0.0.3 2014-08-05
+
+    - Fix padding problem in write_single_coil().
+    - Add new examples.
+
+0.0.2 2014-08-05
+
+    - Compatibility with Python 3 and 2.7.
+    - Use RST format for README instead of markdown, now set long_description.
+    - Add a MANIFEST.in file and include examples/ on sdist.
+
+0.0.1 2014-08-04
+
+    - First release of pyModbusTCP.

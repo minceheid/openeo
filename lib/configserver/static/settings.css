@@ -1,0 +1,73 @@
+/* Settings page */
+.settings {
+	width: 50%;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	font-size: 14pt;
+	overflow-x: hidden;
+	overflow-y: auto;
+	pointer-events: all;
+	z-index: 2000;
+}
+
+.settings input[type=text], .settings input[type=number] {
+	background-color: #222222;
+	color: #ffffff;
+	border: 1px solid #888888;
+}
+
+.settings input[type=number] {
+	width: 5em;  /* accounts for most numbers we'll use, review later */
+}
+
+.setting-row {
+	padding: 0.5em;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+}
+
+.setting-row:nth-child(odd) {
+	background-color: #333333;
+}
+
+.setting-row:nth-child(even) {
+	background-color: #393939;
+}
+
+.setting-heading {
+	font-weight: bold;
+	text-align: center;
+	margin: auto;
+	width: 100%;
+}
+
+.setting-heading span {
+	display: inline-block;
+}
+
+.setting-item {
+	font-weight: normal;
+	width: 40%;
+	/* Flexbox for detail object below label text. */
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+}
+
+.settings-detail {
+	font-size: 8pt;
+	display: none;
+}
+
+.settings-adjuster {
+	width: 60%;
+}
+
+/* Portrait phone tweaks */
+@media (orientation: portrait) and (max-width: 500px) {
+	.settings {
+		width: 90%;
+	}
+}

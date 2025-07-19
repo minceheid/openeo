@@ -1,0 +1,13 @@
+{
+  "scheduler" : { "enabled" : False, "schedule" : [{"start" : "2200", "end" : "0400", "amps" : 32}] },
+  "switch" : { "enabled" : True, "on" : True, "amps" : 32 },
+  "configserver": { "enabled": True, "port": 80 },
+  "chargeroptions" : { "mode" : "switch" },
+  "logger": {
+      "enabled": True,
+      "hires_interval": 2,        # 2 seconds
+      "hires_maxage": 60*10,      # 10 minutes
+      "lowres_interval": 60*5,    # 5 minutes
+      "lowres_maxage": 60*60*48   # 48 hours
+  },
+}

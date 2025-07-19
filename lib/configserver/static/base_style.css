@@ -1,0 +1,497 @@
+body {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+	background-color: #282c34;
+	font-family: Arial, sans-serif;
+	color: white;
+	overflow-y: hidden;
+}
+
+canvas.clock {
+	background: radial-gradient(circle, #3a3d46, #1e2026);
+	border-radius: 51%;
+	box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+	visibility: hidden;
+}
+
+button {
+	margin-top: 10px;
+	padding: 10px;
+}
+
+a {
+	color: #ffffff;
+	text-decoration: none;
+	font-weight: bold;
+}
+
+/* Flexbox for most objects at the top */
+.top-objects-flex {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.top-icons-logo {
+	padding-top: 1em;
+	width: 100%;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: flex-start;
+}
+
+.top-status {
+	width: 100%;
+}
+
+.logo {
+	width: 40%;
+	align-self: flex-end;
+}
+
+.logo-inner {
+	margin-left: auto;
+	margin-right: 1em;
+	float: right;
+}
+
+.logo-inner a {
+	font-weight: normal;
+}
+
+.logo img {
+	vertical-align: middle;
+	width: 2em;
+	height: 2em;
+}
+
+.logo-text {
+	padding: 5px;
+	vertical-align: middle;
+	font-size: 16pt;
+	font-family: Calibri, Arial, sans-serif; /* @TODO: fix font and store as local resource */
+}
+
+.burger-box {
+	width: 10%;
+	pointer-events: all;
+	z-index: 2000;
+}
+
+.burger-list {
+	position: absolute;
+	z-index: 2000;
+	top: 4em;
+	left: 0;
+	padding: 0;
+	margin: 0;
+	display: none;
+}
+
+.burger-list li {
+	padding: 1em;
+	margin: 0;
+	height: 2em;
+	width: 12em;
+	list-style-type: none;
+	background-color: #333333;
+	
+	display: flex;
+	justify-content: left;
+	align-items: center;     
+}
+
+.burger-list li:hover {
+	background-color: #ffffff;
+	color: #000000;
+}
+
+.burger-list li:hover a {
+	color: #000000;
+}
+
+.burger-icon {
+	content: "";
+	margin-left: 1em;
+	width: 2em;
+	height: 2em;
+	background: linear-gradient(
+		to bottom, 
+		white, white 8%, 
+		transparent 8%, transparent 46%, 
+		white 46%, white 54%, 
+		transparent 54%, transparent 92%, 
+		white 92%, white 100%
+	);
+}
+
+.minimal-status {
+	text-align: center;
+	padding-top: -5em;
+	margin-left: auto;
+	margin-right: auto;
+	width: 50%;
+}
+
+.minimal-status p {
+	margin: 0;
+}
+
+.minimal-status .evse-name {
+	font-weight: bold;
+	font-size: 14pt;
+	padding: 0.5em;
+}
+
+.mode-inner {
+	display: inline-block;
+	width: 4em;
+	margin: 0.5em;
+}
+
+.mode-inner svg.svg-use-fill {
+	fill: #666666;
+}
+.mode-inner svg.svg-use-stroke {
+	stroke: #666666;
+}
+
+.mode-inner:hover svg.svg-use-fill {
+	fill: white;
+}
+.mode-inner:hover svg.svg-use-stroke {
+	stroke: white;
+}
+
+.mode-inner.active svg.svg-use-fill {
+	fill: #48e073;
+}
+.mode-inner.active svg.svg-use-stroke {
+	stroke: #48e073;
+}
+
+.mode-inner.disabled svg.svg-use-fill {
+	fill: #4d4d4d;
+}
+.mode-inner.disabled svg.svg-use-stroke {
+	stroke: #4d4d4d;
+}
+
+#startTime, #endTime {
+	font-weight: bold;
+}
+
+.hidden {
+	display: inline;
+	visibility: hidden;
+	font-size: 5pt;
+}
+
+.canvas-area {
+	display: block;
+	margin: 0 auto;
+	width: 100%;
+}
+
+.canvas-container {
+	margin: auto;
+	position: absolute;
+	top: 0;
+	left: 0;
+	justify-content: center;
+	align-items: center;
+	width: 100%;
+	height: 100%;
+}
+
+.canvas-area canvas {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+	pointer-events: all;
+}
+
+.canvas-area .canvas-inner-widget {
+	position: absolute;
+	top: 0;
+	left: 0;
+	margin: auto;
+	width: 100%;
+	height: 100%;
+	text-align: center;
+	vertical-align: center;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	pointer-events: none;
+}
+
+.time-display-container {
+	visibility: hidden;
+	height: 8%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.inner-display-container {
+	visibility: hidden;
+	height: 5%;
+}
+
+.time-display-container p, .inner-display-container p  {
+	font-size: 12pt;
+	margin: 0em;
+	padding: 0em;
+}
+
+.current-display-container {
+	padding-top: 2em;
+	margin: 0em;
+	font-size: 12pt;
+}
+
+.canvas-container {
+	margin: auto;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: row;
+	pointer-events: none;
+}
+
+/* Notification messages that appear above everything else */
+.toast-msg-container {
+	width: 50%;
+	margin: auto;
+	z-index: 2000;
+	position: absolute;
+	bottom: 5em;
+	visibility: hidden;
+}
+
+.toast-msg {
+	border: 2px solid #888888;
+	margin-left: 2em;
+	margin-right: 2em;
+	padding: 15px;
+	text-align: center;
+	background-color: #aaaaaa3f;
+}
+
+.toast-msg-error {
+	border: 2px solid #880000;
+	background-color: #aa00003f;
+}
+
+.mode-switch {
+	padding-top: 2em;
+	width: 100%;
+	flex-direction: row;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	visibility: hidden;
+}
+
+/* Flexbox for objects at the bottom */
+.bottom-objects-flex {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: 100%;
+	height: 30%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.status-info {
+	border: 1px solid #444444;
+	margin: 1em;
+	padding: 1em;
+	text-align: center;
+	color: #888888;
+}
+
+.version-info {
+	text-align: center;
+	color: #444444;
+}
+
+.status-info {
+	visibility: hidden;
+}
+
+.status-break::after {
+	content: "•";
+}
+
+@keyframes charge-pulse {
+  0%   {color: #33cc33;}
+  50%  {color: #99cc99;}
+  100% {color: #33cc33;}
+}
+
+.status-charging {
+	color: #33cc33;
+	font-weight: bold;
+	animation-name: charge-pulse;
+	animation-timing-function: ease-in-out;
+	animation-fill-mode: both;
+	animation-duration: 2s;
+	animation-iteration-count: infinite;
+}
+
+.status-idle {
+	color: #a6a6a6;
+	font-weight: bold;
+}
+
+.status-paused-by-evse {
+	color: #ebe834;
+	font-weight: bold;
+}
+
+.status-fault {
+	color: #ba2020;
+	font-weight: bold;
+}
+
+/* These have the same color */
+.status-paused-by-connection {
+	color: #299ae6;
+	font-weight: bold;
+}
+
+.status-paused-by-vehicle {
+	color: #299ae6;
+	font-weight: bold;
+}
+
+/* Desktop / large screen tweaks */
+@media (min-width: 850px) and (min-height: 850px) {
+	.canvas-area .canvas-inner-widget {
+		gap: 15px;
+	}
+	
+	.time-display-container p, .on-display-container p {
+		font-size: 18pt;
+	}
+
+	.canvas-area .canvas-inner-widget .current-display-container {
+		font-size: 18pt;
+	}
+	
+	.status-info {
+		width: 50%;
+	}
+	
+	.bottom-objects-flex {
+		height: 15%;
+	}
+}
+
+/* Landscape phone tweaks */
+@media (orientation: landscape) and (max-height: 500px) {
+	body {
+		display: flex;
+		flex-direction: row;
+	}
+	
+	.minimal-status {
+		width: 100%;
+		text-align: center;
+		margin-top: -2.5em; /* There's probably a better way... */
+	}
+	
+	.mode-switch {
+		flex-direction: column;
+		display: flex;
+		align-items: left;
+		justify-content: left;
+		width: 20%;
+	}
+	
+	.mode-switch .mode-inner {
+		margin: auto;
+		width: 3.5em;
+	}
+	
+	.canvas-area {
+		display: flex;
+		width: 100%;
+		margin: auto;
+	}
+	
+	.canvas-container {
+		margin: auto;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-direction: row;
+	}
+	
+	.toast-msg-container {
+		width: 75%;
+		bottom: 1em;
+	}
+	
+	/* Hacky */ 
+	.inner-display-container {
+		padding-top: 1.25em;
+	}
+	
+	.current-display-container { 
+		padding-top: 3em;
+	}
+	
+	/* Flexbox moves to the RHS */
+	.bottom-objects-flex {
+		position: absolute;
+		right: 0;
+		top: 0;
+		width: 25%;
+		margin-left: auto;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+	}
+	
+	.status-info {
+		width: 30%;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.status-break::after {
+		content: '\a';
+		white-space: pre;
+	}
+	
+	.status-item {
+		line-height: 1.5;
+	}
+}
+
+/* Portrait phone tweaks */
+@media (orientation: portrait) and (max-width: 500px) {
+	.toast-msg-container {
+		width: 100%;
+		margin-top: 100%;
+	}
+}
