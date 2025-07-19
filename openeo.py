@@ -42,30 +42,31 @@ def readConfiguration(filename):
     # then write a default version. If the JSON can't be interpreted, then abort and
     # return nothing. I don't think we want to overwrite a configuration file if there
     # is a typo in it from a manual edit.
-    with open(filename,"r") as file:
-        try:
-            return(json.load(file))
-        except ValueError:
-            _LOGGER.error("JSON decode failed in config file ("+filename+")")
-            return(None)
-        except (FileNotFoundError):
-            # If the config is not loadable, create a default configuration.
-            _LOGGER.error("Config file couldn't be loaded, recreating defaults ("+filename+")")
-            myConfig = {
-                "scheduler" : { "enabled" : False, "schedule" : [{"start" : "2200", "end" : "0400", "amps" : 32}] },
-                "switch" : { "enabled" : True, "on" : True, "amps" : 32 },
-                "configserver": { "enabled": True, "port": 80 },
-                "chargeroptions" : { "mode" : "switch" },
-                "logger": {
-                    "enabled": True,
-                    "hires_interval": 2,        # 2 seconds
-                    "hires_maxage": 60*10,      # 10 minutes
-                    "lowres_interval": 60*5,    # 5 minutes
-                    "lowres_maxage": 60*60*48   # 48 hours
-                },
-            }
-            open(filename, "w").write(json.dumps(myConfig, indent=2))
-            return(myConfig)
+    try:
+        with open(filename,"r") as file:
+            try:
+                return(json.load(file))
+            except ValueError:
+                _LOGGER.error("JSON decode failed in config file ("+filename+")")
+                return(None)
+    except (FileNotFoundError):
+        # If the config is not loadable, create a default configuration.
+        _LOGGER.error("Config file couldn't be loaded, recreating defaults ("+filename+")")
+        myConfig = {
+            "scheduler" : { "enabled" : False, "schedule" : [{"start" : "2200", "end" : "0400", "amps" : 32}] },
+            "switch" : { "enabled" : True, "on" : True, "amps" : 32 },
+            "configserver": { "enabled": True, "port": 80 },
+            "chargeroptions" : { "mode" : "switch" },
+            "logger": {
+                "enabled": True,
+                "hires_interval": 2,        # 2 seconds
+                "hires_maxage": 60*10,      # 10 minutes
+                "lowres_interval": 60*5,    # 5 minutes
+                "lowres_maxage": 60*60*48   # 48 hours
+            },
+        }
+        open(filename, "w").write(json.dumps(myConfig, indent=2))
+        return(myConfig)
 
 
 #################################################################################
