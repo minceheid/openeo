@@ -1,16 +1,29 @@
 # openeo
 Cloudless software install for the EO Mini 2 EV charger
 
-<img width="489" height="523" alt="Screenshot 2025-07-19 141230" src="https://github.com/user-attachments/assets/148fd76f-fba6-4246-92c2-5e6dc564f759" />
-<img width="490" height="518" alt="Screenshot 2025-07-19 141242" src="https://github.com/user-attachments/assets/c4b3baef-c366-4717-8482-63057f601801" />
+<img width="502" height="765" alt="Screenshot 2025-07-19 144233" src="https://github.com/user-attachments/assets/e4592063-7f7b-485f-af75-c6b6009f6c96" />
+<img width="502" height="765" alt="Screenshot 2025-07-19 144229" src="https://github.com/user-attachments/assets/43ccdd18-a288-481f-b623-c05f28d6a6d3" />
 
 ## Install Instructions
 This software can be installed onto a Raspberry OS Lite install. We recommend that you keep your original EO SD card safe and separate, so that you can revert easily, should things don't work out for you.
 
 1. Obtain a 8GB (or larger) SD card
 2. Flash the SD card with the Raspberry PI imager (Device: Raspberry Pi Zero, Operating System: Raspberry PI OS Lite (32 bit))
+
+<p align="center">
+<img alt="Screenshot 2025-07-19 142701" src="https://github.com/user-attachments/assets/58fc15c4-ed2e-403d-b8f1-7e83a6c8c2b7" style="width:25%; height:auto;" />
+<img alt="Screenshot 2025-07-19 142732" src="https://github.com/user-attachments/assets/db492985-58e3-4b18-8bb2-5eb0fb31cb6d" style="width:25%; height:auto;" />
+</p>
+
 3. In the Raspberry PI imager "General" settings - set your Hostname, Username/Password, Wirelss LAN and Locale settings as appropriate. There are no restrictions on what to set your hostname and username, though I tend to go with "eo".
+
+<p align="center"><img alt="Screenshot 2025-07-19 142812" src="https://github.com/user-attachments/assets/f3db2cc0-9055-4817-b135-2864c760de57" style="width:25%; height:auto;" /></p>
+
 4. In the Raspberry PI imager "Services" settings - ensure that SSH is enabled, and I would recommend that public-key authentication is enabled, and you should add your SSH public key as approprate.
+
+<p align="center"><img alt="Screenshot 2025-07-19 142824" src="https://github.com/user-attachments/assets/d4768f5d-19f3-4355-a44e-6216e492dc30" style="width:25%; height:auto;" />
+</p>
+
 5. *IMPORTANT* Once the new SD card has been created, remove power to your EO box by disconnecting it or by switching off the relevant breaker in your consumer unit. Please ensure that it is completely isolated from the mains electricity. *If you are unsure that the electricity is fully disconnected, then do not proceed*.
 6. Open the EO mini by loosening the four captive screws that are visible on the front of the case (you may need to remove the four rubber covers, if they are fitted), and you will see the RPi Zero inside. You can now switch the SD cards, keeping the original safe.
 7. Close the EO enclosure, and apply power to it. The RPi Zero should boot, and if you have got the configuration correct, it will join your wireless network and you can log in with SSH
@@ -46,3 +59,4 @@ The software is configured by a json configuration file, an example is provided.
 }
 
 ~~~~
+
