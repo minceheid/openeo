@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-cd ~/eo
+cd ~/openeo
 
 #####################
 echo "Wait for network connectivity (checks for default route)"
