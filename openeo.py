@@ -56,7 +56,7 @@ def readConfiguration(filename):
             "scheduler" : { "enabled" : False, "schedule" : [{"start" : "2200", "end" : "0400", "amps" : 32}] },
             "switch" : { "enabled" : True, "on" : True, "amps" : 32 },
             "configserver": { "enabled": True, "port": 80 },
-            "chargeroptions" : { "mode" : "switch" },
+            "chargeroptions" : { "mode" : "manual" },
             "logger": {
                 "enabled": True,
                 "hires_interval": 2,        # 2 seconds

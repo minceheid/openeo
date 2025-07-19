@@ -68,7 +68,7 @@ class configserverClassPlugin:
             _LOGGER.error("Invalid port ({}) in {} plugin config in {}. Defaulting to 80".format(self.pluginConfig["port"],self.myName,globalState.stateDict["eo_config_file"]))
             self.pluginConfig["port"]=80
 
-        serverthread=threading.Thread(target=self.webserver, name='serverthread')
+        serverthread = threading.Thread(target=self.webserver, name='serverthread')
         serverthread.start()
 
     def webserver(self):

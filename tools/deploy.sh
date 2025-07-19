@@ -1,10 +1,9 @@
 #!/bin/bash
-
 # A simple script to deploy an application over SSH to the EO charger
 # It's insecure, so only use for development purposes
 #
 # remote_id.txt file should consist of
-#   IP/dns name
+#   user@<IP/dns name>
 #   password
 #   base directory
 #
@@ -23,11 +22,8 @@ sshpass -p $PASS ssh $REMOTE_NET "touch /tmp/openeo-dev-kill"
 sleep 1
 sshpass -p $PASS ssh $REMOTE_NET "echo $PASS | sudo -S killall python3"
 
-echo "Deploying new application to ${REMOTE_NET}"
-sshpass -p $PASS scp $SCRIPT_DIR/../*.py $REMOTE_NET:$BASE_DIR/
-
-echo "Deploying plugins and resources to ${REMOTE_NET}"
-sshpass -p $PASS scp -rp $SCRIPT_DIR/../openeo/* $REMOTE_NET:$BASE_DIR/openeo
+echo "Deploying files to ${REMOTE_NET}"
+sshpass -p $PASS scp -rp $SCRIPT_DIR/../* $REMOTE_NET:$BASE_DIR/
 
 #echo "Deploying new boot script to ${REMOTE_NET}"
 #sshpass -p $PASS scp $SCRIPT_DIR/../boot.bash $REMOTE_NET:$BASE_DIR/
