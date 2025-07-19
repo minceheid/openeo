@@ -34,7 +34,7 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 <img src="https://github.com/user-attachments/assets/791a735f-6907-45ce-a0b4-738466f55b5b" style="width:25%; height:auto;" />
 </p>
 
-7. Close the EO enclosure, and apply power to it. The RPi Zero should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH. Note that the first time that you power up with a fresh SD card, it will take 10-15 minutes to fully boot before it is seen on the network.
+7. Close the EO enclosure, and apply power to it. The RPi Zero should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take 10-15 minutes to fully boot before it is seen on the network.
 8. Log onto your account on the RPi Zero via SSH over the WiFi network, and run the following three commands. This will download a deployment script from github, run it to install the software onto your RPi, then reboots your RPi to allow the software to finish configuring and start up.
 
 ~~~~
@@ -43,7 +43,7 @@ bash deploy.bash
 sudo reboot
 ~~~~
 
-Once the RPi Zero reboots, it should all be working. You should be able to point your browser at the IP address (which you will be able to find from your router, or you can use mDNS to navigate to _hostname_.local - where _hostname_ is whichever hostname you set in step 3 above). You should see the configuration web page, showing the charger status, and giving you control.
+Once the RPi Zero reboots, it should all be working. You should be able to point your browser at the IP address (or you can use mDNS to navigate to _hostname_.local - where _hostname_ is whichever hostname you set in step 3 above). You should see the configuration web page, showing the charger status, and giving you control.
 
 *Note* - at this time, only the **_Schedule_** mode and **_Manual_** mode is available. We will be adding **_Remote_** (OCPP) shortly.
 
