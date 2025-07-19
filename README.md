@@ -50,7 +50,7 @@ Once the RPi Zero reboots, it should all be working. You should be able to point
 ## Important Notes
 The openeo charger cannot currently accommodate the following features:
 
-* Total current limiting at the mains fuse ("load balancing").  If this charger is used on a looped supply, a small fuse, or shares a supply with another charger, it might require load balancing to avoid a failure of the main incoming fuse.  We will look to introduce load balancing in the near future, but for now, do not use this software if you depend upon that.  
+* Total current limiting at the mains fuse ("load balancing").  If this charger is used on a looped supply, a small fuse, or shares a supply with another charger, it might require load balancing to avoid a failure of the main incoming fuse.  This would result in a total power outage to the home should it occur, and would require your DNO to visit to correct the failure.   We will look to introduce load balancing in the near future, but for now, *DO NOT* use this software if you depend upon that.  
 
 * Solar system integration (except for Victron systems via the `victron_ess` plugin).  This means the openeo charger won't start charging when there is an excess of solar being exported to the grid.  This is also a feature we are looking to add in the future and we are interested in hearing from users who have systems like this that we can test the openeo software on.
 
