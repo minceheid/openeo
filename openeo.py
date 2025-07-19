@@ -118,7 +118,6 @@ def main():
                 # Make the newly read configuration active and take any reconfiguration actions necessary
                 globalConfig=newGlobalConfig
 
-                print("globalConfig=",globalConfig)
                 config_file_modification = new_config_file_modification
 
                 for modulename, pluginConfig in globalConfig.items():

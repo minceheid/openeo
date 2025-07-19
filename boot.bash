@@ -13,6 +13,9 @@ echo "Network is up."
 
 
 #####################
+# Give Python the capability of binding to port 80. This will give our
+# script the ability to run without full root privs, which is a Good Thing.
+sudo setcap CAP_NET_BIND_SERVICE=+eip $(realpath $(which python3))
 
 # Main charger program - running in a loop, in case we hit a catastrophic
 # bug for some reason Main logging is now done through journalctl, however,
@@ -22,6 +25,6 @@ echo "Network is up."
 # override to allow SSH to replace the running application.
 #
 while [ ! -f /tmp/openeo-dev-kill ] ; do
-	sudo ./openeo.py 2>&1 >openeo.log
+	./openeo.py 2>&1 >openeo.log
 done
 
