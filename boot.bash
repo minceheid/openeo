@@ -16,6 +16,10 @@ echo "Network is up."
 # Give Python the capability of binding to port 80. This will give our
 # script the ability to run without full root privs, which is a Good Thing.
 sudo setcap CAP_NET_BIND_SERVICE=+eip $(realpath $(which python3))
+# Ensure that we are in the right groups
+# spi & gpio for communications with the EO control board
+# video gives access to pi temperature
+sudo usermod -a -G spi,gpio,video $(whoami)
 
 # Main charger program - running in a loop, in case we hit a catastrophic
 # bug for some reason Main logging is now done through journalctl, however,
