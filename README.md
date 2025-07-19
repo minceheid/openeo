@@ -3,7 +3,7 @@ Cloudless software install for the EO Mini 2 EV charger
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/e4592063-7f7b-485f-af75-c6b6009f6c96" style="width:25%; height:auto;"  />
-<img src="https://github.com/user-attachments/assets/43ccdd18-a288-481f-b623-c05f28d6a6d3" style="width:25%; height:auto;"  />
+<img src="https://github.com/user-attachments/assets/1e6d8d2f-df0d-4b3b-8647-fd621d5297e4" style="width:25%; height:auto;"  />
 </p>
 
 ## Install Instructions
