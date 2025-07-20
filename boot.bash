@@ -20,6 +20,8 @@ sudo setcap CAP_NET_BIND_SERVICE=+eip $(realpath $(which python3))
 # spi & gpio for communications with the EO control board
 # video gives access to pi temperature
 sudo usermod -a -G spi,gpio,video $(whoami)
+sudo chmod 666 /dev/vcio
+
 
 # Main charger program - running in a loop, in case we hit a catastrophic
 # bug for some reason Main logging is now done through journalctl, however,
