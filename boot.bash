@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
-cd ~/openeo
+SCRIPT_DIR="$(dirname "$0")"
+cd $SCRIPT_DIR
 
 #####################
 echo "Wait for network connectivity (checks for default route)"
