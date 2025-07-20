@@ -37,9 +37,19 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 7. Close the EO enclosure, and apply power to it. The RPi Zero should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take 10-15 minutes to fully boot before it is seen on the network.
 8. Log onto your account on the RPi Zero via SSH over the WiFi network, and run the following three commands. This will download a deployment script from github, run it to install the software onto your RPi, then reboots your RPi to allow the software to finish configuring and start up.
 
+To download the latest
+
 ~~~~
 wget https://raw.githubusercontent.com/minceheid/openeo/refs/heads/main/deploy.bash
 bash deploy.bash
+sudo reboot
+~~~~
+
+To download a specific version (you will need to migrate your config.json by hand)
+
+~~~~
+wget https://raw.githubusercontent.com/minceheid/openeo/refs/heads/main/deploy.bash
+bash deploy.bash v0.4
 sudo reboot
 ~~~~
 
