@@ -52,7 +52,8 @@ class chargeroptionsClassPlugin:
     def get_user_settings(self):
         settings = []
         util.add_simple_setting(self.pluginConfig, settings, 'textinput', "chargeroptions", ("charger_name",), 'Charger Name', note='Friendly name for your charger, used by APIs and the home screen.')
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "chargeroptions", ("charger_id",), 'Charger ID', note='For some APIs like OCPP.  Alphanumeric plus underscore only.')
+        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "chargeroptions", ("charger_id",), 'Charger ID', note='For some APIs like OCPP.  Alphanumeric plus underscore only.',
+            pattern='([A-Za-z0-9_])+')
         util.add_simple_setting(self.pluginConfig, settings, 'boolean', "chargeroptions", ("always_supply_current",), 'Always Supply Current', \
             note="Puts the charge point into 'dumb' mode.  All smart functions are disabled, and only the Overall Current Limit will apply.", default=False)
         util.add_simple_setting(self.pluginConfig, settings, 'slider', "chargeroptions", ("overall_limit_current",), 'Overall Current Limit', \

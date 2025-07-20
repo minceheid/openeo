@@ -7,6 +7,17 @@ Values don't *need* to be predeclared here, but probably important that we docum
 critical ones.
 """
 
+import logging
+
+_LOGGER = logging.getLogger(__name__)
+
+# Read the application version; if not present, default to 0.0.
+try:
+    appVer = open("version.txt", "r").read()
+except:
+    _LOGGER.warning("Unable to get application version")
+    appVer = "0.0"
+    
 stateDict={
     # Name of the Configuration File
     "eo_config_file": "config.json", 
@@ -35,5 +46,8 @@ stateDict={
     "eo_mains_frequency":0,
 
     # Always set charger to requested current, even if no car is connected
-    "eo_always_supply_current": False
+    "eo_always_supply_current": False,
+    
+    # Application (openeo) version
+    "app_version" : appVer
 }

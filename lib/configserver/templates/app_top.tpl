@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>openeo Configuration Page</title>
+	<title>openeo {{ title }}</title>
 	<link rel="stylesheet" href="static/base_style.css">
 	<link rel="apple-touch-icon" href="static/openeo_icon_apple.png">
 </head>
@@ -12,8 +12,8 @@
 	<div class="top-objects-flex">
 		<div class="top-icons-logo">
 			<div class="burger-box" id="burgerBox">
-				<div class="burger-icon"></div>
-				<ul class="burger-list">
+				<div class="burger-icon" id="burgerIcon">☰</div>
+				<ul class="burger-list" id="burgerMenu">
 					<li><a href="/home.html">Home</a></li>
 					<li><a href="/settings.html">Settings</a></li>
 					<li><a href="/statistics.html">Statistics</a></li>

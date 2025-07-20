@@ -25,6 +25,12 @@ env = Environment(
     autoescape=select_autoescape()
 )
 
+template_to_name = {
+    "home": "Charger Control",
+    "settings" : "Settings",
+    "stats" : "Statistics"
+}
+
 class SocketOptionTCPServer(socketserver.TCPServer):
     """This child class allows us to set the REUSEADDR and REUSEPORT options on the socket
     which means the Python task can be started and stopped without breaking the config server
@@ -86,6 +92,7 @@ class configserverClassPlugin:
     class CustomHandler(http.server.BaseHTTPRequestHandler):
         config = {}
         _context = {}
+        selected_page = ""
 
         # Load initial configuration
         def load_config(self):
@@ -222,13 +229,14 @@ class configserverClassPlugin:
             _LOGGER.debug("file %s ext %s" % (file, ext))
             
             # Setup the context according to the config
+            if base in template_to_name:
+                self.selected_page = template_to_name[base]
             self.set_context()
             
             # HTML files are handled as templated objects.
             if ext.lower() == "html":
                 try:
                     template = env.get_template(base + ".tpl")
-                    print("Template context: %r" % self._context)
                     self.send_response(200)
                     self.send_header("Content-type", "text/html")
                     self.end_headers()
@@ -407,7 +415,8 @@ class configserverClassPlugin:
             self._context = {
                 "openeo_cfg" : self.config,
                 "status" : globalState.stateDict,
-                "settings" : []
+                "settings" : [],
+                "title" : self.selected_page
             } 
             
             # If a module supports exposing settings, add each.
@@ -419,8 +428,9 @@ class configserverClassPlugin:
                             util.add_simple_setting(self.config, mod_settings, 'boolean', module.myName, ("enabled",), 'Enable Module') 
                         if hasattr(module, "get_user_settings"):
                             sets = module.get_user_settings()
-                            if isinstance(sets, list):  # Might return None or some other garbage value.
+                            if isinstance(sets, list) and len(sets) > 0:  # Might return None or some other garbage value.
                                 mod_settings += sets
+                                util.add_category_exit(mod_settings)
                         if len(mod_settings) > 0:
                             util.add_header_setting(self._context["settings"], module.PRETTY_NAME)
                             self._context["settings"] += mod_settings

@@ -23,7 +23,7 @@ from ocpp.v16 import ChargePoint, call, call_result
 from ocpp.v16.enums import *
 from ocpp.v16.datatypes import *
 
-import util, cfg
+import util
 
 EVENT_START_CHARGING = 1
 EVENT_STOP_CHARGING = 2
@@ -654,6 +654,6 @@ class ocppClassPlugin:
         settings = []
         util.add_simple_setting(self.config, settings, 'url', "ocpp", ("websocket",), 'Central Server Websocket',
             note='This should not include the charge point ID.  It may include a port number.  Example: ws://homeassistant.local:9000/.', \
-            default="", url_pattern='ws(s?)://.')
+            default="", pattern='ws(s?):\/\/.*')
         return settings
         

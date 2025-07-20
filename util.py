@@ -2,6 +2,8 @@
 Common utilities used by other openeo modules.
 """
 
+import logging
+
 def get_nested_default(cfg_dict, path, default_key=None):
     """Navigate a dictionary using a provided path tuple.  If any key in the path
     doesn't exist, return the default value instead."""
@@ -28,13 +30,16 @@ def get_nested_default(cfg_dict, path, default_key=None):
     except KeyError:
         return default_key
 
-def add_simple_setting(config, context, type, root_module, path, name, default="", note="", range=(), step=1, url_pattern=""):
+def add_simple_setting(config, context, type, root_module, path, name, default="", note="", range=(), step=1, pattern=""):
     path_joined = ".".join(path)
     path_joined = path_joined.replace(".", "_DOT_")
-    context.append({ 'type' : type, 'id' : path_joined, 'value' : get_nested_default(config, path, default), 'name' : name, 'note' : note, 'range' : range, 'step' : step, 'root_module' : root_module, 'url_pattern' : url_pattern })
+    context.append({ 'type' : type, 'id' : path_joined, 'value' : get_nested_default(config, path, default), 'name' : name, 'note' : note, 'range' : range, 'step' : step, 'root_module' : root_module, 'pattern' : pattern })
 
 def add_header_setting(context, heading_text):
     context.append({ 'type' : 'heading', 'text' : heading_text })
+
+def add_category_exit(context):
+    context.append({ 'type' : 'catend' })
 
 def TEST_get_nested_default():
     # Test cases

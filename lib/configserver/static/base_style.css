@@ -50,6 +50,7 @@ a {
 
 .top-status {
 	width: 100%;
+	margin-top: -1em;
 }
 
 .logo {
@@ -74,7 +75,7 @@ a {
 }
 
 .logo-text {
-	padding: 5px;
+	padding: 0.2em;
 	vertical-align: middle;
 	font-size: 16pt;
 	font-family: Calibri, Arial, sans-serif; /* @TODO: fix font and store as local resource */
@@ -89,7 +90,7 @@ a {
 .burger-list {
 	position: absolute;
 	z-index: 2000;
-	top: 4em;
+	top: 2.5em;
 	left: 0;
 	padding: 0;
 	margin: 0;
@@ -97,16 +98,18 @@ a {
 }
 
 .burger-list li {
-	padding: 1em;
-	margin: 0;
-	height: 2em;
-	width: 12em;
 	list-style-type: none;
 	background-color: #333333;
-	
 	display: flex;
 	justify-content: left;
 	align-items: center;     
+}
+
+.burger-list li a {
+	padding: 1em;
+	margin: 0;
+	height: 1em;
+	width: 12em;
 }
 
 .burger-list li:hover {
@@ -119,23 +122,22 @@ a {
 }
 
 .burger-icon {
-	content: "";
-	margin-left: 1em;
-	width: 2em;
-	height: 2em;
-	background: linear-gradient(
-		to bottom, 
-		white, white 8%, 
-		transparent 8%, transparent 46%, 
-		white 46%, white 54%, 
-		transparent 54%, transparent 92%, 
-		white 92%, white 100%
-	);
+	content: "☰";
+	margin-left: 0.5em;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+	padding-bottom: 0.5em;
+	font-size: 1em;
+	width: 1em;
+	text-align: center;
+}
+
+.burger-icon-selected {
+	background-color: #333333;
 }
 
 .minimal-status {
 	text-align: center;
-	padding-top: -5em;
 	margin-left: auto;
 	margin-right: auto;
 	width: 50%;
@@ -493,5 +495,17 @@ a {
 	.toast-msg-container {
 		width: 100%;
 		margin-top: 100%;
+	}
+	
+	/* Make the logo text smaller on a small screen. */
+	.logo-text {
+		padding: 0.2em;
+		vertical-align: middle;
+		font-size: 12pt;
+	}
+	
+	/* Nudge down the top status line to give more space for a long charger name. */
+	.top-status {
+		margin-top: 1em;
 	}
 }

@@ -26,9 +26,8 @@ import logging
 import logging.handlers
 import json, os, time, subprocess
 
-import globalState
+import globalState, util
 from openeoCharger import openeoChargerClass
-
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
@@ -85,13 +84,12 @@ def main():
         _LOGGER.error("Aborting")
         exit(1)
         
-    # Set logging level from config file
-    logLevel=str(globalConfig["chargeroptions"].get("log_level","info")).upper()
+    # Set logging level from config file.  Use the common dict to look up log levels to 
+    # avoid a possible eval exploit from crafted config json.
+    logLevel = str(globalConfig["chargeroptions"].get("log_level","info")).upper()
 
-    # we're going to use exec, so best that we validate the configuration
     if logLevel in logging._nameToLevel:
-        SET_LEVEL = '_LOGGER.setLevel(logging.' + logLevel + ')'
-        exec(SET_LEVEL)
+        _LOGGER.setLevel(logging._nameToLevel[logLevel])
     else:
         _LOGGER.error("Invalid log level "+logLevel+"in config file - ignoring")
 
@@ -121,7 +119,6 @@ def main():
                 config_file_modification = new_config_file_modification
 
                 for modulename, pluginConfig in globalConfig.items():
-
                     # Modue should be enabled
                     if modulename in globalState.stateDict["_moduleDict"]:
                         # Module already loaded, so just configure it
@@ -136,7 +133,7 @@ def main():
                             # instantiate an object and add to the list of active modules
                             globalState.stateDict["_moduleDict"][modulename]=moduleClass(pluginConfig)
                         except ImportError as e:
-                            _LOGGER.error("Aborting - Module \""+modulename+"\" defined and enabled in config file but could not be loaded - %s", repr(e))
+                            _LOGGER.error("Aborting - Module '%s' defined and enabled in config file but could not be loaded - %s" % (modulename, repr(e)))
 
                 # Do we have any modules that are currently loaded, but not in the configfile
                 # file (for example, perhaps the config file has been updated to remove one)

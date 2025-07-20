@@ -8,13 +8,46 @@
 	overflow-x: hidden;
 	overflow-y: auto;
 	pointer-events: all;
-	z-index: 2000;
+	z-index: 1000;
+	position: relative;
+	top: 6em;
 }
 
-.settings input[type=text], .settings input[type=number] {
+/* Hidden icon sorts out the emoji positioning */
+.settings input + span, span.setting-radio-space {
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+}
+
+.settings input[type=text], .settings input[type=number], .settings input[type=url] {
 	background-color: #222222;
 	color: #ffffff;
 	border: 1px solid #888888;
+	border-radius: 5px;
+}
+
+.settings input:focus {
+	border: 1px solid #cccccc !important;
+	outline: none;
+}
+
+.settings input:invalid {
+	border: 1px solid #ff0000 !important;
+}
+
+.settings input:invalid + span::after {
+	content: "✖";
+	font-size: 0.5em;
+	color: red;
+	visibility: visible;
+}
+
+/* This is evil and ugly */
+.settings input[type="range"], .settings input[type="radio"] {
+	accent-color: #4dabf7;
+	border-color: #888888;
+	background-color: #222222;
 }
 
 .settings input[type=number] {
@@ -54,6 +87,7 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
+	padding-left: 1em;
 }
 
 .settings-detail {
@@ -63,6 +97,11 @@
 
 .settings-adjuster {
 	width: 60%;
+}
+
+.setting-cat-end {
+	background-color: transparent !important;
+	padding: 1em;
 }
 
 /* Portrait phone tweaks */
