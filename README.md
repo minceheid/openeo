@@ -45,7 +45,7 @@ bash deploy.bash
 sudo reboot
 ~~~~
 
-To download a specific version
+To download a specific version (you will need to migrate your config.json by hand)
 
 ~~~~
 wget https://raw.githubusercontent.com/minceheid/openeo/refs/heads/main/deploy.bash
