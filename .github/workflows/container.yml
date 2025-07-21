@@ -32,12 +32,6 @@ jobs:
       - name: Checkout Push to Registry action
         uses: actions/checkout@v4
         
-      - name: Install Tools
-        run: |
-          apt update
-          apt install -y buildah podman
-          
-      # Critical changes to commands below ⬇️
       - name: Login to registry
         run: |
           buildah login  --username=$REGISTRY_USER --password=$REGISTRY_PASSWORD $IMAGE_REGISTRY
