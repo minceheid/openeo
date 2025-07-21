@@ -26,9 +26,6 @@ jobs:
     runs-on: docker
     container: 
       image: catthehacker/ubuntu:act-24.04
-    platforms: linux/amd64
-    options: 
-        --privileged
     permissions:
       contents: read
       packages: write
