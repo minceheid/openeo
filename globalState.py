@@ -47,6 +47,9 @@ stateDict={
 
     # Always set charger to requested current, even if no car is connected
     "eo_always_supply_current": False,
+
+    # Counter of the number of serial overruns
+    "eo_serial_errors": 0,
     
     # Application (openeo) version
     "app_version" : appVer

@@ -76,7 +76,7 @@ class openeoChargerClass:
         self.rs485.tx(packet)
         response = self.rs485.rx(recv_delay=3)
         if not response:
-            _LOGGER.info("Response from serial was empty")
+            _LOGGER.info("Response from serial was empty - possible serial overrun")
             return None
         try:
             response = response.decode("ascii")
