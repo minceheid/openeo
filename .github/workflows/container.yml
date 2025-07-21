@@ -34,10 +34,9 @@ jobs:
         
       - name: Login to registry
         run: |
-          buildah login  --username=$REGISTRY_USER --password=$REGISTRY_PASSWORD $IMAGE_REGISTRY
+          buildah login  --username=${{ github.actor }} --password=$REGISTRY_PASSWORD $IMAGE_REGISTRY
         env:
-          REGISTRY_USER: dragon
-          REGISTRY_PASSWORD: ${{ secrets.REG_PASSWORD }}
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Build Image
         run: |
