@@ -23,9 +23,7 @@ env:
 jobs:
   build_push:
     name: Build and push image
-    runs-on: docker
-    container: 
-      image: catthehacker/ubuntu:act-24.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
