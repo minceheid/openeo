@@ -13,7 +13,7 @@ env:
   MY_IMAGE_NAME: "openeo"
   MY_IMAGE_DESC: "openeo"
   IMAGE_REGISTRY: "ghcr.io"
-  STORAGE_DRIVER: "overlayfs"
+  STORAGE_DRIVER: "vfs"
   BUILDAH_ISOLATION: "chroot"
   BUILDAH_LAYERS: true      
   BUILDAH_PROGRESS: true
