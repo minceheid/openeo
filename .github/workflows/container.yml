@@ -1,0 +1,62 @@
+name: Build-openeo
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/README.md'
+  workflow_dispatch:
+env:
+  MY_IMAGE_NAME: "openeo"
+  MY_IMAGE_DESC: "openeo"
+  IMAGE_REGISTRY: "ghcr.io"
+  STORAGE_DRIVER: "overlayfs"
+  BUILDAH_ISOLATION: "chroot"
+  BUILDAH_LAYERS: true      
+  BUILDAH_PROGRESS: true
+
+
+
+jobs:
+  build_push:
+    name: Build and push image
+    runs-on: docker
+    container: 
+      image: catthehacker/ubuntu:act-24.04
+    platforms: linux/amd64
+    options: 
+        --privileged
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout Push to Registry action
+        uses: actions/checkout@v4
+        
+      - name: Install Tools
+        run: |
+          apt update
+          apt install -y buildah podman
+          
+      # Critical changes to commands below ⬇️
+      - name: Login to registry
+        run: |
+          buildah login  --username=$REGISTRY_USER --password=$REGISTRY_PASSWORD $IMAGE_REGISTRY
+        env:
+          REGISTRY_USER: dragon
+          REGISTRY_PASSWORD: ${{ secrets.REG_PASSWORD }}
+          
+      - name: Build Image
+        run: |
+             podman build --platform linux/arm/v7 \
+             --manifest $IMAGE_REGISTRY/$MY_IMAGE_NAME -f docker/Dockerfile .\
+             
+
+      - name: Push Image
+        run: |
+             podman manifest push --all $IMAGE_REGISTRY/$MY_IMAGE_NAME docker://$IMAGE_REGISTRY/$MY_IMAGE_NAME
+            
