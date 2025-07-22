@@ -52,7 +52,6 @@ jobs:
       - name: Build Image
         run: |
           for tag in $(echo $IMAGE_TAGS | tr ',' '\n'); do
-            podman build --platform linux/arm/v6 \
               -t $IMAGE_REGISTRY/${{ github.repository }}:$tag \
               -f docker/Dockerfile .
           done
