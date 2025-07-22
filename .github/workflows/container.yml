@@ -52,7 +52,7 @@ jobs:
       - name: Build Image
         run: |
           for tag in $(echo $IMAGE_TAGS | tr ',' '\n'); do
-             buildah -t $IMAGE_REGISTRY/${{ github.repository }}:$tag \
+             buildah build -t $IMAGE_REGISTRY/${{ github.repository }}:$tag \
               -f docker/Dockerfile .
           done
 
