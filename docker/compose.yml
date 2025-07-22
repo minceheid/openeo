@@ -8,5 +8,6 @@ services:
     cap_add:
       - SYS_RAWIO
     devices:
-      - /dev/spi:/dev/spi
+      - /dev/spidev0.0
+      - /dev/spidev0.1
       - /dev/gpiomem:/dev/gpiomem
