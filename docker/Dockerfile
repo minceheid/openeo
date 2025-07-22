@@ -1,3 +1,4 @@
 FROM arm32v7/debian:bookworm
 COPY . /openeo
-ENTRYPOINT /openeo/openeo.py
+RUN apt-get update && apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2
+ENTRYPOINT python3 /openeo/openeo.py
