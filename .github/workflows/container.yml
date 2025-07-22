@@ -13,7 +13,7 @@ env:
   MY_IMAGE_NAME: "openeo"
   MY_IMAGE_DESC: "openeo"
   IMAGE_REGISTRY: "ghcr.io"
-  STORAGE_DRIVER: "overlayfs"
+  STORAGE_DRIVER: "vfs"
   BUILDAH_ISOLATION: "chroot"
   BUILDAH_LAYERS: true      
   BUILDAH_PROGRESS: true
@@ -21,14 +21,10 @@ env:
 
 
 jobs:
+  
   build_push:
     name: Build and push image
-    runs-on: docker
-    container: 
-      image: catthehacker/ubuntu:act-24.04
-    platforms: linux/amd64
-    options: 
-        --privileged
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -36,27 +32,33 @@ jobs:
     steps:
       - name: Checkout Push to Registry action
         uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
         
-      - name: Install Tools
-        run: |
-          apt update
-          apt install -y buildah podman
-          
-      # Critical changes to commands below ⬇️
       - name: Login to registry
         run: |
-          buildah login  --username=$REGISTRY_USER --password=$REGISTRY_PASSWORD $IMAGE_REGISTRY
+          buildah login  --username=${{ github.actor }} --password=$REGISTRY_PASSWORD $IMAGE_REGISTRY
         env:
-          REGISTRY_USER: dragon
-          REGISTRY_PASSWORD: ${{ secrets.REG_PASSWORD }}
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
           
+      - name: Set image tags
+        id: tags
+        run: |
+          echo "IMAGE_TAGS=${{ github.sha }}" >> $GITHUB_ENV
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "IMAGE_TAGS=${{ github.sha }},latest" >> $GITHUB_ENV
+          fi
+
       - name: Build Image
         run: |
-             podman build --platform linux/arm/v7 \
-             --manifest $IMAGE_REGISTRY/$MY_IMAGE_NAME -f docker/Dockerfile .\
-             
+          for tag in $(echo $IMAGE_TAGS | tr ',' '\n'); do
+            podman build --platform linux/arm/v7 \
+              -t $IMAGE_REGISTRY/${{ github.repository }}:$tag \
+              -f docker/Dockerfile .
+          done
 
       - name: Push Image
         run: |
-             podman manifest push --all $IMAGE_REGISTRY/$MY_IMAGE_NAME docker://$IMAGE_REGISTRY/$MY_IMAGE_NAME
-            
+          for tag in $(echo $IMAGE_TAGS | tr ',' '\n'); do
+            podman push $IMAGE_REGISTRY/${{ github.repository }}:$tag
+          done
