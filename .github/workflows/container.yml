@@ -38,13 +38,24 @@ jobs:
         env:
           REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
           
+      - name: Set image tags
+        id: tags
+        run: |
+          echo "IMAGE_TAGS=${{ github.sha }}" >> $GITHUB_ENV
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "IMAGE_TAGS=${{ github.sha }},latest" >> $GITHUB_ENV
+          fi
+
       - name: Build Image
         run: |
-             podman build --platform linux/arm/v7 \
-             --manifest $IMAGE_REGISTRY/$MY_IMAGE_NAME -f docker/Dockerfile .\
-             
+          for tag in $(echo $IMAGE_TAGS | tr ',' '\n'); do
+            podman build --platform linux/arm/v7 \
+              -t $IMAGE_REGISTRY/${{ github.repository }}:$tag \
+              -f docker/Dockerfile .
+          done
 
       - name: Push Image
         run: |
-             podman manifest push --all $IMAGE_REGISTRY/$MY_IMAGE_NAME docker://$IMAGE_REGISTRY/$MY_IMAGE_NAME
-            
+          for tag in $(echo $IMAGE_TAGS | tr ',' '\n'); do
+            podman push $IMAGE_REGISTRY/${{ github.repository }}:$tag
+          done
