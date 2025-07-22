@@ -21,6 +21,7 @@ env:
 
 
 jobs:
+  
   build_push:
     name: Build and push image
     runs-on: ubuntu-24.04
@@ -31,6 +32,8 @@ jobs:
     steps:
       - name: Checkout Push to Registry action
         uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
         
       - name: Login to registry
         run: |
