@@ -185,10 +185,9 @@ def main():
 
             # If we are ready to charge (that is, there is a cable/car connected), and there is demand from the 
             # modules, then raise the Amp limit to the maximum requested by the modules
-            if (globalState.stateDict["eo_charger_state"] == "charge-unknown-state" or 
-                globalState.stateDict["eo_charger_state"] == "charging" or 
-                globalState.stateDict["eo_charger_state"] == "car-connected" or 
-                globalState.stateDict["eo_charger_state"] == "plug-present") and (globalState.stateDict["eo_amps_requested"] > 0):
+            # Note - we have had some unusual states reported here, preventing charging, so we are now checking
+            # for state_id >= 5 to eliminate suspected error states, but to otherwise be permissive.
+            if (globalState.stateDict["eo_charger_state_id"] >= 5) and (globalState.stateDict["eo_amps_requested"] > 0):
                 globalState.stateDict["eo_amps_limit"]=globalState.stateDict["eo_amps_requested"]
             else:
                 globalState.stateDict["eo_amps_limit"]=0
