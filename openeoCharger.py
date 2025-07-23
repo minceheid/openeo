@@ -106,7 +106,7 @@ class openeoChargerClass:
             duty=round(requested_limit*(1/0.06))
 
         # Construct and send instruction packet
-        packet="+"+self.EO_COMMAND["SET_LIMIT"]+self.my_address+f'{duty:03x}'
+        packet="+"+self.EO_COMMAND["SET_LIMIT"]+self.my_address+f'{duty:03X}'
         result = self.sendSerialCommand(packet)
 
         if result is None: #and self.using_spi:
