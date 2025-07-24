@@ -5,6 +5,7 @@ import time
 import spidev
 import RPi.GPIO as GPIO
 import logging
+import globalState
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,6 +80,7 @@ class SPI_RS485(object):
         data=b""
         enter_timestamp = time.monotonic()
 
+        overrun=0
         while (recv_delay is not None) and (time.monotonic() - enter_timestamp < recv_delay):
             bytesWaiting=int(self._register_get(self.REG_RXLVL))
 
@@ -89,11 +91,15 @@ class SPI_RS485(object):
                 if (OverrunError!=0):
                     _LOGGER.debug("rx - Overrun error")
                     print("Warning - RS485 overrun")
+                    overrun=overrun+1
             else:
                 time.sleep(0.001)
 
-        return bytes(data)
-
+        if overrun>0:
+            globalState.stateDict["eo_serial_errors"]=globalState.stateDict["eo_serial_errors"]+1
+            return None
+        else:
+             return bytes(data)
 
 
 def main():

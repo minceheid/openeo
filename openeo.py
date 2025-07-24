@@ -167,6 +167,8 @@ def main():
 
         # decode the charger status
         if result != None:
+            # Perhaps stupidly, we've already stripped off the prefix, which puts the positions
+            # for slicing the result string out by one, so let's put that prefix back on..
             result="!"+result
             try:
                 # TGO: this divisor results in an error of 9V at 230V on my unit, may need tweaking
@@ -192,7 +194,7 @@ def main():
             _LOGGER.debug("Amps Limit: "+str(globalState.stateDict["eo_amps_limit"])+"A")
             
         else:
-            _LOGGER.debug("Invalid result")
+            _LOGGER.debug("Ignoring State Update, we probably had a serial overrun")
 
         # Measure Pi CPU temperature. This is returned via OCPP and might be exposed in other interfaces later.
         # I'm not sure how useful this is, but presumably on a hot day under high CPU load whilst charging, 
