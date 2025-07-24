@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/minceheid/openeo/compare/v0.2.2...v0.2.3) (2025-07-24)
+
+
+### Bug Fixes
+
+* Correct publishing when Release Please runs ([#29](https://github.com/minceheid/openeo/issues/29)) ([0c59593](https://github.com/minceheid/openeo/commit/0c595930298de40d6aaeaa7dd42ab1fe5c78eaf2))
+
 ## [0.2.2](https://github.com/minceheid/openeo/compare/v0.2.1...v0.2.2) (2025-07-23)
 
 
