@@ -17,24 +17,24 @@ elif [ ! -n "$NODOWNLOAD" ]; then
     if [ ! -n "$BRANCH" ]; then
         BRANCH=main
     fi
-    rm -rf openeo-$BRANCH
+    rm -rf openeo-${BRANCH}
     curl -L https://github.com/minceheid/openeo/archive/refs/heads/${BRANCH}.tar.gz | tar xvzf -
 
     if [ -d openeo ]; then
         # Not the first deployment, so we need to preserve the config.json
         if [ -f openeo/config.json ]; then
             echo "Preserving config.json"
-            cp openeo/config.json openeo-$BRANCH/
+            cp openeo/config.json openeo-${BRANCH}/
         fi
         # Delete old archive area
         rm -rf openeo.old
         mv openeo openeo.old
-        mv openeo-$BRANCH openeo
+        mv openeo-${BRANCH} openeo
 
         # we have also updated the deployment, so this deploy script itself might have changed,
         # so we need to call the new one, but tell it that we don't want to download
         # the software yet again
-        BRANCH=$BRANCH NODOWNLOAD=1 ~/openeo/redeploy.bash
+        BRANCH=$BRANCH NODOWNLOAD=1 ~/openeo/deploy.bash
         exit $?
     fi
 fi
