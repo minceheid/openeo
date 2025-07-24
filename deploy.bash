@@ -34,8 +34,11 @@ elif [ ! -n "$NODOWNLOAD" ]; then
         # we have also updated the deployment, so this deploy script itself might have changed,
         # so we need to call the new one, but tell it that we don't want to download
         # the software yet again
+        echo "Relaunching to complete"
         BRANCH=$BRANCH NODOWNLOAD=1 ~/openeo/deploy.bash
         exit $?
+    else
+        mv openeo-${BRANCH} openeo
     fi
 fi
 
