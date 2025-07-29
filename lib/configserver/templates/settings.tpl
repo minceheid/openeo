@@ -5,7 +5,7 @@
 </style>
 
 <div class="settings">
-	<form>
+	<form method="POST" autocomplete="off" action="/save-settings">
 		{% for setting in settings %}
 			<div class="setting-row {{ 'setting-cat-end' if (setting['type'] == 'catend') else '' }}">
 				{% if setting['type'] == 'heading' %}
@@ -38,7 +38,11 @@
 							<span></span>
 						{% endif %}
 						{% if setting['type'] == 'slider' %}
-							<input type="range" id="settings-{{ setting['id'] }}" name="{{ setting['id'] }}" value="{{ setting['value'] }}" min="{{ setting['range'][0] }}" max="{{ setting['range'][1] }}" step="{{ setting['step'] }}">
+							<span id="settings-{{ setting['id'] }}-slider-value">{{ setting['value'] }}</span>
+							<span id="settings-{{ setting['id'] }}-slider-unit">{{ setting['value_unit'] }}</span>
+							<input type="range" id="settings-{{ setting['id'] }}" name="{{ setting['id'] }}" value="{{ setting['value'] }}" 
+								   min="{{ setting['range'][0] }}" max="{{ setting['range'][1] }}" step="{{ setting['step'] }}"
+								   oninput="document.getElementById('settings-{{ setting['id'] }}-slider-value').innerHTML = this.value;">
 							<span></span>
 						{% endif %}
 						{% if setting['type'] == 'url' %}
@@ -49,6 +53,10 @@
 				{% endif %}
 			</div>
 		{% endfor %}
+		
+		<div class="setting-buttons">
+			<input type="submit" value="Save Settings">
+		</div>
 	</form>
 </div>
 

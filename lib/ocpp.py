@@ -460,7 +460,7 @@ class ocppClassPlugin:
 
     def configure(self, configParam):
         _LOGGER.debug("OCPP: reconfiguring")
-        self.config = configParam["ocpp"]
+        self.config = configParam
         self.sync_state(self.config)
 
     def get_config(self):
@@ -633,7 +633,7 @@ class ocppClassPlugin:
                     )
             except websockets.exceptions.NegotiationError as e:
                 _LOGGER.warning("OCPP: the server does not support our minimum OCCP version, it needs to be updated (%r)" % (self.websocket_uri, e))
-            except (websockets.exceptions.InvalidStatusCode, ConnectionRefusedError, asyncio.exceptions.CancelledError, TimeoutError) as e:
+            except (websockets.exceptions.InvalidStatusCode, ConnectionRefusedError, asyncio.exceptions.CancelledError, TimeoutError, OSError) as e:
                 _LOGGER.warning("OCPP: unable to connect to the server at %s... retry in 10s (%r)" % (self.websocket_uri, e))
             except (websockets.exceptions.ConnectionClosedOK) as e:
                 _LOGGER.warning("OCPP: server %s closed the connection.  Most likely, it is not ready for us yet (device not associated yet?) Retry in 10s..." % self.websocket_uri)

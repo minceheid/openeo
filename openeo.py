@@ -54,7 +54,7 @@ def readConfiguration(filename):
         myConfig = {
             "scheduler" : { "enabled" : False, "schedule" : [{"start" : "2200", "end" : "0400", "amps" : 32}] },
             "switch" : { "enabled" : True, "on" : True, "amps" : 32 },
-            "configserver": { "enabled": True, "port": 80 },
+            "configserver": { "enabled": True, "port": 80, "charger_name" : "openeo Charger", "charger_id" : "openeo_1" },
             "chargeroptions" : { "mode" : "manual" },
             "logger": {
                 "enabled": True,
@@ -122,38 +122,49 @@ def main():
                     # Modue should be enabled
                     if modulename in globalState.stateDict["_moduleDict"]:
                         # Module already loaded, so just configure it
-                        _LOGGER.debug("Configuring %s with %s",modulename,pluginConfig)
+                        _LOGGER.info("Configuring %s with %s",modulename,pluginConfig)
                         globalState.stateDict["_moduleDict"][modulename].configure(pluginConfig)
                     else:
-                        _LOGGER.debug("Initialising %s",modulename)
+                        _LOGGER.info("Initialising %s",modulename)
 
                         try:
                             # module is in configfile, but not running - we need to instantiate it
                             moduleClass=getattr(importlib.import_module("lib."+modulename),modulename+"ClassPlugin")
-                            # instantiate an object and add to the list of active modules
-                            globalState.stateDict["_moduleDict"][modulename]=moduleClass(pluginConfig)
+                            # instantiate an object, configure it, and add to the list of active modules
+                            mod = moduleClass(pluginConfig)
+                            mod.configure(pluginConfig)
+                            globalState.stateDict["_moduleDict"][modulename] = mod
                         except ImportError as e:
-                            _LOGGER.error("Aborting - Module '%s' defined and enabled in config file but could not be loaded - %s" % (modulename, repr(e)))
+                            _LOGGER.error("Aborting - Module '%s' defined and enabled in config file but could not be imported - %s" % (modulename, repr(e)))
+                        except Exception as e:
+                            _LOGGER.error("Aborting - Module '%s' defined and enabled in config file but another error occurred loading  - %s" % (modulename, repr(e)))
 
                 # Do we have any modules that are currently loaded, but not in the configfile
                 # file (for example, perhaps the config file has been updated to remove one)
                 for modulename,module in globalState.stateDict["_moduleDict"].copy().items():
                     if not modulename in globalConfig:
                         # module has recently been disabled in configfile, so unload
-                        _LOGGER.debug("Unloading %s",modulename)
+                        _LOGGER.info("Unloading %s",modulename)
                         del globalState.stateDict["_moduleDict"][modulename]
 
 
         # Take any action necessary - the module poll() function should return a numeric value
         # the maximum value returned by any module will be the max amp setting for the charger
         # If all modules return 0, then the charger will be set to "off"
-        globalState.stateDict["eo_amps_requested"]=0
+        globalState.stateDict["eo_amps_requested"] = 0
+        
         for modulename,module in globalState.stateDict["_moduleDict"].items():
             if module.get_config().get("enabled", True):
-                globalState.stateDict["eo_amps_requested"]=max(globalState.stateDict["eo_amps_requested"],module.poll())
+                globalState.stateDict["eo_amps_requested"] = max(globalState.stateDict["eo_amps_requested"],module.poll())
                 _LOGGER.debug("polled "+modulename+" max_amps_requested="+str(globalState.stateDict["eo_amps_requested"]))
         
-        _LOGGER.info("Amps Requested: %d amps" % int(globalState.stateDict["eo_amps_requested"]))
+        if globalState.stateDict["eo_always_supply_current"]:
+            globalState.stateDict["eo_amps_requested"] = 32
+        
+        globalState.stateDict["eo_amps_requested"] = min(globalState.stateDict["eo_overall_limit_current"], globalState.stateDict["eo_amps_requested"])
+        
+        _LOGGER.info("Amps Requested: %d amps (overall limit: %d amps, always supply: %r)" % \
+            (int(globalState.stateDict["eo_amps_requested"]), globalState.stateDict["eo_overall_limit_current"], globalState.stateDict["eo_always_supply_current"]))
 
         # In order for us to find the status of the charder (e.g. whether a car is connected), we
         # need to set the amp limit first as part of the request. Action may be taken off the back of that 

@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>openeo {{ title }}</title>
+	<title>openeo {{ title }} &middot; {{ status['charger_name'] }}</title>
 	<link rel="stylesheet" href="static/base_style.css">
 	<link rel="apple-touch-icon" href="static/openeo_icon_apple.png">
 </head>
@@ -30,7 +30,7 @@
 		</div>
 		<div class="top-status">
 			<div class="minimal-status" id="minimalStatus">
-				<p><span id="evseName" class="evse-name"></span></p>
+				<p><span id="evseName" class="evse-name">&nbsp;{{ status['charger_name'] }}&nbsp;</span></p>
 				<p><span id="modeName" class="mode-name"></span></p>
 			</div>
 		</div>

@@ -47,6 +47,14 @@ stateDict={
 
     # Always set charger to requested current, even if no car is connected
     "eo_always_supply_current": False,
+    
+    # Set if there is an overriding total current limit.  ConfigServer should generally not
+    # offer the user the ability to set currents above this amount.
+    "eo_overall_limit_current" : 32,
+    
+    # Name and ID of the charger, used for web interface, APIs, etc.
+    "charger_name" : "openeo Charger",
+    "charger_id" : "openeo_1",
 
     # Counter of the number of serial overruns
     "eo_serial_errors": 0,

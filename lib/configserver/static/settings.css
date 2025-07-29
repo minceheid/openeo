@@ -25,6 +25,7 @@
 	color: #ffffff;
 	border: 1px solid #888888;
 	border-radius: 5px;
+	width: 10em;  /* accounts for most strings we'll use, review later */
 }
 
 .settings input:focus {
@@ -43,11 +44,23 @@
 	visibility: visible;
 }
 
-/* This is evil and ugly */
-.settings input[type="range"], .settings input[type="radio"] {
+.settings input[type=range], .settings input[type=radio] {
 	accent-color: #4dabf7;
 	border-color: #888888;
 	background-color: #222222;
+}
+
+.settings input[type=range] {
+	width: 10em;  /* reduce the size compared to default */
+}
+
+.settings input[type=submit], .settings input[type=button], .settings input[type=reset] {
+	background-color: #222222;
+	color: #ffffff;
+	border: 1px solid #888888;
+	border-radius: 5px;
+	font-size: 12pt;
+	padding: 1em;
 }
 
 .settings input[type=number] {
@@ -104,9 +117,22 @@
 	padding: 1em;
 }
 
+.setting-buttons {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+}
+
 /* Portrait phone tweaks */
 @media (orientation: portrait) and (max-width: 500px) {
 	.settings {
 		width: 90%;
+		font-size: 10pt;
+		position: relative;
+		top: 8em;
+	}
+	
+	.settings input[type=range] {
+		width: 7em;  
 	}
 }

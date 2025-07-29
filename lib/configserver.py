@@ -198,8 +198,9 @@ class configserverClassPlugin:
             ###################################################################
             ## expose the running status to the api, as recorded in the global dict in cfg
             if self.path == "/getstatus":
-                # copy.deepcopy is needed to avoid a RuntimeError due to this dict changing size
-                status = copy.deepcopy(globalState.stateDict)
+                # copy is needed to avoid a RuntimeError due to this dict changing size
+                # we can't deepcopy because in some cases the modules within cannot be pickled (e.g. thread objects)
+                status = copy.copy(globalState.stateDict)
                 for x in globalState.stateDict:
                     if x[0]=="_":
                         # an underscore denotes a private configuration that probably shouldn't be exposed
@@ -228,13 +229,14 @@ class configserverClassPlugin:
             base = os.path.basename(file)
             _LOGGER.debug("file %s ext %s" % (file, ext))
             
-            # Setup the context according to the config
-            if base in template_to_name:
-                self.selected_page = template_to_name[base]
-            self.set_context()
-            
             # HTML files are handled as templated objects.
             if ext.lower() == "html":
+                # Setup the context according to the config (only for templated files)
+                if base in template_to_name:
+                    self.selected_page = template_to_name[base]
+                self.load_config()
+                self.set_context()
+                
                 try:
                     template = env.get_template(base + ".tpl")
                     self.send_response(200)
@@ -421,11 +423,11 @@ class configserverClassPlugin:
             
             # If a module supports exposing settings, add each.
             if "_moduleDict" in globalState.stateDict:
-                for modulename,module in globalState.stateDict["_moduleDict"].items():
+                for modulename, module in globalState.stateDict["_moduleDict"].items():
                     try:
                         mod_settings = []
                         if not module.CORE_PLUGIN:
-                            util.add_simple_setting(self.config, mod_settings, 'boolean', module.myName, ("enabled",), 'Enable Module') 
+                            util.add_simple_setting(self.config, mod_settings, 'boolean', module.myName, (module.myName, "enabled",), 'Enable Module') 
                         if hasattr(module, "get_user_settings"):
                             sets = module.get_user_settings()
                             if isinstance(sets, list) and len(sets) > 0:  # Might return None or some other garbage value.
