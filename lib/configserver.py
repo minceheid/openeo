@@ -296,7 +296,7 @@ class configserverClassPlugin:
                         a[key] = b[key]
                 else:
                     a[key] = b[key]
-            return a            
+            return a  
 
         def do_POST(self):
             _LOGGER.info("do_POST(%s)" % self.path)
@@ -337,6 +337,22 @@ class configserverClassPlugin:
                     self.wfile.write(json.dumps({"status": "failed", "config" : self.config}).encode("utf-8"))
                     _LOGGER.info('Config save error: %r' % e)
                     return
+            elif self.path == "/setsettings":
+                ##################################
+                # API for syncing settings via POST variables.
+                # This is effectively the same as /setconfig, but does not require the data to be serialised
+                # as JSON, accepting colon-delimited variables to build the mergable dictionary.
+                # It redirects the user to the settings.html page when done.
+                content_length = int(self.headers['Content-Length'])
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                post_vars = urllib.parse.parse_qsl(post_data)
+                new_dict = {}
+                
+                # It is legal for POST keys to be duplicated; that shouldn't happen when saving settings, but #
+                # even if it does, we'll just take the last value we see.
+                for key, value in post_var:
+                    util.set_nested_value_from_colon_key(new_dict, key, value)
+                    
             elif self.path == "/setmode":
                 ##################################
                 # API for changing the mode.  Depending upon the selected mode, one or more modules 

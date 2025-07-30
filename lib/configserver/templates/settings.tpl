@@ -5,7 +5,7 @@
 </style>
 
 <div class="settings">
-	<form method="POST" autocomplete="off" action="/save-settings">
+	<form method="POST" autocomplete="off" action="/setsettings">
 		{% for setting in settings %}
 			<div class="setting-row {{ 'setting-cat-end' if (setting['type'] == 'catend') else '' }}">
 				{% if setting['type'] == 'heading' %}

@@ -2,7 +2,7 @@
 Common utilities used by other openeo modules.
 """
 
-import logging
+import logging, dict
 
 def get_nested_default(cfg_dict, path, default_key=None):
     """Navigate a dictionary using a provided path tuple.  If any key in the path
@@ -52,6 +52,15 @@ def add_header_setting(context, heading_text):
 def add_category_exit(context):
     context.append({ 'type' : 'catend' })
 
+def set_nested_value_from_colon_key(d, colon_key, value):
+    keys = colon_key.split(':')
+    
+    for i, key in enumerate(keys[:-1]):
+        d = d.setdefault(key, {})
+        d = d[key]
+    
+    d[keys[-1]] = value
+
 def TEST_get_nested_default():
     # Test cases
     cfg_dict = {
@@ -97,6 +106,28 @@ def TEST_get_nested_default():
         raise AssertionError("Failed exception test")
     
     print("Tests complete")
+
+def TEST_set_nested_value_from_colon_key():
+    base_dict = {}
+    
+    d = copy.copy(base_dict)
+    set_nested_value_from_colon_key(d, "a", 1)
+    if d["a"] != 1:
+        raise AssertionError("Failed value test")
+    
+    d = copy.copy(base_dict)
+    set_nested_value_from_colon_key(d, "a:b", 1)
+    if d["a"]["b"] != 1:
+        raise AssertionError("Failed value test")
+        
+    d = copy.copy(base_dict)
+    d["a"] = {}
+    d["a"]["c"] = 1234
+    set_nested_value_from_colon_key(d, "a:b", 1)
+    if d["a"]["b"] != 1:
+        raise AssertionError("Failed value test")
+    if d["a"]["c"] != 1234:
+        raise AssertionError("Failed value test")
 
 if __name__ == "__main__":
     TEST_get_nested_default()
