@@ -31,16 +31,18 @@ template_to_name = {
     "stats" : "Statistics"
 }
 
-class SocketOptionTCPServer(socketserver.TCPServer):
+class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     """This child class allows us to set the REUSEADDR and REUSEPORT options on the socket
     which means the Python task can be started and stopped without breaking the config server
-    due to the previous socket being in TIME_WAIT."""
+    due to the previous socket being in TIME_WAIT.
+    
+    It's now threaded, allowing for multiple requests to be handled in parallel."""
     def server_bind(self):
         # Set socket options before binding
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         super().server_bind()
-
+        
 #################################################################################
 class configserverClassPlugin:
     pretty_name = "Config Server"
@@ -79,7 +81,7 @@ class configserverClassPlugin:
 
     def webserver(self):
         socketserver.TCPServer.allow_reuse_address = True
-        with SocketOptionTCPServer(("", self.pluginConfig["port"]), self.CustomHandler) as httpd:
+        with ThreadedServer(("", self.pluginConfig["port"]), self.CustomHandler) as httpd:
             _LOGGER.info("Serving Configuration webserver on port {}".format(self.pluginConfig["port"]))
             try:
                 httpd.serve_forever()
@@ -88,7 +90,7 @@ class configserverClassPlugin:
 
     ###############
     # Everything from here down is the config handling
-
+    
     class CustomHandler(http.server.BaseHTTPRequestHandler):
         config = {}
         _context = {}
