@@ -23,7 +23,7 @@ from ocpp.v16 import ChargePoint, call, call_result
 from ocpp.v16.enums import *
 from ocpp.v16.datatypes import *
 
-import util
+import globalState, util
 
 EVENT_START_CHARGING = 1
 EVENT_STOP_CHARGING = 2
@@ -462,6 +462,29 @@ class ocppClassPlugin:
         _LOGGER.debug("OCPP: reconfiguring")
         self.config = configParam
         self.sync_state(self.config)
+        
+        try:
+            self.websocket_uri = str(self.config["websocket"]).strip()
+            _LOGGER.debug("OCPP: websocket: %s" % self.websocket_uri)
+        except KeyError:
+            _LOGGER.warning("OCPP: websocket is not specified, aborting module init.")
+            return
+        
+        if not self.websocket_uri.startswith("ws://") or not self.websocket_uri.endswith("/") or self.websocket_uri.count("/") > 3:
+            _LOGGER.warning("OCPP: websocket ID is not well-formed and might not work, it needs to look like: ws://ip-or-dns-name:1234/; do not include the CP ID.")
+        
+        # OCPP1.6 or OCPP2.0.1 are implemented.  We prefer 2.0.1, then fall back to 1.6.
+        self.protos = ["occp2.0.1", "ocpp1.6"]
+        
+        if "charger_id" not in globalState.stateDict:
+            self.point_id = "ChargePoint1"
+        else:
+            self.point_id = str(globalState.stateDict["charger_id"])
+            
+        if "charger_name" not in globalState.stateDict:
+            self.name = "Unnamed openeo Charger"
+        else:
+            self.name = str(globalState.stateDict["charger_name"])
 
     def get_config(self):
         return self.config
@@ -521,30 +544,7 @@ class ocppClassPlugin:
 
     def __init__(self, configParam):
         _LOGGER.debug("Initialising Module: OCPP")
-        self.config = configParam
-        
-        try:
-            self.websocket_uri = str(self.config["websocket"]).strip()
-            _LOGGER.debug("OCPP: websocket: %s" % self.websocket_uri)
-        except KeyError:
-            _LOGGER.warning("OCPP: websocket is not specified, aborting module init.")
-            return
-        
-        if not self.websocket_uri.startswith("ws://") or not self.websocket_uri.endswith("/") or self.websocket_uri.count("/") > 3:
-            _LOGGER.warning("OCPP: websocket ID is not well-formed and might not work, it needs to look like: ws://ip-or-dns-name:1234/; do not include the CP ID.")
-        
-        # OCPP1.6 or OCPP2.0.1 are implemented.  We prefer 2.0.1, then fall back to 1.6.
-        self.protos = ["occp2.0.1", "ocpp1.6"]
-        
-        if "point_id" not in self.config:
-            self.point_id = "ChargePoint1"
-        else:
-            self.point_id = str(self.config["point_id"])
-        
-        try:
-            self.name = str(self.config["name"])
-        except KeyError:
-            self.name = "OpenEO_Charger"
+        self.configure(configParam)
         
         # Start the OCPP sub-thread
         _LOGGER.debug("Starting OCPP thread")

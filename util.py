@@ -2,7 +2,9 @@
 Common utilities used by other openeo modules.
 """
 
-import logging, dict
+import logging, os, sys, psutil
+
+_LOGGER = logging.getLogger(__name__)
 
 def get_nested_default(cfg_dict, path, default_key=None):
     """Navigate a dictionary using a provided path tuple.  If any key in the path
@@ -53,14 +55,35 @@ def add_category_exit(context):
     context.append({ 'type' : 'catend' })
 
 def set_nested_value_from_colon_key(d, colon_key, value):
+    # handle empty source
+    if len(colon_key) == 0:
+        return d
+        
     keys = colon_key.split(':')
     
     for i, key in enumerate(keys[:-1]):
         d = d.setdefault(key, {})
-        d = d[key]
     
     d[keys[-1]] = value
 
+def restart_python():
+    """Restarts the current program, with file objects and descriptors cleanup."""
+    # https://stackoverflow.com/questions/11329917/restart-python-script-from-within-itself
+    _LOGGER.info("Got restart request.")
+    
+    try:
+        p = psutil.Process(os.getpid())
+        for handler in (p.open_files() + p.connections()):
+            try:
+                os.close(handler.fd)
+            except Exception as e:
+                _LOGGER.error("Inner error closing for restart %r: %r" % (handler, e))
+    except Exception as e:
+        _LOGGER.error("Outer exception in restart: %r" % e)
+
+    python = sys.executable
+    os.execl(python, python, *sys.argv)
+    
 def TEST_get_nested_default():
     # Test cases
     cfg_dict = {

@@ -13,7 +13,8 @@ Configuration example:
 
 """
 #################################################################################
-import re, logging, threading, json, http.server, socketserver, datetime, socket, os, copy, numbers, urllib.parse
+import re, logging, threading, json, http.server, socketserver, datetime, socket, os
+import copy, time, numbers, urllib.parse
 import globalState, util
 
 # logging for use in this module
@@ -111,10 +112,6 @@ class configserverClassPlugin:
                 f.write(json.dumps(self.config, indent=2))
 
         def do_GET(self):
-            # handle the root page correctly
-            if self.path == "/":
-                self.path = "/home.html"
-                
             ################################
             # Prometheus exporter
             if format(self.path)=="/metrics":
@@ -147,7 +144,18 @@ class configserverClassPlugin:
                 self.wfile.write(json.dumps(status).encode('utf-8'))
                 return
 
-
+            ##################################
+            # This is a potential DoS end point.  Not sure how to secure this if we want
+            # to offer the users an option.
+            if self.path == "/restart":
+                _LOGGER.info("User requested to restart openeo")
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "requested"}).encode("utf-8"))
+                time.sleep(1.0) # Give time for the packet to be absorbed
+                util.restart_python()
+                
             ###################################################################
             ## expose the configuration from the config file to the api
             ## we can also use POST/setconfig to write the configuration
@@ -218,15 +226,24 @@ class configserverClassPlugin:
             # Revert to serving files from the filesystem
             # @TODO: not yet sure how I can have this CustomHandler class pick up self.myName from the parent
             # object, to remove this hardcoded subdirectory name
-            self.path='lib/configserver' + self.path
-            _LOGGER.debug("serving: " + self.path)
             
             # Try to prevent directory backtracking.  If we detect ".." in the URL, that's not allowed.
             if ".." in self.path:
                 self.send_error(403, "Forbidden - but, nice try")
                 return
+            
+            path_components = urllib.parse.urlsplit(self.path)
+            _LOGGER.info("Path components: %s" % repr(path_components))
+            
+            # Handle root request
+            req_path = path_components.path
+            if req_path == "/" or req_path == "":
+                req_path = "/home.html"
+            
+            file_path  = 'lib/configserver' + req_path
+            _LOGGER.debug("serving: " + file_path)
                 
-            file, ext = os.path.splitext(self.path)
+            file, ext = os.path.splitext(file_path)
             ext = ext.lstrip('.')
             base = os.path.basename(file)
             _LOGGER.debug("file %s ext %s" % (file, ext))
@@ -267,7 +284,7 @@ class configserverClassPlugin:
                         mode = 'rb'
                         
                     try:
-                        with open(self.path, mode) as f:
+                        with open(file_path, mode) as f:
                             self.send_response(200)
                             self.send_header("Content-type", v[0])
                             self.end_headers()
@@ -352,9 +369,27 @@ class configserverClassPlugin:
                 
                 # It is legal for POST keys to be duplicated; that shouldn't happen when saving settings, but #
                 # even if it does, we'll just take the last value we see.
-                for key, value in post_var:
+                for key, value in post_vars:
+                    _LOGGER.info("%r : %r" % (key, value))
                     util.set_nested_value_from_colon_key(new_dict, key, value)
                     
+                _LOGGER.info("Result dict: %r" % new_dict)
+                
+                self.load_config()
+                self.merge(self.config, new_dict)
+                self.save_config()
+                self.set_context()
+                _LOGGER.info("New config: %r" % self.config)
+                
+                # Force all modules in the config set to update
+                for modulename, module in globalState.stateDict["_moduleDict"].items():
+                    if hasattr(module, "configure"):
+                        _LOGGER.info("Force module %s to update config" % modulename)
+                        module.configure(self.config[modulename])
+                
+                self.send_response(303) # 303 See Other, used after POST request to indicate resubmission should not occur
+                self.send_header('Location', '/settings.html?toast2success=1')
+                self.end_headers()
             elif self.path == "/setmode":
                 ##################################
                 # API for changing the mode.  Depending upon the selected mode, one or more modules 

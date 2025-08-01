@@ -63,6 +63,11 @@
 	padding: 1em;
 }
 
+.setting-button-restart {
+	background-color: #552222 !important;
+	border: 1px solid #ff8888 !important;
+}
+
 .settings input[type=number] {
 	width: 5em;  /* accounts for most numbers we'll use, review later */
 }
@@ -120,7 +125,7 @@
 .setting-buttons {
 	display: flex;
 	flex-direction: row;
-	justify-content: center;
+	justify-content: space-around;
 }
 
 /* Portrait phone tweaks */

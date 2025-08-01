@@ -26,6 +26,7 @@ class schedulerClassPlugin:
     PRETTY_NAME = "Scheduler"
     CORE_PLUGIN = True  
     pluginConfig = []
+    parsedSchedule = []
     myName=""
 
     def __str__(self):
@@ -33,10 +34,13 @@ class schedulerClassPlugin:
 
     def configure(self,configParam):
         _LOGGER.debug("Plugin Configured: "+type(self).__name__)
-        self.pluginConfig=configParam
-        for i in self.pluginConfig["schedule"]:
-            i['start']=datetime.time(int(i['start'][:2]),int(i['start'][-2:]),0,0)
-            i['end']=datetime.time(int(i['end'][:2]),int(i['end'][-2:]),0,0)
+        self.pluginConfig = configParam
+        self.parsedSchedule = []
+        for n, i in enumerate(self.pluginConfig["schedule"]):
+            sched = {}
+            sched['start']=datetime.time(int(i['start'][:2]),int(i['start'][-2:]),0,0)
+            sched['end']=datetime.time(int(i['end'][:2]),int(i['end'][-2:]),0,0)
+            self.parsedSchedule.append(sched)
         
     def get_config(self):
         return self.pluginConfig
@@ -45,7 +49,7 @@ class schedulerClassPlugin:
         now=datetime.datetime.now().time()
         amps=0
         # Check each defined schedule in the configuration
-        for i in self.pluginConfig["schedule"]:
+        for i in self.parsedSchedule:
             schedule_amps=i.get("amps",32)
 
             if i['start']<i['end'] and ( now>i['start'] and now<i['end'] ):

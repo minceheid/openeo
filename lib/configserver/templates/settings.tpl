@@ -56,6 +56,7 @@
 		
 		<div class="setting-buttons">
 			<input type="submit" value="Save Settings">
+			<input type="button" value="Restart openeo" class="setting-button-restart" onclick="requestRestart();">
 		</div>
 	</form>
 </div>
