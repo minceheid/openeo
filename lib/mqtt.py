@@ -234,7 +234,7 @@ class mqttClassPlugin:
             self.pluginConfig["username"], self.pluginConfig["password"]
         )
         self.client.on_connect = self.on_connect
-        # client.on_message = self.on_message
+        self.client.on_message = self.on_message
         # Connect to the MQTT broker
         self.client.connect(self.pluginConfig["server"], self.pluginConfig["port"])
         # Start MQTT client loop in background thread
