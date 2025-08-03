@@ -166,12 +166,13 @@ def main():
         _LOGGER.info("Amps Requested: %d amps (overall limit: %d amps, always supply: %r)" % \
             (int(globalState.stateDict["eo_amps_requested"]), globalState.stateDict["eo_overall_limit_current"], globalState.stateDict["eo_always_supply_current"]))
 
-        # In order for us to find the status of the charder (e.g. whether a car is connected), we
+        # In order for us to find the status of the charger (e.g. whether a car is connected), we
         # need to set the amp limit first as part of the request. Action may be taken off the back of that 
         # status on the next iteration (e.g. if the car is unplugged, then we'll need to wait for the next
         # iteration to set amps_limit to zero)
         try:
-            result = charger.set_amp_limit(globalState.stateDict["eo_amps_limit"])
+            _LOGGER.debug("Setting amp limit: %d" % globalState.stateDict["eo_amps_requested"])
+            result = charger.set_amp_limit(globalState.stateDict["eo_amps_requested"])
         except:
             _LOGGER.exception("Problem getting result from serial command: ("+str(result)+")")
             result = None
@@ -184,9 +185,9 @@ def main():
             try:
                 # TGO: this divisor results in an error of 9V at 230V on my unit, may need tweaking
                 globalState.stateDict["eo_live_voltage"] = round(int(result[13:16], 16) / 3.78580786, 1) # divisor is an estimate, based on voltmeter readings
-                globalState.stateDict["eo_p1_current"] = round(int(result[67:70], 16) / 10, 1)
-                globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_p1_current"]) / 1000, 1)        # P=VA
-                globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 1)    # P=VA
+                globalState.stateDict["eo_p1_current"] = round(int(result[67:70], 16) / 10, 2)
+                globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_p1_current"]) / 1000, 2)        # P=VA
+                globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
                 globalState.stateDict["eo_mains_frequency"] = int(result[22:25], 16)
                 globalState.stateDict["eo_charger_state_id"] = int(result[25:27], 16)
                 globalState.stateDict["eo_charger_state"] = openeoChargerClass.CHARGER_STATES[globalState.stateDict["eo_charger_state_id"]]

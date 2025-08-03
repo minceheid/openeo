@@ -149,9 +149,11 @@ def main():
     address=result[1:-3].decode("ascii")
     print("address: "+str(address))
 
-    loop=0
+    loop = 0
+    eo_p1_current = 0
+    
     while True:
-        amps_requested=32*(loop%2)
+        amps_requested=4*((loop//8) % 2)
         duty=round(amps_requested*(1/0.06))
         packet="+0"+address+f'{duty:03x}'
         packet=packet+generateChecksum(packet)
@@ -164,14 +166,15 @@ def main():
             voltage = round(int(result[13:16], 16) / 3.78580786, 1) # divisor is an estimate, based on voltmeter readings
             frequency = int(result[22:25], 16)
             amps_set = round(int(result[29:32],16)/(1/0.06))
+            eo_p1_current = round(int(result[67:70], 16) / 10, 2)
         else:
             EOSerial.write(packet.encode("ASCII"))
             time.sleep(0.6)  
             result = EOSerial.read(255)
 
-        print("Voltage: {0}V    Frequency: {1}Hz    Amps Requested: {2}A    Amps Set: {3}A".format(voltage,frequency,amps_requested,amps_set))
+        print("Voltage: {0}V    Frequency: {1}Hz    Amps Requested: {2}A    Amps Set: {3}A    Actual Current: {4:.2f}A".format(voltage,frequency,amps_requested,amps_set,eo_p1_current))
         loop=loop+1
-        time.sleep(5)
+        time.sleep(1)
 
 
 main()
