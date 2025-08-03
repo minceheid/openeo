@@ -1,13 +1,34 @@
 {
-  "scheduler" : { "enabled" : False, "schedule" : [{"start" : "2200", "end" : "0400", "amps" : 32}] },
-  "switch" : { "enabled" : True, "on" : True, "amps" : 32 },
-  "configserver": { "enabled": True, "port": 80 },
-  "chargeroptions" : { "mode" : "switch" },
-  "logger": {
-      "enabled": True,
-      "hires_interval": 2,        # 2 seconds
-      "hires_maxage": 60*10,      # 10 minutes
-      "lowres_interval": 60*5,    # 5 minutes
-      "lowres_maxage": 60*60*48   # 48 hours
+  "scheduler": {
+    "enabled": false,
+    "schedule": [
+      {
+        "start": "2200",
+        "end": "0400",
+        "amps": 32
+      }
+    ]
   },
+  "switch": {
+    "enabled": true,
+    "on": true,
+    "amps": 32
+  },
+  "configserver": {
+    "enabled": true,
+    "port": 80,
+    "charger_name": "openeo Charger",
+    "charger_id": "openeo_1"
+  },
+  "chargeroptions": {
+    "mode": "manual",
+    "mains_voltage_correction": 0.776231001
+  },
+  "logger": {
+    "enabled": true,
+    "hires_interval": 2,
+    "hires_maxage": 600,
+    "lowres_interval": 300,
+    "lowres_maxage": 172800
+  }
 }
