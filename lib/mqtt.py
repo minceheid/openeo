@@ -233,7 +233,6 @@ class mqttClassPlugin:
         self.client.username_pw_set(
             self.pluginConfig["username"], self.pluginConfig["password"]
         )
-        self.client.connect(self.pluginConfig["server"], self.pluginConfig["port"])
         self.client.on_connect = self.on_connect
         # client.on_message = self.on_message
         # Connect to the MQTT broker
