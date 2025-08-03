@@ -240,12 +240,18 @@ class mqttClassPlugin:
         self.client.connect(self.pluginConfig["server"], self.pluginConfig["port"])
         # Start MQTT client loop in background thread
         self.client.loop_start()
+        # Set the polls value to 0
+        self.polls = 0
 
     def get_config(self):
         return self.pluginConfig
 
     def poll(self):
         amps = 0
+        # Waiting for 2 polls to have passed before sending updates to ensure we've got some initial data
+        if self.polls < 2:
+            self.polls += 1
+            return amps
         # Poll the charger and send updates to MQTT
         status = copy.copy(globalState.stateDict)
         for x in globalState.stateDict:
