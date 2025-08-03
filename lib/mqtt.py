@@ -194,10 +194,12 @@ class mqttClassPlugin:
             if msg.payload.decode() == "ON":
                 self.config["switch"]["enabled"] = True
                 self.config["scheduler"]["enabled"] = False
+                self.config["chargeroptions"]["mode"] = "manual"
                 updated_value = "ON"
             elif msg.payload.decode() == "OFF":
                 self.config["switch"]["enabled"] = False
                 self.config["scheduler"]["enabled"] = True
+                self.config["chargeroptions"]["mode"] = "schedule"
                 updated_value = "OFF"
         elif msg.topic == mqtt_topic_prefix + "override_current_limit/set":
             # Handle override current limit command
