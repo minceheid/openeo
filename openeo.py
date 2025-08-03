@@ -191,7 +191,7 @@ def main():
                     int(result[13:16], 16)
                     / 2
                     / math.sqrt(2)
-                    * globalState.stateDict["chargeroptions"].get("mains_voltage_correction", 0.776231001)
+                    * globalConfig["chargeroptions"].get("mains_voltage_correction", 0.776231001)
                     ),
                     2,
                 )
