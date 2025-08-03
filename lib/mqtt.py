@@ -172,6 +172,46 @@ class mqttClassPlugin:
                 retain=True,
             )
 
+    def on_message(self, client, userdata, msg):
+        _LOGGER.debug("Received message on topic: " + msg.topic + " with payload: " + str(msg.payload))
+        # Handle incoming messages for command topics
+        # Load config to access global state
+        self.load_config()
+        mqtt_topic_prefix = "evcharger/eominipro2/"
+        if msg.topic == mqtt_topic_prefix + "pause/set":
+            # Handle pause command
+            topic_to_update = mqtt_topic_prefix + "pause"
+            if msg.payload.decode() == "ON":
+                self.config["switch"]["on"] = False
+                updated_value = "OFF"
+            elif msg.payload.decode() == "OFF":
+                self.config["switch"]["on"] = True
+                updated_value = "ON"
+        elif msg.topic == mqtt_topic_prefix + "override/set":
+            # Handle override command
+            topic_to_update = mqtt_topic_prefix + "override"
+            # If this is turned on, we enable the switch module and disable the scheduler module and vice versa
+            if msg.payload.decode() == "ON":
+                self.config["switch"]["enabled"] = True
+                self.config["scheduler"]["enabled"] = False
+                updated_value = "ON"
+            elif msg.payload.decode() == "OFF":
+                self.config["switch"]["enabled"] = False
+                self.config["scheduler"]["enabled"] = True
+                updated_value = "OFF"
+        elif msg.topic == mqtt_topic_prefix + "override_current_limit/set":
+            # Handle override current limit command
+            topic_to_update = mqtt_topic_prefix + "override_current_limit"
+            new_limit = int(msg.payload.decode())
+            self.config["switch"]["amps"] = new_limit
+            updated_value = new_limit
+
+        # Save the updated configuration
+        self.save_config()
+        # Publish the updated value to the corresponding topic
+        client.publish(topic_to_update, updated_value, retain=True)
+
+
     def load_config(self):
         try:
             with open(globalState.stateDict["eo_config_file"], "r") as f:
