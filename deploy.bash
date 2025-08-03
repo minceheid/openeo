@@ -8,7 +8,7 @@ if [ -n "$1" ]; then
     ZIP_URL="https://github.com/minceheid/openeo/releases/download/${VERSION}/openeo-${VERSION}.zip"
     ZIP_FILE="openeo-${VERSION}.zip"
     wget "$ZIP_URL" -O "$ZIP_FILE"
-    unzip "$ZIP_FILE" -d "openeo-${VERSION}"
+    unzip -of "$ZIP_FILE" -d "openeo-${VERSION}"
     # The crontab will allow openeo to start automatically at boot
     echo "@reboot openeo-${VERSION}/boot.bash" >/tmp/crontab 
 
@@ -48,7 +48,7 @@ fi
 # in a workable state
 
 # Install prereq packages
-sudo apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2
+sudo apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil
 
 # Update the SPI config
 sudo cp /boot/firmware/config.txt /tmp/config.txt
