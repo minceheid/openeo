@@ -55,7 +55,7 @@ def readConfiguration(filename):
             "scheduler" : { "enabled" : False, "schedule" : [{"start" : "2200", "end" : "0400", "amps" : 32}] },
             "switch" : { "enabled" : True, "on" : True, "amps" : 32 },
             "configserver": { "enabled": True, "port": 80, "charger_name" : "openeo Charger", "charger_id" : "openeo_1" },
-            "chargeroptions" : { "mode" : "manual" },
+            "chargeroptions" : { "mode" : "manual", "mains_voltage_correction": 0.776231001 },
             "logger": {
                 "enabled": True,
                 "hires_interval": 2,        # 2 seconds
@@ -191,7 +191,7 @@ def main():
                     int(result[13:16], 16)
                     / 2
                     / math.sqrt(2)
-                    * 0.776231001
+                    * globalState.stateDict["chargeroptions"].get("mains_voltage_correction", 0.776231001)
                     ),
                     2,
                 )
