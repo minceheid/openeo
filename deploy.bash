@@ -7,7 +7,7 @@ if [ -n "$1" ]; then
     VERSION="$1"
     ZIP_URL="https://github.com/minceheid/openeo/releases/download/${VERSION}/openeo-${VERSION}.zip"
     ZIP_FILE="openeo-${VERSION}.zip"
-    wget "$ZIP_URL" -O "$ZIP_FILE"
+    wget -q "$ZIP_URL" -O "$ZIP_FILE"
     unzip -of "$ZIP_FILE" -d "openeo-${VERSION}"
     # The crontab will allow openeo to start automatically at boot
     echo "@reboot openeo-${VERSION}/boot.bash" >/tmp/crontab 
@@ -18,7 +18,7 @@ elif [ ! -n "$NODOWNLOAD" ]; then
         BRANCH=main
     fi
     rm -rf openeo-${BRANCH}
-    curl -L https://github.com/minceheid/openeo/archive/refs/heads/${BRANCH}.tar.gz | tar xvzf -
+    curl -sSL https://github.com/minceheid/openeo/archive/refs/heads/${BRANCH}.tar.gz | tar xvzf -
 
     if [ -d openeo ]; then
         # Not the first deployment, so we need to preserve the config.json
