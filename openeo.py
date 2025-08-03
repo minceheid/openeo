@@ -26,9 +26,8 @@ import logging
 import logging.handlers
 import json, os, time, subprocess
 
-import globalState
+import globalState, util
 from openeoCharger import openeoChargerClass
-
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
@@ -55,7 +54,7 @@ def readConfiguration(filename):
         myConfig = {
             "scheduler" : { "enabled" : False, "schedule" : [{"start" : "2200", "end" : "0400", "amps" : 32}] },
             "switch" : { "enabled" : True, "on" : True, "amps" : 32 },
-            "configserver": { "enabled": True, "port": 80 },
+            "configserver": { "enabled": True, "port": 80, "charger_name" : "openeo Charger", "charger_id" : "openeo_1" },
             "chargeroptions" : { "mode" : "manual" },
             "logger": {
                 "enabled": True,
@@ -85,13 +84,12 @@ def main():
         _LOGGER.error("Aborting")
         exit(1)
         
-    # Set logging level from config file
-    logLevel=str(globalConfig["chargeroptions"].get("log_level","info")).upper()
+    # Set logging level from config file.  Use the common dict to look up log levels to 
+    # avoid a possible eval exploit from crafted config json.
+    logLevel = str(globalConfig["chargeroptions"].get("log_level","info")).upper()
 
-    # we're going to use exec, so best that we validate the configuration
     if logLevel in logging._nameToLevel:
-        SET_LEVEL = '_LOGGER.setLevel(logging.' + logLevel + ')'
-        exec(SET_LEVEL)
+        _LOGGER.setLevel(logging._nameToLevel[logLevel])
     else:
         _LOGGER.error("Invalid log level "+logLevel+"in config file - ignoring")
 
@@ -121,62 +119,75 @@ def main():
                 config_file_modification = new_config_file_modification
 
                 for modulename, pluginConfig in globalConfig.items():
-
                     # Modue should be enabled
                     if modulename in globalState.stateDict["_moduleDict"]:
                         # Module already loaded, so just configure it
-                        _LOGGER.debug("Configuring %s with %s",modulename,pluginConfig)
+                        _LOGGER.info("Configuring %s with %s",modulename,pluginConfig)
                         globalState.stateDict["_moduleDict"][modulename].configure(pluginConfig)
                     else:
-                        _LOGGER.debug("Initialising %s",modulename)
+                        _LOGGER.info("Initialising %s",modulename)
 
                         try:
                             # module is in configfile, but not running - we need to instantiate it
                             moduleClass=getattr(importlib.import_module("lib."+modulename),modulename+"ClassPlugin")
-                            # instantiate an object and add to the list of active modules
-                            globalState.stateDict["_moduleDict"][modulename]=moduleClass(pluginConfig)
+                            # instantiate an object, configure it, and add to the list of active modules
+                            mod = moduleClass(pluginConfig)
+                            mod.configure(pluginConfig)
+                            globalState.stateDict["_moduleDict"][modulename] = mod
                         except ImportError as e:
-                            _LOGGER.error("Aborting - Module \""+modulename+"\" defined and enabled in config file but could not be loaded - %s", repr(e))
+                            _LOGGER.error("Aborting - Module '%s' defined and enabled in config file but could not be imported - %s" % (modulename, repr(e)))
+                        except Exception as e:
+                            _LOGGER.error("Aborting - Module '%s' defined and enabled in config file but another error occurred loading  - %s" % (modulename, repr(e)))
 
                 # Do we have any modules that are currently loaded, but not in the configfile
                 # file (for example, perhaps the config file has been updated to remove one)
                 for modulename,module in globalState.stateDict["_moduleDict"].copy().items():
                     if not modulename in globalConfig:
                         # module has recently been disabled in configfile, so unload
-                        _LOGGER.debug("Unloading %s",modulename)
+                        _LOGGER.info("Unloading %s",modulename)
                         del globalState.stateDict["_moduleDict"][modulename]
 
 
         # Take any action necessary - the module poll() function should return a numeric value
         # the maximum value returned by any module will be the max amp setting for the charger
         # If all modules return 0, then the charger will be set to "off"
-        globalState.stateDict["eo_amps_requested"]=0
+        globalState.stateDict["eo_amps_requested"] = 0
+        
         for modulename,module in globalState.stateDict["_moduleDict"].items():
             if module.get_config().get("enabled", True):
-                globalState.stateDict["eo_amps_requested"]=max(globalState.stateDict["eo_amps_requested"],module.poll())
+                globalState.stateDict["eo_amps_requested"] = max(globalState.stateDict["eo_amps_requested"],module.poll())
                 _LOGGER.debug("polled "+modulename+" max_amps_requested="+str(globalState.stateDict["eo_amps_requested"]))
         
-        _LOGGER.info("Amps Requested: %d amps" % int(globalState.stateDict["eo_amps_requested"]))
+        if globalState.stateDict["eo_always_supply_current"]:
+            globalState.stateDict["eo_amps_requested"] = 32
+        
+        globalState.stateDict["eo_amps_requested"] = min(globalState.stateDict["eo_overall_limit_current"], globalState.stateDict["eo_amps_requested"])
+        
+        _LOGGER.info("Amps Requested: %d amps (overall limit: %d amps, always supply: %r)" % \
+            (int(globalState.stateDict["eo_amps_requested"]), globalState.stateDict["eo_overall_limit_current"], globalState.stateDict["eo_always_supply_current"]))
 
-        # In order for us to find the status of the charder (e.g. whether a car is connected), we
+        # In order for us to find the status of the charger (e.g. whether a car is connected), we
         # need to set the amp limit first as part of the request. Action may be taken off the back of that 
         # status on the next iteration (e.g. if the car is unplugged, then we'll need to wait for the next
         # iteration to set amps_limit to zero)
         try:
-            result = charger.set_amp_limit(globalState.stateDict["eo_amps_limit"])
+            _LOGGER.debug("Setting amp limit: %d" % globalState.stateDict["eo_amps_requested"])
+            result = charger.set_amp_limit(globalState.stateDict["eo_amps_requested"])
         except:
             _LOGGER.exception("Problem getting result from serial command: ("+str(result)+")")
             result = None
 
         # decode the charger status
         if result != None:
+            # Perhaps stupidly, we've already stripped off the prefix, which puts the positions
+            # for slicing the result string out by one, so let's put that prefix back on..
             result="!"+result
             try:
                 # TGO: this divisor results in an error of 9V at 230V on my unit, may need tweaking
                 globalState.stateDict["eo_live_voltage"] = round(int(result[13:16], 16) / 3.78580786, 1) # divisor is an estimate, based on voltmeter readings
-                globalState.stateDict["eo_p1_current"] = round(int(result[67:70], 16) / 10, 1)
-                globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_p1_current"]) / 1000, 1)        # P=VA
-                globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 1)    # P=VA
+                globalState.stateDict["eo_p1_current"] = round(int(result[67:70], 16) / 10, 2)
+                globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_p1_current"]) / 1000, 2)        # P=VA
+                globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
                 globalState.stateDict["eo_mains_frequency"] = int(result[22:25], 16)
                 globalState.stateDict["eo_charger_state_id"] = int(result[25:27], 16)
                 globalState.stateDict["eo_charger_state"] = openeoChargerClass.CHARGER_STATES[globalState.stateDict["eo_charger_state_id"]]
@@ -194,7 +205,7 @@ def main():
             _LOGGER.debug("Amps Limit: "+str(globalState.stateDict["eo_amps_limit"])+"A")
             
         else:
-            _LOGGER.debug("Invalid result")
+            _LOGGER.debug("Ignoring State Update, we probably had a serial overrun")
 
         # Measure Pi CPU temperature. This is returned via OCPP and might be exposed in other interfaces later.
         # I'm not sure how useful this is, but presumably on a hot day under high CPU load whilst charging, 

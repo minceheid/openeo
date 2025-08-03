@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/bash 
 # Usage: ./deploy.bash [version]
 # If a version is supplied, download the corresponding release from minceheid/openeo
 # Otherwise, download the main branch from minceheid/openeo
@@ -11,16 +11,41 @@ if [ -n "$1" ]; then
     unzip "$ZIP_FILE" -d "openeo-${VERSION}"
     # The crontab will allow openeo to start automatically at boot
     echo "@reboot openeo-${VERSION}/boot.bash" >/tmp/crontab 
-else
-    BRANCH=main
-    wget https://github.com/minceheid/openeo/archive/refs/heads/$BRANCH.zip -O main.zip
-    unzip main.zip
-    mv openeo-$BRANCH openeo
-    # The crontab will allow openeo to start automatically at boot
-    echo "@reboot openeo/boot.bash" >/tmp/crontab 
+
+elif [ ! -n "$NODOWNLOAD" ]; then
+    # Let us set BRANCH from environment variable. This can help us test
+    if [ ! -n "$BRANCH" ]; then
+        BRANCH=main
+    fi
+    rm -rf openeo-${BRANCH}
+    curl -L https://github.com/minceheid/openeo/archive/refs/heads/${BRANCH}.tar.gz | tar xvzf -
+
+    if [ -d openeo ]; then
+        # Not the first deployment, so we need to preserve the config.json
+        if [ -f openeo/config.json ]; then
+            echo "Preserving config.json"
+            cp openeo/config.json openeo-${BRANCH}/
+        fi
+        # Delete old archive area
+        rm -rf openeo.old
+        mv openeo openeo.old
+        mv openeo-${BRANCH} openeo
+
+        # we have also updated the deployment, so this deploy script itself might have changed,
+        # so we need to call the new one, but tell it that we don't want to download
+        # the software yet again
+        echo "Relaunching to complete"
+        BRANCH=$BRANCH NODOWNLOAD=1 ~/openeo/deploy.bash
+        exit $?
+    else
+        mv openeo-${BRANCH} openeo
+    fi
 fi
 
-crontab /tmp/crontab
+##############################################
+# All actions from here must be repeatable. If we're updating a config file,
+# ensure that we're not just appending it, but refreshing it completely leaving it
+# in a workable state
 
 # Install prereq packages
 sudo apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2
@@ -28,5 +53,3 @@ sudo apt-get install -y python3-serial python3-websockets python3-jsonschema pyt
 # Update the SPI config
 sudo cp /boot/firmware/config.txt /tmp/config.txt
 sudo sh -c 'sed "s/#dtparam=spi=on/dtparam=spi=on/" </tmp/config.txt >/boot/firmware/config.txt'
-
-echo If you hava previous config.json, please copy it to the new openeo directory.

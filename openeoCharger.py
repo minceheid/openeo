@@ -74,9 +74,9 @@ class openeoChargerClass:
         """
         packet=packet+self.generateChecksum(packet)
         self.rs485.tx(packet)
-        response = self.rs485.rx(recv_delay=3)
+        response = self.rs485.rx(recv_delay=0.5)
         if not response:
-            _LOGGER.info("Response from serial was empty")
+            _LOGGER.info("Response from serial was empty - possible serial overrun")
             return None
         try:
             response = response.decode("ascii")
@@ -103,7 +103,7 @@ class openeoChargerClass:
         # Calcualte duty cycle
         duty=0
         if requested_limit>=6:
-            duty=round(requested_limit*(1/0.06))
+            duty=int(requested_limit*(1/0.062))
 
         # Construct and send instruction packet
         packet="+"+self.EO_COMMAND["SET_LIMIT"]+self.my_address+f'{duty:03X}'

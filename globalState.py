@@ -7,6 +7,17 @@ Values don't *need* to be predeclared here, but probably important that we docum
 critical ones.
 """
 
+import logging
+
+_LOGGER = logging.getLogger(__name__)
+
+# Read the application version; if not present, default to 0.0.
+try:
+    appVer = open("version.txt", "r").read()
+except:
+    _LOGGER.warning("Unable to get application version")
+    appVer = "0.0"
+    
 stateDict={
     # Name of the Configuration File
     "eo_config_file": "config.json", 
@@ -35,5 +46,19 @@ stateDict={
     "eo_mains_frequency":0,
 
     # Always set charger to requested current, even if no car is connected
-    "eo_always_supply_current": False
+    "eo_always_supply_current": False,
+    
+    # Set if there is an overriding total current limit.  ConfigServer should generally not
+    # offer the user the ability to set currents above this amount.
+    "eo_overall_limit_current" : 32,
+    
+    # Name and ID of the charger, used for web interface, APIs, etc.
+    "charger_name" : "openeo Charger",
+    "charger_id" : "openeo_1",
+
+    # Counter of the number of serial overruns
+    "eo_serial_errors": 0,
+    
+    # Application (openeo) version
+    "app_version" : appVer
 }

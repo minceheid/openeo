@@ -4,8 +4,9 @@
 import time
 import spidev
 import RPi.GPIO as GPIO
-import logging
-import globalState
+import logging,re
+import serial
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -80,7 +81,6 @@ class SPI_RS485(object):
         data=b""
         enter_timestamp = time.monotonic()
 
-        overrun=0
         while (recv_delay is not None) and (time.monotonic() - enter_timestamp < recv_delay):
             bytesWaiting=int(self._register_get(self.REG_RXLVL))
 
@@ -91,25 +91,90 @@ class SPI_RS485(object):
                 if (OverrunError!=0):
                     _LOGGER.debug("rx - Overrun error")
                     print("Warning - RS485 overrun")
-                    overrun=overrun+1
             else:
                 time.sleep(0.001)
 
-        if overrun>0:
-            globalState.stateDict["eo_serial_errors"]=globalState.stateDict["eo_serial_errors"]+1
-            return None
-        else:
-             return bytes(data)
+        return bytes(data)
+
+
+
+
+####################################
+def generateChecksum(text):
+    checksum = 0
+    for byte in text.encode("ascii"):
+        checksum += byte
+    return "%02X" % (checksum & 0xFF)
+
+
+def is_eo_mini_2():
+    revision = "0000"
+    with open("/proc/cpuinfo", "r") as myfile:
+        for line in myfile:
+                m=re.search(r"^Revision.+: (.+)$",line)
+                if m:
+                    revision=m.group(1)
+
+    return revision in["900092","900093","9000c1"]
 
 
 def main():
-    # Just some tests
-    rs485=SPI_RS485()
-    rs485.tx("+15C")
-    result=rs485.rx(recv_delay=3)
-    print("result:"+str(result))
-    #rs485.tx("+0000082EA0009B")
-    #result=rs485.rx()
-    #print("result:"+str(result))
 
-#main()
+    address="unknown"
+    voltage=0
+    frequency=0
+
+    packet="+15C"
+
+    if is_eo_mini_2:
+        print("EO Mini 2")
+        rs485=SPI_RS485()
+        rs485.tx(packet)
+        result=rs485.rx(recv_delay=3)
+    else:
+        print("*NOT* EO Mini 2")
+        EOSerial=serial.Serial(
+                baudrate=115200,
+                port="/dev/ttyUSB0",
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE,
+                bytesize=serial.EIGHTBITS,
+                timeout=0.4,
+            ) 
+        SystemOperator.flush_serial(EOSerial)
+        EOSerial.write(packet.encode("ASCII")) 
+        time.sleep(3)  
+        result = EOSerial.read(255)
+
+    address=result[1:-3].decode("ascii")
+    print("address: "+str(address))
+
+    loop = 0
+    eo_p1_current = 0
+    
+    while True:
+        amps_requested=4*((loop//8) % 2)
+        duty=round(amps_requested*(1/0.06))
+        packet="+0"+address+f'{duty:03x}'
+        packet=packet+generateChecksum(packet)
+
+        if is_eo_mini_2:
+            rs485.tx(packet)
+            result=rs485.rx()
+            result=result.decode("ascii")
+
+            voltage = round(int(result[13:16], 16) / 3.78580786, 1) # divisor is an estimate, based on voltmeter readings
+            frequency = int(result[22:25], 16)
+            amps_set = round(int(result[29:32],16)/(1/0.06))
+            eo_p1_current = round(int(result[67:70], 16) / 10, 2)
+        else:
+            EOSerial.write(packet.encode("ASCII"))
+            time.sleep(0.6)  
+            result = EOSerial.read(255)
+
+        print("Voltage: {0}V    Frequency: {1}Hz    Amps Requested: {2}A    Amps Set: {3}A    Actual Current: {4:.2f}A".format(voltage,frequency,amps_requested,amps_set,eo_p1_current))
+        loop=loop+1
+        time.sleep(1)
+
+
+main()

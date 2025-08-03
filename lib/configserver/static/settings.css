@@ -8,13 +8,64 @@
 	overflow-x: hidden;
 	overflow-y: auto;
 	pointer-events: all;
-	z-index: 2000;
+	z-index: 1000;
+	position: relative;
+	top: 6em;
 }
 
-.settings input[type=text], .settings input[type=number] {
+/* Hidden icon sorts out the emoji positioning */
+.settings input + span, span.setting-radio-space {
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+}
+
+.settings input[type=text], .settings input[type=number], .settings input[type=url] {
 	background-color: #222222;
 	color: #ffffff;
 	border: 1px solid #888888;
+	border-radius: 5px;
+	width: 10em;  /* accounts for most strings we'll use, review later */
+}
+
+.settings input:focus {
+	border: 1px solid #cccccc !important;
+	outline: none;
+}
+
+.settings input:invalid {
+	border: 1px solid #ff0000 !important;
+}
+
+.settings input:invalid + span::after {
+	content: "✖";
+	font-size: 0.5em;
+	color: red;
+	visibility: visible;
+}
+
+.settings input[type=range], .settings input[type=radio] {
+	accent-color: #4dabf7;
+	border-color: #888888;
+	background-color: #222222;
+}
+
+.settings input[type=range] {
+	width: 10em;  /* reduce the size compared to default */
+}
+
+.settings input[type=submit], .settings input[type=button], .settings input[type=reset] {
+	background-color: #222222;
+	color: #ffffff;
+	border: 1px solid #888888;
+	border-radius: 5px;
+	font-size: 12pt;
+	padding: 1em;
+}
+
+.setting-button-restart {
+	background-color: #552222 !important;
+	border: 1px solid #ff8888 !important;
 }
 
 .settings input[type=number] {
@@ -54,6 +105,7 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
+	padding-left: 1em;
 }
 
 .settings-detail {
@@ -65,9 +117,27 @@
 	width: 60%;
 }
 
+.setting-cat-end {
+	background-color: transparent !important;
+	padding: 1em;
+}
+
+.setting-buttons {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+}
+
 /* Portrait phone tweaks */
 @media (orientation: portrait) and (max-width: 500px) {
 	.settings {
 		width: 90%;
+		font-size: 10pt;
+		position: relative;
+		top: 8em;
+	}
+	
+	.settings input[type=range] {
+		width: 7em;  
 	}
 }
