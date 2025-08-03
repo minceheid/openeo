@@ -228,6 +228,7 @@ class mqttClassPlugin:
     def configure(self, configParam):
         _LOGGER.debug("Plugin Configured: " + type(self).__name__)
         self.pluginConfig = configParam
+        # Create MQTT client
         self.client = mqtt.Client()
         self.client.username_pw_set(
             self.pluginConfig["username"], self.pluginConfig["password"]
@@ -235,6 +236,9 @@ class mqttClassPlugin:
         self.client.connect(self.pluginConfig["server"], self.pluginConfig["port"])
         self.client.on_connect = self.on_connect
         # client.on_message = self.on_message
+        # Connect to the MQTT broker
+        self.client.connect(self.pluginConfig["server"], self.pluginConfig["port"])
+        # Start MQTT client loop in background thread
         self.client.loop_start()
 
     def get_config(self):
