@@ -120,11 +120,11 @@ class mqttClassPlugin:
         },
         {
             "type": "number",
-            "name": "Override Current Limit",
+            "name": "Manual Charging Current Limit",
             "unit_of_measurement": "A",
             "device_class": "current",
-            "topic": mqtt_topic_prefix + "override_current_limit",
-            "command_topic": mqtt_topic_prefix + "override_current_limit/set",
+            "topic": mqtt_topic_prefix + "manual_charging_current_limit",
+            "command_topic": mqtt_topic_prefix + "manual_charging_current_limit/set",
             "max": 32,
             "min": 6,
             "last_published": None,
@@ -324,20 +324,19 @@ class mqttClassPlugin:
             elif sensor["type"] == "switch" or sensor["type"] == "number":
                 # For switches and numbers (charging override, pause, override current limit) we need to check the status of the 'switch' module
                 self.load_config()
-                if sensor["name"] == "Charging Override":
-                    if self.config["switch"]["enabled"]:
-                        value_to_publish = "ON"
-                    else:
-                        value_to_publish = "OFF"
-                    retain = False
-                elif sensor["name"] == "Override Current Limit":
+                if sensor["name"] == "Manual Charging Current Limit":
                     value_to_publish = self.config["switch"]["amps"]
                     retain = True
-                elif sensor["name"] == "Pause":
+                elif sensor["name"] == "Manual Charging Pause":
                     if not self.config["switch"]["on"]:
                         value_to_publish = "ON"
                     else:
                         value_to_publish = "OFF"
+                    retain = True
+            elif sensor["type"] == "select":
+                # For select (charger mode) we need to check the status of the 'chargeroptions' module
+                if sensor["name"] == "Charger Mode":
+                    value_to_publish = self.config["chargeroptions"]["mode"]
                     retain = True
 
             self.client.publish(
