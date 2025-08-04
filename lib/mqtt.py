@@ -178,7 +178,7 @@ class mqttClassPlugin:
             this_config["expire_after"] = 30
 
             # Construct the config topic for this sensor
-            this_topic = f"homeassistant/{sensor['type']}/eominipro2_{sensor['name'].replace(' ', '_').lower()}/config"
+            this_topic = f"homeassistant/{sensor['type']}/{self.config['chargeroptions'].get('charger_id', 'eominipro2')}_{sensor['name'].replace(' ', '_').lower()}/config"
             # Publish the config for this sensor
             client.publish(
                 this_topic,
