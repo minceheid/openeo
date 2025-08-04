@@ -104,7 +104,6 @@ class mqttClassPlugin:
         },
         {
             "type": "select",
-            "platform": "select",
             "name": "Charger Mode",
             "options": ["manual", "schedule"],
             "topic": mqtt_topic_prefix + "charger_mode",
@@ -165,20 +164,29 @@ class mqttClassPlugin:
                 this_config["state_class"] = sensor["state_class"]
             # Add command topic if it exists
             if "command_topic" in sensor:
-                this_config["command_topic"] = sensor["command_topic"]
+                this_config["command_topic"] = sensor["command_topic"].format(
+                    self.config["chargeroptions"].get("charger_id", "eominipro2")
+                )
                 # Subscribe to the command topic
-                client.subscribe(sensor["command_topic"])
+                client.subscribe(sensor["command_topic"].format(
+                    self.config["chargeroptions"].get("charger_id", "eominipro2")
+                ))
             # Add min and max if they exist
             if "min" in sensor:
                 this_config["min"] = sensor["min"]
             if "max" in sensor:
                 this_config["max"] = sensor["max"]
+            # Add options if they exist
+            if "options" in sensor:
+                this_config["options"] = sensor["options"]
 
             # Add expiry to the config of 30 seconds
             this_config["expire_after"] = 30
 
             # Construct the config topic for this sensor
             this_topic = f"homeassistant/{sensor['type']}/{self.config['chargeroptions'].get('charger_id', 'eominipro2')}_{sensor['name'].replace(' ', '_').lower()}/config"
+            # Add the type as the platform to the config
+            this_config["platform"] = sensor["type"]
             # Publish the config for this sensor
             client.publish(
                 this_topic,
@@ -202,10 +210,10 @@ class mqttClassPlugin:
             topic_to_update = mqtt_topic_prefix + "manual_charging_pause"
             if msg.payload.decode() == "ON":
                 self.config["switch"]["on"] = False
-                updated_value = "OFF"
+                updated_value = "ON"
             elif msg.payload.decode() == "OFF":
                 self.config["switch"]["on"] = True
-                updated_value = "ON"
+                updated_value = "OFF"
         elif msg.topic == mqtt_topic_prefix + "charger_mode/set":
             # Handle charger mode command
             topic_to_update = mqtt_topic_prefix + "charger_mode"
