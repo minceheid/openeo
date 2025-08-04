@@ -24,7 +24,7 @@ SOFTWARE.
 """
 import logging
 import logging.handlers
-import json, os, time, subprocess
+import json, os, time, subprocess, math
 
 import globalState, util
 from openeoCharger import openeoChargerClass
@@ -55,7 +55,7 @@ def readConfiguration(filename):
             "scheduler" : { "enabled" : False, "schedule" : [{"start" : "2200", "end" : "0400", "amps" : 32}] },
             "switch" : { "enabled" : True, "on" : True, "amps" : 32 },
             "configserver": { "enabled": True, "port": 80, "charger_name" : "openeo Charger", "charger_id" : "openeo_1" },
-            "chargeroptions" : { "mode" : "manual" },
+            "chargeroptions" : { "mode" : "manual", "mains_voltage_correction": 0.776231001 },
             "logger": {
                 "enabled": True,
                 "hires_interval": 2,        # 2 seconds
@@ -183,8 +183,18 @@ def main():
             # for slicing the result string out by one, so let's put that prefix back on..
             result="!"+result
             try:
-                # TGO: this divisor results in an error of 9V at 230V on my unit, may need tweaking
-                globalState.stateDict["eo_live_voltage"] = round(int(result[13:16], 16) / 3.78580786, 1) # divisor is an estimate, based on voltmeter readings
+                # Live voltage is in hex, and seems to be peak to peak
+                # Convert to int, divide by 2, then by sqrt(2) to get RMS
+                # Apply a default correction factor of ~0.77 to get correct-ish value. User can override this in config.json
+                globalState.stateDict["eo_live_voltage"] = round(
+                    (
+                    int(result[13:16], 16)
+                    / 2
+                    / math.sqrt(2)
+                    * globalConfig["chargeroptions"].get("mains_voltage_correction", 0.776231001)
+                    ),
+                    2,
+                )
                 globalState.stateDict["eo_p1_current"] = round(int(result[67:70], 16) / 10, 2)
                 globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_p1_current"]) / 1000, 2)        # P=VA
                 globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
