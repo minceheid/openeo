@@ -316,7 +316,7 @@ class mqttClassPlugin:
                     value_to_publish = self.config["switch"]["amps"]
                     retain = True
                 elif sensor["name"] == "Pause":
-                    if self.config["switch"]["enabled"] and not self.config["switch"]["on"]:
+                    if not self.config["switch"]["on"]:
                         value_to_publish = "ON"
                     else:
                         value_to_publish = "OFF"
