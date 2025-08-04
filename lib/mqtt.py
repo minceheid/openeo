@@ -110,6 +110,15 @@ class mqttClassPlugin:
             "last_published": None,
         },
         {
+            "type": "select",
+            "platform": "select",
+            "name": "Charger Mode",
+            "options": ["manual", "schedule"],
+            "topic": mqtt_topic_prefix + "charger_mode",
+            "command_topic": mqtt_topic_prefix + "charger_mode/set",
+            "last_published": None,
+        },
+        {
             "type": "switch",
             "name": "Pause",
             "topic": mqtt_topic_prefix + "pause",
