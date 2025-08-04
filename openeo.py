@@ -229,10 +229,8 @@ def main():
         # We only measure temperature every 5 loops.
         if (loop % 5) == 0:
             try:
-                temp_str = subprocess.check_output("vcgencmd measure_temp", shell=True)
-                temp_str = temp_str.decode('ascii').strip()
-                parts = temp_str.split('=')
-                temp_val = float(parts[1].rstrip("'C"))
+                with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
+                    temp_val = float(f.read().strip()) / 1000.0
                 globalState.stateDict["cpu_temperature"] = temp_val
             except Exception as e:
                 _LOGGER.warning("Couldn't measure Pi temperature: %r" % e)
