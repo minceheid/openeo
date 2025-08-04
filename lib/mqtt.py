@@ -103,13 +103,6 @@ class mqttClassPlugin:
             "last_published": None,
         },
         {
-            "type": "switch",
-            "name": "Charging Override",
-            "topic": mqtt_topic_prefix + "override",
-            "command_topic": mqtt_topic_prefix + "override/set",
-            "last_published": None,
-        },
-        {
             "type": "select",
             "platform": "select",
             "name": "Charger Mode",
@@ -182,7 +175,12 @@ class mqttClassPlugin:
             )
 
     def on_message(self, client, userdata, msg):
-        _LOGGER.debug("Received message on topic: " + msg.topic + " with payload: " + str(msg.payload))
+        _LOGGER.debug(
+            "Received message on topic: "
+            + msg.topic
+            + " with payload: "
+            + str(msg.payload)
+        )
         # Handle incoming messages for command topics
         # Load config to access global state
         self.load_config()
@@ -221,7 +219,6 @@ class mqttClassPlugin:
         self.save_config()
         # Publish the updated value to the corresponding topic
         client.publish(topic_to_update, updated_value, retain=True)
-
 
     def load_config(self):
         try:
@@ -310,7 +307,13 @@ class mqttClassPlugin:
                     retain = True
                 elif sensor["name"] == "Power":
                     # Calculating power so we can send W to HASS instead of kW
-                    value_to_publish = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_p1_current"]), 2)  
+                    value_to_publish = round(
+                        (
+                            globalState.stateDict["eo_live_voltage"]
+                            * globalState.stateDict["eo_p1_current"]
+                        ),
+                        2,
+                    )
                     retain = True
             elif sensor["type"] == "switch" or sensor["type"] == "number":
                 # For switches and numbers (charging override, pause, override current limit) we need to check the status of the 'switch' module
