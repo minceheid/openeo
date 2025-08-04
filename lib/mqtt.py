@@ -39,7 +39,7 @@ class mqttClassPlugin:
 
     mqtt_base_config = {
         "state_topic": "",
-        "unique_id": "{}_eominipro2",
+        "unique_id": "{}_{}",
         "device": {
             "identifiers": ["eominipro2"],
             "name": "EV Charger",
@@ -113,9 +113,9 @@ class mqttClassPlugin:
         },
         {
             "type": "switch",
-            "name": "Pause",
-            "topic": mqtt_topic_prefix + "pause",
-            "command_topic": mqtt_topic_prefix + "pause/set",
+            "name": "Manual Charging Pause",
+            "topic": mqtt_topic_prefix + "manual_charging_pause",
+            "command_topic": mqtt_topic_prefix + "manual_charging_pause/set",
             "last_published": None,
         },
         {
@@ -133,13 +133,19 @@ class mqttClassPlugin:
 
     def on_connect(self, client, userdata, flags, rc):
         _LOGGER.debug("Connected to MQTT broker with result code: " + str(rc))
+        # Load main config so we can get unique IDs and charger name
+        self.load_config()
         for sensor in self.mqtt_sensors:
             this_config = self.mqtt_base_config.copy()
             # Fill out the base config with this sensor's details
             this_config["state_topic"] = sensor["topic"]
             this_config["unique_id"] = this_config["unique_id"].format(
-                sensor["name"].replace(" ", "_").lower()
+                sensor["name"].replace(" ", "_").lower(), self.config["chargeroptions"].get("charger_id", "eominipro2")
             )
+            # Override the HASS identifier and HASS device name with the charger id / charger name from openeo
+            this_config["device"]["name"] = self.config["chargeroptions"].get("charger_name", "EV Charger")
+            this_config["device"]["identifiers"] = [self.config["chargeroptions"].get("charger_id", "eominipro2")]
+            # Set the name for the sensor
             this_config["name"] = this_config["name"].format(sensor["name"])
 
             # Add unit of measurement if it exists
