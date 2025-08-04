@@ -49,7 +49,7 @@ class mqttClassPlugin:
         "name": "{}",
     }
 
-    mqtt_topic_prefix = "evcharger/eominipro2/"
+    mqtt_topic_prefix = "evcharger/{}/"
     mqtt_sensors = [
         {
             "type": "binary_sensor",
@@ -138,7 +138,13 @@ class mqttClassPlugin:
         for sensor in self.mqtt_sensors:
             this_config = self.mqtt_base_config.copy()
             # Fill out the base config with this sensor's details
-            this_config["state_topic"] = sensor["topic"]
+            this_config["state_topic"] = sensor["topic"].format(
+                self.config["chargeroptions"].get("charger_id", "eominipro2")
+            )
+            # Also update the sensor topic with the formatted charger ID
+            sensor["topic"] = sensor["topic"].format(
+                self.config["chargeroptions"].get("charger_id", "eominipro2")
+            )
             this_config["unique_id"] = this_config["unique_id"].format(
                 sensor["name"].replace(" ", "_").lower(), self.config["chargeroptions"].get("charger_id", "eominipro2")
             )
@@ -190,7 +196,7 @@ class mqttClassPlugin:
         # Handle incoming messages for command topics
         # Load config to access global state
         self.load_config()
-        mqtt_topic_prefix = "evcharger/eominipro2/"
+        mqtt_topic_prefix = f"evcharger/{self.config['chargeroptions'].get('charger_id', 'eominipro2')}/"
         if msg.topic == mqtt_topic_prefix + "manual_charging_pause/set":
             # Handle pause command
             topic_to_update = mqtt_topic_prefix + "manual_charging_pause"
