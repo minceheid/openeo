@@ -9,8 +9,6 @@ if [ -n "$1" ]; then
     ZIP_FILE="openeo-${VERSION}.zip"
     wget -q "$ZIP_URL" -O "$ZIP_FILE"
     unzip -of "$ZIP_FILE" -d "openeo-${VERSION}"
-    # The crontab will allow openeo to start automatically at boot
-    echo "@reboot openeo-${VERSION}/boot.bash" >/tmp/crontab 
 
 elif [ ! -n "$NODOWNLOAD" ]; then
     # Let us set BRANCH from environment variable. This can help us test
@@ -46,6 +44,14 @@ fi
 # All actions from here must be repeatable. If we're updating a config file,
 # ensure that we're not just appending it, but refreshing it completely leaving it
 # in a workable state
+
+if [ -n "$VERSION" ]; then
+    # The crontab will allow openeo to start automatically at boot
+    echo "@reboot openeo-${VERSION}/boot.bash" >/tmp/crontab 
+else 
+    echo "@reboot openeo/boot.bash" >/tmp/crontab 
+fi
+crontab /tmp/crontab
 
 # Install prereq packages
 sudo apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil
