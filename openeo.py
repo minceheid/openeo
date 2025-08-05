@@ -42,15 +42,17 @@ def readConfiguration(filename):
     # return nothing. I don't think we want to overwrite a configuration file if there
     # is a typo in it from a manual edit.
     try:
-        with open(filename,"r") as file:
+        with open(filename, "r") as file:
+            file_bytes = file.read()
             try:
-                return(json.load(file))
-            except ValueError:
-                _LOGGER.error("JSON decode failed in config file ("+filename+")")
-                return(None)
-    except (FileNotFoundError):
+                return json.loads(file_bytes)
+            except ValueError as e:
+                _LOGGER.error("JSON decode failed in config file %s: %r" % (filename, e))
+                _LOGGER.info(file_bytes)
+                return None
+    except Exception  as e:
         # If the config is not loadable, create a default configuration.
-        _LOGGER.error("Config file couldn't be loaded, recreating defaults ("+filename+")")
+        _LOGGER.error("Config file couldn't be loaded, recreating defaults ("+filename+") (%r)" % e)
         myConfig = {
             "scheduler" : { "enabled" : False, "schedule" : [{"start" : "2200", "end" : "0400", "amps" : 32}] },
             "switch" : { "enabled" : True, "on" : True, "amps" : 32 },
@@ -65,8 +67,7 @@ def readConfiguration(filename):
             },
         }
         open(filename, "w").write(json.dumps(myConfig, indent=2))
-        return(myConfig)
-
+        return myConfig
 
 #################################################################################
 # Main Program
@@ -153,18 +154,20 @@ def main():
         # If all modules return 0, then the charger will be set to "off"
         globalState.stateDict["eo_amps_requested"] = 0
         
-        for modulename,module in globalState.stateDict["_moduleDict"].items():
+        for module_name, module in globalState.stateDict["_moduleDict"].items():
             if module.get_config().get("enabled", True):
-                globalState.stateDict["eo_amps_requested"] = max(globalState.stateDict["eo_amps_requested"],module.poll())
-                _LOGGER.debug("polled "+modulename+" max_amps_requested="+str(globalState.stateDict["eo_amps_requested"]))
+                module_current = module.poll()
+                globalState.stateDict["eo_amps_requested"] = max(globalState.stateDict["eo_amps_requested"], module_current)
+                _LOGGER.info("polled %s, amps_requested=%d" % (module_name, module_current))
         
         if globalState.stateDict["eo_always_supply_current"]:
             globalState.stateDict["eo_amps_requested"] = 32
         
         globalState.stateDict["eo_amps_requested"] = min(globalState.stateDict["eo_overall_limit_current"], globalState.stateDict["eo_amps_requested"])
         
-        _LOGGER.info("Amps Requested: %d amps (overall limit: %d amps, always supply: %r)" % \
-            (int(globalState.stateDict["eo_amps_requested"]), globalState.stateDict["eo_overall_limit_current"], globalState.stateDict["eo_always_supply_current"]))
+        _LOGGER.info("Amps Requested: %d amps (overall limit: %d amps, always supply: %r), Charger State: %s" % \
+            (int(globalState.stateDict["eo_amps_requested"]), globalState.stateDict["eo_overall_limit_current"], globalState.stateDict["eo_always_supply_current"],
+             globalState.stateDict["eo_charger_state"]))
 
         # In order for us to find the status of the charger (e.g. whether a car is connected), we
         # need to set the amp limit first as part of the request. Action may be taken off the back of that 
