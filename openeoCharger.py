@@ -90,7 +90,7 @@ class openeoChargerClass:
         Set the amp limit by sending the appropriate PWM value to the controller
         """
         if self.my_address == None:
-            #  If the address is stilL None, try again to talk to the main board
+            #  If the address is stil None, try again to talk to the main board
             self.connect()
             if self.my_address == None:
                 _LOGGER.error("No comms with main board, cannot change current limit!")
@@ -112,7 +112,51 @@ class openeoChargerClass:
         if result is None: #and self.using_spi:
             # try again
             result = self.sendSerialCommand(packet)
-        return result
+
+        if result is not None:
+                # Perhaps stupidly, we've already stripped off the prefix, which puts the positions
+                # for slicing the result string out by one, so let's put that prefix back on..
+                result="!"+result
+                self.live_voltage =     round(int(result[13:16], 16) / 3.78580786, 1) # divisor is an estimate, based on voltmeter readings
+                self.p1_current =       round(int(result[67:70], 16) / 10, 2)
+                self.power_delivered =  round((self.live_voltage * self.p1_current) / 1000, 2)        # P=VA
+                self.power_requested =  round((self.live_voltage * requested_limit) / 1000, 2)    # P=VA
+                self.mains_frequency =  int(result[22:25], 16)
+                self.charger_state_id = int(result[25:27], 16)
+                self.charger_state = openeoChargerClass.CHARGER_STATES[self.charger_state_id]
+
+                # More values in the response that we may wish to inspect in due course
+                self.version = result[1:3]
+                self.current_switch_setting = result[3]
+                self.control_pilot_voltage = result[4:7]
+                self.charge_duty = result[7:10]
+                self.plug_present_voltage = result[10:13]
+                #self.live_voltage = result[13:16]
+                self.neutral_voltage = result[16:19]
+                self.daylight_detection = result[19:22]
+                #self.mains_frequency = result[22:25]
+                #self.charger_state = result[25:27]
+                self.relay_state = result[27]
+                self.plug_state = result[28]
+                self.HUB_duty_limit = result[29:32]
+                self.charge_duty_timer = result[32:36]
+                self.station_uptime = result[36:40]
+                self.charge_time = result[40:44]
+                self.state_of_mains = result[44:46]
+                self.cp_line_state = result[46]
+                self.station_ID = result[47]
+                self.random_value = result[48:50]
+                self.max_current = result[50:53]
+                self.persistant_ID = result[53:61]
+                self.watchdog_current = result[61:64]
+                self.watchdog_time = result[64:67]
+                #self.p1_current = result[67:70]
+                self.p2_current = result[70:73]
+                self.p3_current = result[73:76]
+                self.eco_7_switch = result[76]
+                #self.checksum = result[77:79]
+                return True
+        return None
 
     #################################################################################
     # Constructor methods
