@@ -9,7 +9,8 @@ the serial number of the EO controller board and setting the maximum charging ra
 #################################################################################
 import logging
 import RPi.GPIO as GPIO
-from spi_485 import SPI_RS485
+import EO_comms.HomeHub
+import EO_comms.MiniPro3
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
@@ -114,12 +115,21 @@ class openeoChargerClass:
             result = self.sendSerialCommand(packet)
         return result
 
+
+
     #################################################################################
     # Constructor methods
     def __init__(self):
-        _LOGGER.debug("Initialising SPI/RS485")
+
+        # Check hardware type, and initialise the correct object class for communications
+        # At this time there is only two hardware types that we are supporting, so this
+        # is easy, but extensible, if we find more.
+        if EO_comms.MiniPro2.identify_hardware():
+            self.rs485=EO_comms.MiniPro2()
+        else:
+            self.rs485=EO_comms.HomeHub()
+
         GPIO.setmode(GPIO.BCM)
-        self.rs485 = SPI_RS485()
         self.connect()
 
     def connect(self):
