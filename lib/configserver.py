@@ -131,7 +131,7 @@ class configserverClassPlugin:
                 if n == 99:
                     _LOGGER.error("Failed to sync the config due to a blocking I/O operation or another error")
                     os.unlink(tmp.name) # Delete the temporary file, to avoid cluttering up tmpfs
-                os.chmod(globalState.stateDict["eo_config_file"], 0777)
+                os.chmod(globalState.stateDict["eo_config_file"], 0o0777)
                 
             with open(globalState.stateDict["eo_config_file"], "w") as f:
                 f.write(json.dumps(self.config, indent=2))
