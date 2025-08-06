@@ -9,8 +9,8 @@ the serial number of the EO controller board and setting the maximum charging ra
 #################################################################################
 import logging
 import RPi.GPIO as GPIO
-import EO_comms.HomeHub
-import EO_comms.MiniPro3
+from EO_comms.HomeHub import HomeHub
+from EO_comms.MiniPro2 import MiniPro2
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
@@ -124,10 +124,10 @@ class openeoChargerClass:
         # Check hardware type, and initialise the correct object class for communications
         # At this time there is only two hardware types that we are supporting, so this
         # is easy, but extensible, if we find more.
-        if EO_comms.MiniPro2.identify_hardware():
-            self.rs485=EO_comms.MiniPro2()
+        if MiniPro2.identify_hardware():
+            self.rs485=MiniPro2()
         else:
-            self.rs485=EO_comms.HomeHub()
+            self.rs485=HomeHub()
 
         GPIO.setmode(GPIO.BCM)
         self.connect()
