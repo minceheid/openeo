@@ -12,29 +12,29 @@ Configuration example:
 
 """
 #################################################################################
-import logging
-import datetime
-import re
+import logging,json, datetime,re
+from lib.PluginSuperClass import PluginSuperClass
+
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
 
 #################################################################################
-class schedulerClassPlugin:
+class schedulerClassPlugin(PluginSuperClass):
     myName=""
 
     PRETTY_NAME = "Scheduler"
     CORE_PLUGIN = True  
     pluginConfig = []
+    pluginParamSpec={"enabled":"bool"}
     parsedSchedule = []
     myName=""
 
-    def __str__(self):
-        return self.myName
 
     def configure(self,configParam):
-        _LOGGER.debug("Plugin Configured: "+type(self).__name__)
-        self.pluginConfig = configParam
+        super().configure(configParam)
+
+        self.pluginConfig["schedule"]=json.loads(self.pluginConfig["schedule_json"])
         self.parsedSchedule = []
         for n, i in enumerate(self.pluginConfig["schedule"]):
             sched = {}
@@ -43,9 +43,7 @@ class schedulerClassPlugin:
             sched['amps'] = int(i['amps'])
             self.parsedSchedule.append(sched)
         
-    def get_config(self):
-        return self.pluginConfig
-        
+
     def poll(self):
         now=datetime.datetime.now().time()
         amps=0
@@ -59,9 +57,3 @@ class schedulerClassPlugin:
                 amps = max(amps, schedule_amps)
 
         return amps
-
-    def __init__(self,configParam):
-        _LOGGER.debug("Initialising Module: Scheduler")
-        # Store the name of the plugin for reuse elsewhere
-        self.myName=re.sub('ClassPlugin$','',type(self).__name__)
-        self.configure(configParam)

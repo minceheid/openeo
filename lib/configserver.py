@@ -72,7 +72,7 @@ class configserverClassPlugin:
         self.myName=re.sub('ClassPlugin$','',type(self).__name__)
         _LOGGER.debug("Initialising Module: "+self.myName)
 
-        self.pluginConfig["port"]=configParam.get("port",80)
+        self.pluginConfig["port"]=int(configParam.get("port",80))
         if (isinstance(self.pluginConfig["port"],(int))!=True):
             _LOGGER.error("Invalid port ({}) in {} plugin config in {}. Defaulting to 80".format(self.pluginConfig["port"],self.myName,globalState.stateDict["eo_config_file"]))
             self.pluginConfig["port"]=80
@@ -97,44 +97,20 @@ class configserverClassPlugin:
         _context = {}
         selected_page = ""
 
+
         # Load initial configuration
         def load_config(self):
-            try:
-                with open(globalState.stateDict["eo_config_file"], "r") as f:
-                    self.config = json.load(f)
-                    return True
-            except (FileNotFoundError, ValueError):
-                self.config = {}
-                return False
+            ##self.config=globalState.configDB.dict()
+            # We can't load config directly from sqlite, as we need the modules to interpret and typecast
+            # the attributes, so instead, we need to recompile the full config from polling the plugin modules
+            # There must be a better way...
 
-        def save_config(self):
-            # Configuration save must be done atomically, because there are potentially multiple threads
-            # reading and writing to this file.  Create a tmpfile on the SD card.
-            # 'delete' must be set to False as 'os.replace' will effectively delete the file from underneath of
-            # the tempfile wrapper.
-            with tempfile.NamedTemporaryFile(mode='w+b', delete=False, dir=os.path.expanduser('~')) as tmp:
-                _LOGGER.info("Writing config to tempfile: %s" % tmp.name)
-                tmp.write(json.dumps(self.config, indent=2).encode('utf-8'))
-                tmp.flush()
-                os.fsync(tmp.fileno())
-                # It's possible that we can't replace the file because the file has been opened by another thread.
-                # To resolve this condition, we can block for a little bit until we can write it.
-                # There's a possibility of a deadlock here if two writers end up waiting for each other, so we 
-                # give up after 1 second and fail to write the file if that happens.  
-                # (This might not be an issue on POSIX, but I'm not 100% sure.)
-                for n in range(100):
-                    try:
-                        os.replace(tmp.name, globalState.stateDict["eo_config_file"])
-                        break
-                    except (OSError, IOError):
-                        time.sleep(0.01)
-                if n == 99:
-                    _LOGGER.error("Failed to sync the config due to a blocking I/O operation or another error")
-                    os.unlink(tmp.name) # Delete the temporary file, to avoid cluttering up tmpfs
-                os.chmod(globalState.stateDict["eo_config_file"], 0o0777)
-                
-            with open(globalState.stateDict["eo_config_file"], "w") as f:
-                f.write(json.dumps(self.config, indent=2))
+            self.config={}
+            for modulename,module in globalState.stateDict["_moduleDict"].items():
+                    self.config[modulename]=module.pluginConfig
+
+            return True
+            
 
         def do_GET(self):
             ################################
@@ -192,16 +168,15 @@ class configserverClassPlugin:
                 util.restart_python()
                 
             ###################################################################
-            ## expose the configuration from the config file to the api
+            ## expose the configuration the running config to the api
             ## we can also use POST/setconfig to write the configuration
             if self.path == "/getconfig":
-                with open(globalState.stateDict["eo_config_file"], "r") as f:
-                    parsed_config = json.load(f)
-                    self.send_response(200)
-                    self.send_header("Content-type", "application/json")
-                    self.end_headers()
-                    self.wfile.write(json.dumps(parsed_config).encode("utf-8"))
-                    return
+                self.load_config()
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(self.config).encode("utf-8"))
+                return
             
             ###################################################################
             ## expose the logger module metrics to the api, if that is available
@@ -336,22 +311,6 @@ class configserverClassPlugin:
             self.send_error(404, "Not Found")
             return
         
-        def merge(self,a: dict, b: dict, path=[]):
-            """Recursive merge of dictionary/lists
-            @TODO: More testing required. This might be buggy."""
-            for key in b:
-                if key in a:
-                    if isinstance(a[key], dict) and isinstance(b[key], dict):
-                        self.merge(a[key], b[key], path + [str(key)])
-                    elif isinstance(a[key], list) and isinstance(b[key], list):
-                        for i in range(len(b[key])):
-                            self.merge(a[key][i], b[key][i], path+[str(i)])
-                    elif a[key] != b[key]:
-                        a[key] = b[key]
-                else:
-                    a[key] = b[key]
-            return a  
-
         def do_POST(self):
             _LOGGER.info("do_POST(%s)" % self.path)
             
@@ -365,32 +324,19 @@ class configserverClassPlugin:
                 content_length = int(self.headers['Content-Length'])
                 post_data = json.loads(self.rfile.read(content_length).decode('utf-8'))
 
-                print(post_data)
-                if not "chargeroptions" in post_data:
-                    post_data["chargeroptions"]={}
-                post_data["chargeroptions"]["config_update_time"] = str(datetime.datetime.now())
-                
+                print("POST:",post_data)
+                print(globalState.configDB)
+                globalState.configDB.setDict(post_data)
                 self.load_config()
-                self.merge(self.config, post_data)
-                _LOGGER.info('Merged config %r' % self.config)
+                print("SAVE RESULT:")
+                print(globalState.configDB)
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success", "config": self.config}).encode("utf-8"))
+                _LOGGER.info('Config saved')
+                return
 
-                try:
-                    self.save_config()
-
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"status": "success", "config": self.config}).encode("utf-8"))
-                    _LOGGER.info('Config saved')
-                    return
-                except Exception as e:
-                    _LOGGER.error("Unable to write to config file:"+globalState.stateDict["eo_config_file"],repr(e))
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"status": "failed", "config" : self.config}).encode("utf-8"))
-                    _LOGGER.info('Config save error: %r' % e)
-                    return
             elif self.path == "/setsettings":
                 ##################################
                 # API for syncing settings via POST variables.

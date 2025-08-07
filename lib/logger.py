@@ -50,6 +50,7 @@ class loggerClassPlugin:
     def configure(self,configParam):
         _LOGGER.debug("Plugin Configured: "+self.myName)
 
+        """
         if (not isinstance(configParam.get("hires_interval",0),(int))):
             del configParam["hires_interval"]
             _LOGGER.error("logger hires_interval parameter malformed ("+str(configParam["hires_interval"])+"). Ignoring and will use default value")
@@ -62,11 +63,11 @@ class loggerClassPlugin:
         if (not isinstance(configParam.get("lowres_maxage",0),(int))):
             del configParam["lowres_maxage"]
             _LOGGER.error("logger lowres_maxage parameter malformed ("+str(configParam["lowres_maxage"])+"). Ignoring and will use default value")
-
-        self.pluginConfig["hires_interval"]=configParam.get("hires_interval",30)
-        self.pluginConfig["hires_maxage"]=configParam.get("hires_maxage",60*60)
-        self.pluginConfig["lowres_interval"]=configParam.get("lowres_interval",5*60)
-        self.pluginConfig["lowres_maxage"]=configParam.get("lowres_maxage",60*60*48)
+        """
+        self.pluginConfig["hires_interval"]=int(configParam.get("hires_interval",30))
+        self.pluginConfig["hires_maxage"]=int(configParam.get("hires_maxage",60*60))
+        self.pluginConfig["lowres_interval"]=int(configParam.get("lowres_interval",5*60))
+        self.pluginConfig["lowres_maxage"]=int(configParam.get("lowres_maxage",60*60*48))
         
     def poll(self):
         if datetime.now()>self.nextDatapoint:

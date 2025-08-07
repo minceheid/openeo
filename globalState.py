@@ -8,6 +8,7 @@ critical ones.
 """
 
 import logging
+from openeoConfig  import openeoConfigClass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -62,3 +63,19 @@ stateDict={
     # Application (openeo) version
     "app_version" : appVer
 }
+
+defaultConfig = {
+        "scheduler" : { "enabled" : False, "schedule_json": '[{"start": "2200", "end": "0400", "amps": 32}]' },
+        "switch" : { "enabled" : True, "on" : False, "amps" : 32 },
+        "configserver": { "enabled": True, "port": 80, "charger_name" : "openeo Charger", "charger_id" : "openeo_1" },
+        "chargeroptions" : { "mode" : "manual", "mains_voltage_correction": 0.776231001, "log_level": "debug" },
+        "logger": {
+            "enabled": True,
+            "hires_interval": 2,        # 2 seconds
+            "hires_maxage": 60*10,      # 10 minutes
+            "lowres_interval": 60*5,    # 5 minutes
+            "lowres_maxage": 60*60*48   # 48 hours
+        },
+    }
+configDB = openeoConfigClass(defaultConfig)
+print(configDB)
