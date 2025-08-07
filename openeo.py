@@ -28,6 +28,7 @@ import json, os, time, subprocess
 
 import globalState, util
 from openeoCharger import openeoChargerClass
+from openeoConfig  import openeoConfigClass
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
@@ -72,6 +73,7 @@ def readConfiguration(filename):
 # Main Program
 
 def main():    
+    config = openeoConfigClass()
     charger = openeoChargerClass()
     config_file_modification = 0
     import importlib
