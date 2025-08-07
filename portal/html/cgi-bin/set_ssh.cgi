@@ -19,14 +19,14 @@ def parse_input():
 
 def set_ssh_public_key(key=""):
         try:
-                result = subprocess.run( ['/var/www/html/cgi-bin/getset_keys',key], capture_output=True, text=True, check=True )
+                result = subprocess.run( ['/home/pi/openeo/portal/html/cgi-bin/getset_keys',key], capture_output=True, text=True, check=True )
                 return result.stdout
         except Exception as e:
                 return f"Error reading file: {e}"
 
 def get_ssh_public_key():
         try:
-                result = subprocess.run( ['/var/www/html/cgi-bin/getset_keys'], capture_output=True, text=True, check=True )
+                result = subprocess.run( ['/home/pi/openeo/portal/html/cgi-bin/getset_keys'], capture_output=True, text=True, check=True )
                 return result.stdout
         except Exception as e:
                 return f"Error reading file: {e}"

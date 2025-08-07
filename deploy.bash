@@ -60,8 +60,9 @@ sudo apt-get update
 sudo apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil dnsmasq nginx fcgiwrap spawn-fcgi iptables at
 
 if [ $? -ne 0 ] ; then
-	echo >&2 "ERROR: Package Instll failed - Deploy Aborted"
+	echo >&2 "ERROR: Package Install failed - Deploy Aborted"
 	exit 1
+fi
 
 # Update the SPI config
 sudo cp /boot/firmware/config.txt /tmp/config.txt

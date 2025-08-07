@@ -246,7 +246,7 @@
       console.log(output);
       // This is a bit of a hack
       alert("Software Update Complete - Rebooting Charger");
-      const res = await fetch("/cgi-bin/reboot.cgi", { method: "POST", });
+      const reboot = await fetch("/cgi-bin/reboot.cgi", { method: "POST", });
     } catch (err) {
       msg.textContent = "Failed to update. ("+err+")";
       msg.style.color = "#f44336";
