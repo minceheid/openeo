@@ -1,4 +1,6 @@
 #!/bin/bash
+MYDIR=$(dirname $0)
+
 ################################
 # SD Card image builder script.
 # You can (probably) run this on the RPi Zero, but I wouldn't recommend it.
@@ -57,29 +59,16 @@ done
 #################
 ## Copy Files
 echo ">> Deploying config..."
-sudo cp -r ../files/* $MOUNT_DIR/
+sudo cp -r $MYDIR/../config/* $MOUNT_DIR/
 
 echo ">> Running chroot setup..."
 sudo chroot "$MOUNT_DIR" /bin/bash <<'EOF_chroot'
-
-# www-data needs to be able to see the pi directory
-chmod 755 /home/pi
 
 raspi-config nonint do_hostname openeo
 raspi-config nonint do_wifi_country GB
 raspi-config nonint do_change_timezone Europe/London
 
 echo ">> Installing packages..."
-
-#############
-# Enable openeo_ap nginx config
-
-rm /etc/nginx/sites-enabled/default
-ln -s /etc/nginx/sites-available/openeo_ap.conf  /etc/nginx/sites-enabled/openeo_ap.conf
-rm -f /var/www/html/index.nginx-debian.html
-
-# Uncomment this if we're not setting the password in /boot/userconf.txt
-#systemctl disable userconfig
 
 #############
 ## Deploy openeo
@@ -90,12 +79,6 @@ su - pi -c "wget https://raw.githubusercontent.com/minceheid/openeo/refs/heads/m
 su - pi -c "bash /tmp/deploy.bash"
 mv /boot/firmware/config.txt /boot/config.txt
 rmdir /boot/firmware
-
-##############
-# Show /var/www files, for the record
-echo "=================="
-echo "/var/www contents:"
-find /var/www -ls
 
 EOF_chroot
 

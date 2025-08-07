@@ -71,8 +71,8 @@ sudo cp -r $MYDIR/portal/config/* /
 
 #############
 # Setup Portal
-rm -f /etc/nginx/sites-enabled/default
-ln -s /etc/nginx/sites-available/openeo_portal.conf  /etc/nginx/sites-enabled/openeo_portal.conf
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo ln -s /etc/nginx/sites-available/openeo_portal.conf  /etc/nginx/sites-enabled/openeo_portal.conf
 
 echo ">> Enabling services..."
 sudo systemctl disable nginx
