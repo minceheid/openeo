@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OpenEO EV Charger Setup</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+	background-color: #282c34;
+	color: white;
+      padding: 20px;
+    }
+    h1, h2 {
+      margin: 0 0 10px;
+    }
+
+    a {
+	color: #ffffff;
+	text-decoration: none;
+	font-weight: bold;
+}
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .indicator {
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+    }
+    .indicator span {
+      margin-left: 8px;
+    }
+    .green { color: #4caf50; }
+    .red { color: #f44336; }
+    .section {
+      margin-bottom: 30px;
+    }
+    .wifi-entry {
+      padding: 10px;
+      border: 1px solid #444;
+      border-radius: 5px;
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      cursor: pointer;
+      background-color: #1e1e1e;
+    }
+    .wifi-entry.selected {
+      border-color: #2196f3;
+      background-color: #2a2a2a;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      margin-bottom: 10px;
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+      border: 1px solid #555;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #2196f3;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1976d2;
+    }
+    .message {
+      font-size: 0.9em;
+      margin-top: -5px;
+    }
+        
+    .logo {
+      width: 40%;
+      align-self: flex-end;
+    }
+
+    .logo-inner {
+      margin-left: auto;
+      margin-right: 1em;
+      float: right;
+    }
+
+    .logo-inner a {
+      font-weight: normal;
+    }
+
+    .logo img {
+      vertical-align: middle;
+      width: 2em;
+      height: 2em;
+    }
+
+    .logo-text {
+      padding: 0.2em;
+      vertical-align: middle;
+      font-size: 16pt;
+      font-family: Calibri, Arial, sans-serif; /* @TODO: fix font and store as local resource */
+    }
+
+
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div id="network-status" class="indicator">
+      <span id="network-icon">☐</span>
+      <span id="network-text">..checking..</span>
+    </div>
+      <div class="logo" id="logo">
+        <div class="logo-inner">
+            <span class="logo-text">openeo</span>
+            <img src="static/openeo_vector_glyph_lightmono.svg" width="50" height="50"/>
+        </div>
+      </div>
+  </div>
+
+  <!-- Wi-Fi Section -->
+  <div class="section">
+    <h2>Wi-Fi Networks</h2>
+    <div id="wifi-list">
+      <!-- Populated dynamically -->
+    </div>
+
+    <div id="wifi-password-section" style="display:none;">
+      <input type="text" id="wifi-password" placeholder="Enter Wi-Fi password">
+      <button id="apply-wifi">Apply Network Settings</button>
+      <div id="wifi-message" class="message"></div>
+    </div>
+  </div>
+
+  <!-- SSH Public Key -->
+  <div class="section">
+    <h2>SSH Public Key</h2>
+    <textarea id="ssh-key" rows="4" placeholder="Paste your SSH public key here..."></textarea>
+    <button id="apply-ssh">Apply SSH Public Key</button>
+    <div id="ssh-message" class="message green"></div>
+  </div>
+
+  <!-- Software Update -->
+  <div class="section" id="update-div" style="display:None">
+    <h2>Software Update</h2>
+    <button id="update-software">Update to Latest Version</button>
+    <div id="update-message" class="message green"></div>
+  </div>
+  <script>
+  
+  let selectedSSID = null;
+
+  const selectWiFi = (ssid, div) => {
+    selectedSSID = ssid;
+    document.querySelectorAll(".wifi-entry").forEach(el => el.classList.remove("selected"));
+    div.classList.add("selected");
+    document.getElementById("wifi-password-section").style.display = "block";
+    document.getElementById("wifi-message").textContent = "";
+  };
+
+  ////////////////////////////////////
+  // get server side configuration and populate into form
+
+  const loadWiFiNetworks = async () => {
+    try {
+      const res = await fetch("/cgi-bin/get_wifi.cgi");
+      const myData = await res.json();
+      const ssids = await myData["SSID"];
+      const list = document.getElementById("wifi-list");
+      list.innerHTML = "";
+
+      ssids.forEach(ssid => {
+        const div = document.createElement("div");
+        div.className = "wifi-entry" + (ssid === myData["CONNECTED"] ? " selected" : "");
+        div.innerHTML = `<span>${ssid}</span><span>📶</span>`;
+        div.onclick = () => selectWiFi(ssid, div);
+        list.appendChild(div);
+      });
+
+    const ssh=document.getElementById("ssh-key");
+    ssh.textContent=myData["SSH"];
+
+    online=myData["INTERNET"];
+          const icon = document.getElementById("network-icon");
+          const text = document.getElementById("network-text");
+          icon.textContent = online ? "✅" : "❌";
+          icon.className = online ? "green" : "red";
+          text.textContent = online ? "Internet Online ("+myData["IP"]+")" : "Internet Offline";
+    
+          // Only show software update section if we are connected to the internet
+          if (online) {
+            document.getElementById("update-div").style.display='Block';
+          }
+    } catch (err) {
+      console.error("Wi-Fi scan failed:", err);
+    }
+  };
+
+  ////////////////////////////////////
+  // Apply new WiFi settings
+
+  document.getElementById("apply-wifi").onclick = async () => {
+    const password = document.getElementById("wifi-password").value.trim();
+    const msg = document.getElementById("wifi-message");
+    if (!selectedSSID || !password) {
+      msg.textContent = "SSID and password required.";
+      msg.style.color = "#f44336";
+      return;
+    }
+    msg.textContent = "Connecting..";
+    try {
+    	msg.textContent += "Refreshing page..";
+      const res = await fetch(`/cgi-bin/set_wifi.cgi?ssid=${encodeURIComponent(selectedSSID)}&password=${encodeURIComponent(password)}`);
+      // when network is updated, we lose connection, so we don't get a good response from this fetch
+      // instead, let's reload the page after a 2 second pause and see what the result is..
+    	await new Promise(r => setTimeout(r,2000));
+	    location.reload();
+    } catch (err) {
+      msg.textContent = "Failed to apply settings ("+err+")";
+      msg.style.color = "#f44336";
+    }
+  };
+
+  ////////////////////////////////////
+  // Update Software
+
+  document.getElementById("update-software").onclick = async () => {
+    const msg = document.getElementById("update-message");
+    msg.textContent = "Updating...";
+    try {
+      const res = await fetch("/cgi-bin/update.cgi", { method: "POST", });
+      const result = await res;
+      output=await result.text();
+      msg.textContent = result.status==200 ? "Update successful." : "Update Error";
+      msg.style.color = result.status==200 ? "#4caf50" : "#f44336";
+      msg.innerHTML += "<br><br>Update output:<br><pre>"+output+"</pre>";
+      console.log(output);
+    } catch (err) {
+      msg.textContent = "Failed to update. ("+err+")";
+      msg.style.color = "#f44336";
+	    console.log(err);
+    }
+  };
+
+  ////////////////////////////////////
+  // Update SSH Authorized_keys
+
+  document.getElementById("apply-ssh").onclick = async () => {
+    const key = document.getElementById("ssh-key").value.trim();
+    const msg = document.getElementById("ssh-message");
+    if (!key) {
+      msg.textContent = "SSH key is empty.";
+      msg.style.color = "#f44336";
+      return;
+    }
+    msg.textContent = "Applying...";
+    try {
+      const res = await fetch("/cgi-bin/set_ssh.cgi", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ key })
+      });
+      const result = await res;
+      msg.textContent = result.status==200 ? "SSH key applied." : "Update Error - Invalid Key?";
+      msg.style.color = result.status==200 ? "#4caf50" : "#f44336";
+    } catch (err) {
+      msg.textContent = "Failed to apply SSH key.";
+      msg.style.color = "#f44336";
+    	console.log(err);
+    }
+  };
+
+  loadWiFiNetworks();
+  </script>
+
+</body>
+</html>
