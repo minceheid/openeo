@@ -43,6 +43,7 @@ else
 
 	iptables -t nat -A PREROUTING -i wlan1 -p tcp --dport 80 -j REDIRECT --to-ports 81
 
+	atq | awk '{print $1}' |xargs -L 1 -t atrm
 	##########
 	# Shuts down the captive portal after 15 minutes for security purposes
 	echo "/home/pi/openeo/portal/tools/openeo_portal.bash stop" | at now +15 minutes
