@@ -56,7 +56,12 @@ fi
 crontab /tmp/crontab
 
 # Install prereq packages
+sudo apt-get update
 sudo apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil dnsmasq nginx fcgiwrap spawn-fcgi iptables at
+
+if [ $? -ne 0 ] ; then
+	echo >&2 "ERROR: Package Instll failed - Deploy Aborted"
+	exit 1
 
 # Update the SPI config
 sudo cp /boot/firmware/config.txt /tmp/config.txt
@@ -70,10 +75,11 @@ sudo cp -r $MYDIR/portal/config/* /
 
 #############
 # Setup Portal
-sudo rm -f /etc/nginx/sites-enabled/default
+sudo rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/openeo_portal.conf
 sudo ln -s /etc/nginx/sites-available/openeo_portal.conf  /etc/nginx/sites-enabled/openeo_portal.conf
 
 echo ">> Enabling services..."
+sudo systemctl daemon-reload
 sudo systemctl disable nginx
 sudo systemctl disable dnsmasq
-sudo systemctl enable openeo_ap
+sudo systemctl enable openeo_portal

@@ -1,1 +1,2 @@
 www-data ALL=(pi) NOPASSWD: /usr/bin/chmod,/usr/bin/mkdir,/usr/bin/cat,/usr/bin/tee,/home/pi/openeo/deploy.bash
+www-data ALL=(root) NOPASSWD: /usr/sbin/reboot
