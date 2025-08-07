@@ -4,7 +4,6 @@
 # Otherwise, download the main branch from minceheid/openeo
 
 MYDIR=$(dirname $0)
-echo $MYDIR
 
 if [ -n "$1" ]; then
     VERSION="$1"
