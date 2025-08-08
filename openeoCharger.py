@@ -7,8 +7,9 @@ the serial number of the EO controller board and setting the maximum charging ra
 
 """
 #################################################################################
-import logging
+import logging,math
 import RPi.GPIO as GPIO
+import globalState
 from EO_comms.HomeHub import HomeHub
 from EO_comms.MiniPro2 import MiniPro2
 
@@ -118,57 +119,37 @@ class openeoChargerClass:
             # Perhaps stupidly, we've already stripped off the prefix, which puts the positions
             # for slicing the result string out by one, so let's put that prefix back on..
             result="!"+result
-            try:
-                # Live voltage is in hex, and seems to be peak to peak
-                # Convert to int, divide by 2, then by sqrt(2) to get RMS
-                # Apply a default correction factor of ~0.77 to get correct-ish value. User can override this in config.json
-                globalState.stateDict["eo_live_voltage"] = round(
-                    (
-                    int(result[13:16], 16)
-                    / 2
-                    / math.sqrt(2)
-                    * globalConfig["chargeroptions"].get("mains_voltage_correction", 0.776231001)
-                    ),
-                    2,
-                )
-                globalState.stateDict["eo_p1_current"] = round(int(result[67:70], 16) / 10, 2)
-                globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_p1_current"]) / 1000, 2)        # P=VA
-                globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
-                globalState.stateDict["eo_mains_frequency"] = int(result[22:25], 16)
-                globalState.stateDict["eo_charger_state_id"] = int(result[25:27], 16)
-                globalState.stateDict["eo_charger_state"] = openeoChargerClass.CHARGER_STATES[globalState.stateDict["eo_charger_state_id"]]
-
-                # More values in the response that we may wish to inspect in due course
-                self.version = result[1:3]
-                self.current_switch_setting = result[3]
-                self.control_pilot_voltage = result[4:7]
-                self.charge_duty = result[7:10]
-                self.plug_present_voltage = result[10:13]
-                #self.live_voltage = result[13:16]
-                self.neutral_voltage = result[16:19]
-                self.daylight_detection = result[19:22]
-                #self.mains_frequency = result[22:25]
-                #self.charger_state = result[25:27]
-                self.relay_state = result[27]
-                self.plug_state = result[28]
-                self.HUB_duty_limit = result[29:32]
-                self.charge_duty_timer = result[32:36]
-                self.station_uptime = result[36:40]
-                self.charge_time = result[40:44]
-                self.state_of_mains = result[44:46]
-                self.cp_line_state = result[46]
-                self.station_ID = result[47]
-                self.random_value = result[48:50]
-                self.max_current = result[50:53]
-                self.persistant_ID = result[53:61]
-                self.watchdog_current = result[61:64]
-                self.watchdog_time = result[64:67]
-                #self.p1_current = result[67:70]
-                self.p2_current = result[70:73]
-                self.p3_current = result[73:76]
-                self.eco_7_switch = result[76]
-                #self.checksum = result[77:79]
-                return True
+            # More values in the response that we may wish to inspect in due course
+            self.version = result[1:3]
+            self.current_switch_setting = result[3]
+            self.control_pilot_voltage = result[4:7]
+            self.charge_duty = result[7:10]
+            self.plug_present_voltage = result[10:13]
+            self.live_voltage = result[13:16]
+            self.neutral_voltage = result[16:19]
+            self.daylight_detection = result[19:22]
+            self.mains_frequency = result[22:25]
+            self.charger_state = result[25:27]
+            self.relay_state = result[27]
+            self.plug_state = result[28]
+            self.HUB_duty_limit = result[29:32]
+            self.charge_duty_timer = result[32:36]
+            self.station_uptime = result[36:40]
+            self.charge_time = result[40:44]
+            self.state_of_mains = result[44:46]
+            self.cp_line_state = result[46]
+            self.station_ID = result[47]
+            self.random_value = result[48:50]
+            self.max_current = result[50:53]
+            self.persistant_ID = result[53:61]
+            self.watchdog_current = result[61:64]
+            self.watchdog_time = result[64:67]
+            self.p1_current = result[67:70]
+            self.p2_current = result[70:73]
+            self.p3_current = result[73:76]
+            self.eco_7_switch = result[76]
+            self.checksum = result[77:79]
+            return True
         return None
 
 

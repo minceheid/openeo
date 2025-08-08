@@ -183,13 +183,25 @@ def main():
         if result:
             # Take values that have been recorded by the charger object, and squirrel them away in 
             # globalState.stateDict{}.
-            globalState.stateDict["eo_live_voltage"] =      charger.live_voltage
-            globalState.stateDict["eo_p1_current"] =        charger.p1_current
-            globalState.stateDict["eo_power_delivered"] =   charger.power_delivered
-            globalState.stateDict["eo_power_requested"] =   charger.power_requested
-            globalState.stateDict["eo_mains_frequency"] =   charger.mains_frequency
-            globalState.stateDict["eo_charger_state_id"] =  charger.charger_state_id
-            globalState.stateDict["eo_charger_state"] =     charger.charger_state
+
+                        # Live voltage is in hex, and seems to be peak to peak
+            # Convert to int, divide by 2, then by sqrt(2) to get RMS
+            # Apply a default correction factor of ~0.77 to get correct-ish value. User can override this in config.json
+            globalState.stateDict["eo_live_voltage"] = round(
+                (
+                int(charger.live_voltage, 16)
+                / 2
+                / math.sqrt(2)
+                * globalConfig["chargeroptions"].get("mains_voltage_correction", 0.776231001)
+                ),
+                2,
+            )
+            globalState.stateDict["eo_p1_current"] = round(int(charger.p1_current, 16) / 10, 2)
+            globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_p1_current"]) / 1000, 2)        # P=VA
+            globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
+            globalState.stateDict["eo_mains_frequency"] = int(charger.mains_frequency, 16)
+            globalState.stateDict["eo_charger_state_id"] = int(charger.charger_state, 16)
+            globalState.stateDict["eo_charger_state"] = openeoChargerClass.CHARGER_STATES[globalState.stateDict["eo_charger_state_id"]]
 
             # If we are ready to charge (that is, there is a cable/car connected), and there is demand from the 
             # modules, then raise the Amp limit to the maximum requested by the modules
