@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 
 #################################################################################
-import time
-import spidev
+import time,re,spidev,logging
 import RPi.GPIO as GPIO
-import logging
 import globalState
+from EO_comms.HomeHub import HomeHub
 
 _LOGGER = logging.getLogger(__name__)
 
-class SPI_RS485(object):
+# The MiniPro3 Comms Library inherits from the HomeHub Comms library
+# Very little code is shared between them at this point, but maintining the relationship between the
+# classes appears to be a reasonable thing to do
+class MiniPro2(HomeHub):
+
 
     # GPIO chip reset line (BCM definition)
     NRESET = 16
@@ -31,6 +34,17 @@ class SPI_RS485(object):
     spi = None
     # bits
     BIT_OVERRUN = 0x02
+
+    @classmethod
+    def identify_hardware(self):
+        revision = "0000"
+        with open("/proc/cpuinfo", "r") as myfile:
+            for line in myfile:
+                    m=re.search(r"^Revision.+: (.+)$",line)
+                    if m:
+                        revision=m.group(1)
+        #print("Identifying: CPU revision", revision)
+        return revision in["900092","900093","9000c1","902120"]
 
 
     def _register_set(self,reg, val):
@@ -65,6 +79,7 @@ class SPI_RS485(object):
         self._register_set(self.REG_LCR, 0x03)
         self._register_set(self.REG_FCR_IIR, 0x07)
         self._register_set(self.REG_EFCR, 0x30)
+        _LOGGER.debug("EO COMMS - HomeHub initialised")
 
 
     def tx(self,command):
@@ -101,15 +116,37 @@ class SPI_RS485(object):
         else:
              return bytes(data)
 
+    def test(self):
+        # Just some tests
+        def generateChecksum(text):
+            checksum = 0
+            for byte in text.encode("ascii"):
+                checksum += byte
+            return "%02X" % (checksum & 0xFF)
 
-def main():
-    # Just some tests
-    rs485=SPI_RS485()
-    rs485.tx("+15C")
-    result=rs485.rx(recv_delay=3)
-    print("result:"+str(result))
-    #rs485.tx("+0000082EA0009B")
-    #result=rs485.rx()
-    #print("result:"+str(result))
+        comms=MiniPro2()
+        comms.tx("+15C")
+        result=comms.rx(recv_delay=3)
 
-#main()
+        if result:
+            address=result[1:-3].decode("ascii")
+            print("address: "+str(address))
+
+            loop=0
+            while loop<5:
+                amps_requested=32*(loop%2)
+                duty=round(amps_requested*(1/0.06))
+                packet="+0"+address+f'{duty:03X}'
+                packet=packet+generateChecksum(packet)
+
+                comms.tx(packet) 
+                result = comms.rx(0.6)
+                
+                voltage = round(int(result[13:16], 16) / 3.78580786, 1) # divisor is an estimate, based on voltmeter readings
+                frequency = int(result[22:25], 16)
+                amps_set = round(int(result[29:32],16)/(1/0.06))
+                print("Voltage: {0}V    Frequency: {1}Hz    Amps Requested: {2}A    Amps Set: {3}A".format(voltage,frequency,amps_requested,amps_set))
+                loop=loop+1
+                time.sleep(5)
+        else:
+                print("No response")
