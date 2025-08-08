@@ -105,7 +105,7 @@ class openeoChargerClass:
         if requested_limit>=6:
             duty=int(requested_limit*(1/0.062))
 
-        # Construct and send instruction packet
+        # Construct and send instruction packet.  Duty cycle must be uppercase.
         packet="+"+self.EO_COMMAND["SET_LIMIT"]+self.my_address+f'{duty:03X}'
         result = self.sendSerialCommand(packet)
 
@@ -114,16 +114,28 @@ class openeoChargerClass:
             result = self.sendSerialCommand(packet)
 
         if result is not None:
-                # Perhaps stupidly, we've already stripped off the prefix, which puts the positions
-                # for slicing the result string out by one, so let's put that prefix back on..
-                result="!"+result
-                self.live_voltage =     round(int(result[13:16], 16) / 3.78580786, 1) # divisor is an estimate, based on voltmeter readings
-                self.p1_current =       round(int(result[67:70], 16) / 10, 2)
-                self.power_delivered =  round((self.live_voltage * self.p1_current) / 1000, 2)        # P=VA
-                self.power_requested =  round((self.live_voltage * requested_limit) / 1000, 2)    # P=VA
-                self.mains_frequency =  int(result[22:25], 16)
-                self.charger_state_id = int(result[25:27], 16)
-                self.charger_state = openeoChargerClass.CHARGER_STATES[self.charger_state_id]
+            # Perhaps stupidly, we've already stripped off the prefix, which puts the positions
+            # for slicing the result string out by one, so let's put that prefix back on..
+            result="!"+result
+            try:
+                # Live voltage is in hex, and seems to be peak to peak
+                # Convert to int, divide by 2, then by sqrt(2) to get RMS
+                # Apply a default correction factor of ~0.77 to get correct-ish value. User can override this in config.json
+                globalState.stateDict["eo_live_voltage"] = round(
+                    (
+                    int(result[13:16], 16)
+                    / 2
+                    / math.sqrt(2)
+                    * globalConfig["chargeroptions"].get("mains_voltage_correction", 0.776231001)
+                    ),
+                    2,
+                )
+                globalState.stateDict["eo_p1_current"] = round(int(result[67:70], 16) / 10, 2)
+                globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_p1_current"]) / 1000, 2)        # P=VA
+                globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
+                globalState.stateDict["eo_mains_frequency"] = int(result[22:25], 16)
+                globalState.stateDict["eo_charger_state_id"] = int(result[25:27], 16)
+                globalState.stateDict["eo_charger_state"] = openeoChargerClass.CHARGER_STATES[globalState.stateDict["eo_charger_state_id"]]
 
                 # More values in the response that we may wish to inspect in due course
                 self.version = result[1:3]

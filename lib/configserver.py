@@ -14,7 +14,7 @@ Configuration example:
 """
 #################################################################################
 import re, logging, threading, json, http.server, socketserver, datetime, socket, os
-import copy, time, numbers, urllib.parse
+import copy, time, numbers, urllib.parse, tempfile
 import globalState, util
 
 # logging for use in this module
@@ -108,6 +108,31 @@ class configserverClassPlugin:
                 return False
 
         def save_config(self):
+            # Configuration save must be done atomically, because there are potentially multiple threads
+            # reading and writing to this file.  Create a tmpfile on the SD card.
+            # 'delete' must be set to False as 'os.replace' will effectively delete the file from underneath of
+            # the tempfile wrapper.
+            with tempfile.NamedTemporaryFile(mode='w+b', delete=False, dir=os.path.expanduser('~')) as tmp:
+                _LOGGER.info("Writing config to tempfile: %s" % tmp.name)
+                tmp.write(json.dumps(self.config, indent=2).encode('utf-8'))
+                tmp.flush()
+                os.fsync(tmp.fileno())
+                # It's possible that we can't replace the file because the file has been opened by another thread.
+                # To resolve this condition, we can block for a little bit until we can write it.
+                # There's a possibility of a deadlock here if two writers end up waiting for each other, so we 
+                # give up after 1 second and fail to write the file if that happens.  
+                # (This might not be an issue on POSIX, but I'm not 100% sure.)
+                for n in range(100):
+                    try:
+                        os.replace(tmp.name, globalState.stateDict["eo_config_file"])
+                        break
+                    except (OSError, IOError):
+                        time.sleep(0.01)
+                if n == 99:
+                    _LOGGER.error("Failed to sync the config due to a blocking I/O operation or another error")
+                    os.unlink(tmp.name) # Delete the temporary file, to avoid cluttering up tmpfs
+                os.chmod(globalState.stateDict["eo_config_file"], 0o0777)
+                
             with open(globalState.stateDict["eo_config_file"], "w") as f:
                 f.write(json.dumps(self.config, indent=2))
 

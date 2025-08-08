@@ -38,8 +38,9 @@ class schedulerClassPlugin:
         self.parsedSchedule = []
         for n, i in enumerate(self.pluginConfig["schedule"]):
             sched = {}
-            sched['start']=datetime.time(int(i['start'][:2]),int(i['start'][-2:]),0,0)
-            sched['end']=datetime.time(int(i['end'][:2]),int(i['end'][-2:]),0,0)
+            sched['start'] = datetime.time(int(i['start'][:2]), int(i['start'][-2:]),0,0)
+            sched['end'] = datetime.time(int(i['end'][:2]), int(i['end'][-2:]),0,0)
+            sched['amps'] = int(i['amps'])
             self.parsedSchedule.append(sched)
         
     def get_config(self):
@@ -50,12 +51,12 @@ class schedulerClassPlugin:
         amps=0
         # Check each defined schedule in the configuration
         for i in self.parsedSchedule:
-            schedule_amps=i.get("amps",32)
+            schedule_amps = i.get("amps", 32)
 
-            if i['start']<i['end'] and ( now>i['start'] and now<i['end'] ):
-                amps=max(amps,schedule_amps)
-            if i['end']<i['start'] and ( now>i['start'] or now<i['end'] ):
-                amps=max(amps,schedule_amps)
+            if i['start'] < i['end'] and (now > i['start'] and now < i['end']):
+                amps = max(amps, schedule_amps)
+            if i['end'] < i['start'] and (now > i['start'] or now < i['end']):
+                amps = max(amps, schedule_amps)
 
         return amps
 
