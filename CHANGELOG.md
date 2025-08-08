@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0](https://github.com/minceheid/openeo/compare/v0.2.3...v0.3.0) (2025-08-08)
+
+
+### Features
+
+* improved deploy script ([c1fb062](https://github.com/minceheid/openeo/commit/c1fb0627879bf76850a8bd8fba29f1d125f3769e))
+* Improved handling of serial overruns ([#31](https://github.com/minceheid/openeo/issues/31)) ([6164f46](https://github.com/minceheid/openeo/commit/6164f4612053486414c419cdbcd8b6534933a8a7))
+
+
+### Bug Fixes
+
+* abstracted charger response decoding into the charger class ([#41](https://github.com/minceheid/openeo/issues/41)) ([16afab9](https://github.com/minceheid/openeo/commit/16afab910490ad15c8bf1a98de1cba0bc54d7cec))
+* add python3-psutil to deploy.bash ([415a195](https://github.com/minceheid/openeo/commit/415a1958cdf035fe8d6696960231735dd67e3bea))
+* crontab entry broken in deploy.bash ([68efd5c](https://github.com/minceheid/openeo/commit/68efd5cb30cbeab77ff54fe98157f320aa5c8226))
+* deploy ([fb28e16](https://github.com/minceheid/openeo/commit/fb28e1654abd83daa522ce7f02abe5e8bc1cd850))
+* deploy ([ce413bb](https://github.com/minceheid/openeo/commit/ce413bb20d0c7e4fe658db23ccb88b0f5f6c29b6))
+* disable portal - I think we have a race condition that is knocking out wifi ([c9f73e4](https://github.com/minceheid/openeo/commit/c9f73e4bad5cebc4ea03232813bc586bea212cf4))
+* make curl quiet in deploy.bash ([5e3ce53](https://github.com/minceheid/openeo/commit/5e3ce53cb33b718bd20ae1b59a8873ce3c9d99e7))
+* merge errors ([71d3c28](https://github.com/minceheid/openeo/commit/71d3c2809fa1b243c5d421789749fdc62bfa91d5))
+
 ## [0.2.3](https://github.com/minceheid/openeo/compare/v0.2.2...v0.2.3) (2025-07-24)
 
 
