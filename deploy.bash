@@ -83,4 +83,6 @@ echo ">> Enabling services..."
 sudo systemctl daemon-reload
 sudo systemctl disable nginx
 sudo systemctl disable dnsmasq
-sudo systemctl enable openeo_portal
+##########
+## Portal disabled for now - we have some sort of race condition error
+sudo systemctl disable openeo_portal
