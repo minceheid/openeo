@@ -1,0 +1,6 @@
+[Allow cgi script to modify network settings]
+Identity=unix-group:www-data
+Action=org.freedesktop.NetworkManager.*
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes

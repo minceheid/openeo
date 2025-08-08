@@ -1,0 +1,17 @@
+#!/bin/bash -x
+
+KEYFILE=/home/pi/.ssh/authorized_keys
+
+if [ -n "$1" ] ; then
+	############
+	# Set a key
+	if [ ! -d $(dirname $KEYFILE) ]; then
+		sudo -u pi /usr/bin/mkdir $(dirname $KEYFILE)
+		sudo -u pi /usr/bin/chmod 700 $(dirname $KEYFILE)
+	fi
+	echo $1 | sudo -u pi /usr/bin/tee $KEYFILE
+	sudo -u pi /usr/bin/chmod 600 $KEYFILE
+fi
+
+
+sudo -u pi /usr/bin/cat $KEYFILE|head -1

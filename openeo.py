@@ -180,39 +180,22 @@ def main():
             _LOGGER.exception("Problem getting result from serial command: ("+str(result)+")")
             result = None
 
-        # decode the charger status
-        if result != None:
-            # Perhaps stupidly, we've already stripped off the prefix, which puts the positions
-            # for slicing the result string out by one, so let's put that prefix back on..
-            result="!"+result
-            try:
-                # Live voltage is in hex, and seems to be peak to peak
-                # Convert to int, divide by 2, then by sqrt(2) to get RMS
-                # Apply a default correction factor of ~0.77 to get correct-ish value. User can override this in config.json
-                globalState.stateDict["eo_live_voltage"] = round(
-                    (
-                    int(result[13:16], 16)
-                    / 2
-                    / math.sqrt(2)
-                    * globalConfig["chargeroptions"].get("mains_voltage_correction", 0.776231001)
-                    ),
-                    2,
-                )
-                globalState.stateDict["eo_p1_current"] = round(int(result[67:70], 16) / 10, 2)
-                globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_p1_current"]) / 1000, 2)        # P=VA
-                globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
-                globalState.stateDict["eo_mains_frequency"] = int(result[22:25], 16)
-                globalState.stateDict["eo_charger_state_id"] = int(result[25:27], 16)
-                globalState.stateDict["eo_charger_state"] = openeoChargerClass.CHARGER_STATES[globalState.stateDict["eo_charger_state_id"]]
-            except ValueError:
-                _LOGGER.exception("Problem decoding status: ("+str(result)+")")
+        if result:
+            # Take values that have been recorded by the charger object, and squirrel them away in 
+            # globalState.stateDict{}.
+            globalState.stateDict["eo_live_voltage"] =      charger.live_voltage
+            globalState.stateDict["eo_p1_current"] =        charger.p1_current
+            globalState.stateDict["eo_power_delivered"] =   charger.power_delivered
+            globalState.stateDict["eo_power_requested"] =   charger.power_requested
+            globalState.stateDict["eo_mains_frequency"] =   charger.mains_frequency
+            globalState.stateDict["eo_charger_state_id"] =  charger.charger_state_id
+            globalState.stateDict["eo_charger_state"] =     charger.charger_state
 
             # If we are ready to charge (that is, there is a cable/car connected), and there is demand from the 
             # modules, then raise the Amp limit to the maximum requested by the modules
-            if (globalState.stateDict["eo_charger_state"] == "charge-unknown-state" or 
-                globalState.stateDict["eo_charger_state"] == "charging" or 
-                globalState.stateDict["eo_charger_state"] == "car-connected" or 
-                globalState.stateDict["eo_charger_state"] == "plug-present") and (globalState.stateDict["eo_amps_requested"] > 0):
+            # Note - we have had some unusual states reported here, preventing charging, so we are now checking
+            # for state_id >= 5 to eliminate suspected error states, but to otherwise be permissive.
+            if (globalState.stateDict["eo_charger_state_id"] >= 5) and (globalState.stateDict["eo_amps_requested"] > 0):
                 globalState.stateDict["eo_amps_limit"]=globalState.stateDict["eo_amps_requested"]
             else:
                 globalState.stateDict["eo_amps_limit"]=0

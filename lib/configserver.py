@@ -146,12 +146,18 @@ class configserverClassPlugin:
 
                 # Dump all global variables in prometheus exporter format
                 for cfgkey,cfgvalue in globalState.stateDict.items():
-                    if isinstance(cfgvalue, numbers.Number):
-                        if (cfgkey=="eo_charger_state_id"):
-                            self.wfile.write(str("# HELP "+cfgkey+" "+globalState.stateDict["eo_charger_state"]+"\n").encode('utf-8'))
+                    if cfgkey[0]!="_":
+                        # Convert any bool values to int
+                        if isinstance(cfgvalue, (bool)):
+                            cfgvalue=int(cfgvalue)
 
-                        self.wfile.write(str("# TYPE "+cfgkey+" gauge\n").encode('utf-8'))
-                        self.wfile.write(str(cfgkey+"{} "+str(cfgvalue)+"\n").encode('utf-8'))   
+                        # Then only show numerics
+                        if isinstance(cfgvalue, numbers.Number):
+                            if (cfgkey=="eo_charger_state_id"):
+                                self.wfile.write(str("# HELP "+cfgkey+" "+globalState.stateDict["eo_charger_state"]+"\n").encode('utf-8'))
+
+                            self.wfile.write(str("# TYPE "+cfgkey+" gauge\n").encode('utf-8'))
+                            self.wfile.write(str(cfgkey+"{} "+str(cfgvalue)+"\n").encode('utf-8'))   
                 return
 
             ################################
@@ -159,9 +165,13 @@ class configserverClassPlugin:
             if format(self.path)=="/api":
                 status={}
                 status["eo_charger_state"]={"id":globalState.stateDict["eo_charger_state_id"],"status":globalState.stateDict["eo_charger_state"]}
+
+
                 for cfgkey,cfgvalue in globalState.stateDict.items():
-                    if (cfgkey!="eo_harger_state_id") and (cfgkey!="eo_charger_state"):
-                            status[cfgkey]=cfgvalue
+                    if cfgkey[0]!="_":
+                        if isinstance(cfgvalue, numbers.Number):
+                            if (cfgkey!="eo_harger_state_id") and (cfgkey!="eo_charger_state"):
+                                    status[cfgkey]=cfgvalue
 
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")

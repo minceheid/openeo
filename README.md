@@ -37,15 +37,36 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 7. Close the EO enclosure, and apply power to it. The RPi Zero should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take 10-15 minutes to fully boot before it is seen on the network.
 8. Log onto your account on the RPi Zero via SSH over the WiFi network, and run the following three commands. This will download a deployment script from github, run it to install the software onto your RPi, then reboots your RPi to allow the software to finish configuring and start up.
 
+To download the latest
+
 ~~~~
 wget https://raw.githubusercontent.com/minceheid/openeo/refs/heads/main/deploy.bash
 bash deploy.bash
 sudo reboot
 ~~~~
 
+To download a specific version (you will need to migrate your config.json by hand)
+
+~~~~
+wget https://raw.githubusercontent.com/minceheid/openeo/refs/heads/main/deploy.bash
+bash deploy.bash v0.4
+sudo reboot
+~~~~
+
 Once the RPi Zero reboots, it should all be working. You should be able to point your browser at the IP address (or you can use mDNS to navigate to _hostname_.local - where _hostname_ is whichever hostname you set in step 3 above). You should see the configuration web page, showing the charger status, and giving you control.
 
 *Note* - at this time, only the **_Schedule_** mode and **_Manual_** mode is available. We will be adding **_Remote_** (OCPP) shortly.
+
+## Important Notes
+The openeo charger cannot currently accommodate the following features:
+
+* Total current limiting at the mains fuse ("load balancing").  If this charger is used on a looped supply, a small fuse, or shares a supply with another charger, it might require load balancing to avoid a failure of the main incoming fuse.  This would result in a total power outage to the home should it occur, and would require your DNO to visit to correct the failure.   We will look to introduce load balancing in the near future, but for now, *DO NOT* use this software if you depend upon that.  
+
+* Solar system integration (except for Victron systems via the `victron_ess` plugin).  This means the openeo charger won't start charging when there is an excess of solar being exported to the grid.  This is also a feature we are looking to add in the future and we are interested in hearing from users who have systems like this that we can test the openeo software on.
+
+* Control is currently only possible locally via the web interface and some phones when connected to the same wireless network as the charger.  Whilst it is possible to expose your openeo instance to the public internet, we strongly advise that you do not do so, since the application has not been audited for security vulnerabilities yet.  This also means you can't (yet) control charging remotely, though we will be releasing Home Assistant support in the near future which should allow this.
+
+Disclaimer:  The software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software.   Please see the important terms and conditions in the `LICENSE.txt` file.   The software has been developed by clean-room reverse engineering of the existing EO software and no copyrighted EO code is used in this application.  
 
 ## Configuration
 The software is configured by a json configuration file, an example is provided. The main functions are provided by plugin modules, each of which must be listed in the json config file, along with the configuration parameters. See the source of the module in the eo/openeo/ directory for more information on each module. If a configuration file does not initially exist, a default configuration will be generated and saved for you.
