@@ -334,7 +334,6 @@ class configserverClassPlugin(PluginSuperClass):
                 content_length = int(self.headers['Content-Length'])
                 post_data = self.rfile.read(content_length).decode('utf-8')
                 post_vars = urllib.parse.parse_qsl(post_data)
-                #new_dict = {}
                 
                 # It is legal for POST keys to be duplicated; that shouldn't happen when saving settings, but #
                 # even if it does, we'll just take the last value we see.
@@ -347,7 +346,6 @@ class configserverClassPlugin(PluginSuperClass):
                         modulelist.append(module)
                     _LOGGER.debug("%r : %r : %r" % (module, key, value))
                     globalState.configDB.set(module,key,value)
-                    #util.set_nested_value_from_colon_key(new_dict, key, value)
                 
                 # Now instruct all modules to reconfigure themselves. Probably overkill
                 newconfig={}
@@ -355,22 +353,8 @@ class configserverClassPlugin(PluginSuperClass):
                     module.configure(globalState.configDB.get(modulename))
                     newconfig[modulename]=module.pluginConfig
 
-                #_LOGGER.info("Result dict: %r" % new_dict)
-                
-                #self.load_config()
-                #print("dict:",new_dict)
-                # write configuration update to sqlite
-                #globalState.configDB.setDict(new_dict,False)
-
                 self.set_context()
-                #_LOGGER.info("New config: %r" % self.config)
-                
-                # Force all modules in the config set to update
-                #for modulename, module in globalState.stateDict["_moduleDict"].items():
-                #    if hasattr(module, "configure"):
-                #        _LOGGER.info("Force module %s to update config" % modulename)
-                #        module.configure(self.config[modulename])
-                
+               
                 self.send_response(303) # 303 See Other, used after POST request to indicate resubmission should not occur
                 self.send_header('Location', '/settings.html?toast2success=1')
                 self.end_headers()
@@ -389,16 +373,16 @@ class configserverClassPlugin(PluginSuperClass):
                 
                     if new_mode == "schedule":
                         # Disable all modules except the reserved ones
-                        self.switch_modules(0)
+                        #self.switch_modules(0)
                         # Enable the scheduler
-                        #self.config["scheduler"]["enabled"] = 1
                         globalState.configDB.set("scheduler","enabled",True)
+                        globalState.configDB.set("switch","enabled",False)
 
                     elif new_mode == "manual":
                         # Disable all modules except the reserved ones
-                        self.switch_modules(0)
+                        #self.switch_modules(0)
                         # Enable the switch module
-                        #self.config["switch"]["enabled"] = 1
+                        globalState.configDB.set("scheduler","enabled",False)
                         globalState.configDB.set("switch","enabled",True)
 
                     elif new_mode == "remote":
@@ -406,25 +390,16 @@ class configserverClassPlugin(PluginSuperClass):
                         globalState.configDB.set("scheduler","enabled",False)
                         globalState.configDB.set("switch","enabled",False)
 
-                        #self.config["scheduler"]["enabled"] = 0
-                        #self.config["switch"]["enabled"] = 0
                         # Enable all modules, don't touch the reserved ones.
-                        self.switch_modules(1)
+                        #self.switch_modules(1)
                     else:
                         raise RuntimeError("unsupported mode %s" % new_mode)
                         
-                    # Save the mode string
-                    #if "chargeroptions" not in self.config:
-                    #    self.config["chargeroptions"] = {}
-                    #self.config["chargeroptions"]["mode"] = new_mode
-                    #_LOGGER.info("New config: %s" % repr(self.config))
                     
                     # Sync to disk.  This is required to keep the scheduler up to date,
                     # which is probably a limitation that should be fixed eventually.
                     # write configuration update to sqlite
                     globalState.configDB.set("chargeroptions","mode",new_mode)
-                    
-                    print("XXX",globalState.configDB)
                     
                     # Now instruct all modules to reconfigure themselves. Probably overkill
                     newconfig={}

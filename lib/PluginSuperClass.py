@@ -2,7 +2,11 @@
 """
 OpenEO Module: PluginSuperClass
 
-Configuration example:
+Parent class for all plugin modules, providing common functions. The configure() method
+will automatically do type conversion/checks and handle default values based on the 
+pluginParamSpec{} dict. Format as follows:
+
+pluginParamSpec= { "<attributename>": {"type": "(bool|int|float|str|json", "default": <defaultvalue> )}}
 
 """
 #################################################################################
@@ -16,6 +20,10 @@ _LOGGER = logging.getLogger(__name__)
 class PluginSuperClass:
 
     def _convertType(self,value,typeClass,default=None):
+        """
+        Internal method used by the configure() method. This attempts to do type conversion, or
+        if not possible, returns a default value.    
+        """
         match typeClass:
             case "bool":
                 return ((isinstance(value,numbers.Number) and value==1) or (isinstance(value,str) and value.lower()=="true") or (isinstance(value,str) and value.isnumeric() and int(value)==1))
@@ -59,14 +67,12 @@ class PluginSuperClass:
     
     def __str__(self):
         return self.myName
-    
-        
 
     def configure(self,configParam):
         _LOGGER.debug("Plugin Configured: "+self.myName)
         self.pluginConfig=configParam
 
-        # Does type conversion
+        # Does type conversion, ased on the pluginParamSpec{} dict
         for attribute,spec in self.pluginParamSpec.items():
             self.pluginConfig[attribute]=self._convertType(self.pluginConfig.get(attribute,None),spec["type"],spec["default"])
 
