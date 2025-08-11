@@ -154,6 +154,8 @@ class openeoChargerClass:
 
 
 
+
+
     #################################################################################
     # Constructor methods
     def __init__(self):
