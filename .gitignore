@@ -1,4 +1,5 @@
 __pycache__/
 config.json
+config.db
 openeo.log
 tools/remote_id.txt

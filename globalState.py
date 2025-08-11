@@ -64,8 +64,13 @@ stateDict={
     "app_version" : appVer
 }
 
+
+"""
+#####
+# Do we need to define the defaultConfig at all? - perhaps this can be derived from the 
+# default values already defined in each module?
 defaultConfig = {
-        "scheduler" : { "enabled" : False, "schedule_json": '[{"start": "2200", "end": "0400", "amps": 32}]' },
+        "scheduler" : { "enabled" : False, "schedule": '[{"start": "2200", "end": "0400", "amps": 32}]' },
         "switch" : { "enabled" : True, "on" : False, "amps" : 32 },
         "configserver": { "enabled": True, "port": 80, "charger_name" : "openeo Charger", "charger_id" : "openeo_1" },
         "chargeroptions" : { "mode" : "manual", "mains_voltage_correction": 0.776231001, "log_level": "debug" },
@@ -77,5 +82,20 @@ defaultConfig = {
             "lowres_maxage": 60*60*48   # 48 hours
         },
     }
+
+"""
+print("#################")
+import json
+schedule_json = '[{"start": "2200", "end": "0400", "amps": 32}]'
+schedule=json.loads(schedule_json)
+print(json.dumps(schedule))
+print("#################")
+
+
+defaultConfig = {
+        "scheduler" : { "enabled" : True },
+        "switch" : { "enabled" : True },
+        "configserver" : { "enabled" : True },
+        "chargeroptions" : { "enabled" : True }}
+
 configDB = openeoConfigClass(defaultConfig)
-print(configDB)

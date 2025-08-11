@@ -12,42 +12,27 @@ Configuration example:
 #################################################################################
 import logging,re
 import globalState, util
+from lib.PluginSuperClass import PluginSuperClass
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
 
 #################################################################################
-class chargeroptionsClassPlugin:
+class chargeroptionsClassPlugin(PluginSuperClass):
     PRETTY_NAME = "Charger Options"  # @FUTURE: i18n?
     CORE_PLUGIN = True
-    pluginConfig={}
-    myName=""
-    
-    def __str__(self):
-        return self.myName
-
-    def __init__(self, configParam):
-       # Store the name of the plugin for reuse elsewhere
-        self.myName=re.sub('ClassPlugin$','',type(self).__name__)
-        _LOGGER.debug("Initialising Module: "+self.myName)
+    pluginParamSpec={   "enabled":      {"type": "bool","default": True},
+                        "always_supply_current":   {"type": "bool", "default":False},
+                        "overall_limit_current":  {"type": "int","default":32},
+                        "charger_name":  {"type": "str","default":"openeo"},
+                        "charger_id":  {"type": "str","default":"openeo_1"}}
 
     def configure(self, configParam):
-        _LOGGER.info("Plugin Configured: " + type(self).__name__)
-        self.pluginConfig = configParam
-        if ("always_supply_current" in self.pluginConfig and isinstance(self.pluginConfig["always_supply_current"], bool)):
-            globalState.stateDict["eo_always_supply_current"] = self.pluginConfig["always_supply_current"]
-        if ("overall_limit_current" in self.pluginConfig and isinstance(self.pluginConfig["overall_limit_current"], int)):
-            globalState.stateDict["eo_overall_limit_current"] = self.pluginConfig["overall_limit_current"]
-        if ("charger_name" in self.pluginConfig and isinstance(self.pluginConfig["charger_name"], str)):
-            globalState.stateDict["charger_name"] = self.pluginConfig["charger_name"]
-        if ("charger_id" in self.pluginConfig and isinstance(self.pluginConfig["charger_id"], str)):
-            globalState.stateDict["charger_id"] = self.pluginConfig["charger_id"]
-
-    def get_config(self):
-        return self.pluginConfig
-        
-    def poll(self):
-        return 0
+        super().configure(configParam)
+        globalState.stateDict["eo_always_supply_current"] = self.pluginConfig["always_supply_current"]
+        globalState.stateDict["eo_overall_limit_current"] = self.pluginConfig["overall_limit_current"]
+        globalState.stateDict["charger_name"] = self.pluginConfig["charger_name"]
+        globalState.stateDict["charger_id"] = self.pluginConfig["charger_id"]
 
     def get_user_settings(self):
         settings = []

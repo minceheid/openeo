@@ -20,17 +20,12 @@ _LOGGER = logging.getLogger(__name__)
 class switchClassPlugin(PluginSuperClass):
     PRETTY_NAME = "Switch"
     CORE_PLUGIN = True  
-    pluginConfig={}
-    pluginParamSpec={"enabled":"bool","on": "bool","amps":"int"}
-    myName=""
+    pluginParamSpec={	"enabled":	{"type": "bool","default": True},
+			"on":	{"type": "bool", "default":False},
+			"amps":	{"type": "int","default":32}}
         
-
     def poll(self):
-
-        print("xxx switchpoll")
         if (self.pluginConfig.get("on",False)):
-            print("xxx on")
             return self.pluginConfig.get("amps",32)
         else:
-            print("xxx off")
             return 0

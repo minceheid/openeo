@@ -7,7 +7,7 @@ Configuration example:
 """
 #################################################################################
 
-import logging
+import logging,json
 import re, numbers
 
 # logging for use in this module
@@ -15,7 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class PluginSuperClass:
 
-    def _convertType(self,value,typeClass):
+    def _convertType(self,value,typeClass,default=None):
         match typeClass:
             case "bool":
                 return ((isinstance(value,numbers.Number) and value==1) or (isinstance(value,str) and value.lower()=="true") or (isinstance(value,str) and value.isnumeric() and int(value)==1))
@@ -25,9 +25,32 @@ class PluginSuperClass:
             case "float":
                 if isinstance(value,(float,int)) or (isinstance(value,str) and re.match(r'^-?\d+(?:\.?\d+)$', value)):
                     return float(value)
+            case "str":
+                if isinstance(value,(str)):
+                    return value
+            case "json":
+                if isinstance(value,(str)):
+                    try:
+                        return(json.loads(value))
+                    except Exception as e:
+                        _LOGGER.error(f"Invalid JSON syntax ({value})")
+                        return json.loads(default)
+
+	# If we didn't match any of these conditions, then we should return the default value
+	# But we should also check to see that the default value is either None
+	# or matches the type we expect.
+
+        defaultType=type(default).__name__
+        if typeClass=="json":
+            return json.loads(default)
+        elif default==None or defaultType==typeClass:
+            return(default)
+        else:
+            _LOGGER.error(f"Given default value ({default}({defaultType})) does not match given typeClass ({typeClass}). Returning None from _convertType - check pluginParamSpec")
+            return(None)
 
     
-#################################################################################
+    #################################################################################
     PRETTY_NAME = "PluginSuperClass"
     CORE_PLUGIN = True  
     pluginConfig={}
@@ -44,8 +67,8 @@ class PluginSuperClass:
         self.pluginConfig=configParam
 
         # Does type conversion
-        for attribute,type in self.pluginParamSpec.items():
-            self.pluginConfig[attribute]=self._convertType(self.pluginConfig[attribute],type)
+        for attribute,spec in self.pluginParamSpec.items():
+            self.pluginConfig[attribute]=self._convertType(self.pluginConfig.get(attribute,None),spec["type"],spec["default"])
 
     def get_config(self):
         return self.pluginConfig
@@ -60,10 +83,6 @@ class PluginSuperClass:
         # Store the name of the plugin for reuse elsewhere
         self.myName=re.sub('ClassPlugin$','',type(self).__name__)
         _LOGGER.debug("Initialising Module: "+self.myName)
-        print("configuring")
-        try:
-            self.configure(configParam)
-        except Exception as e:
-                print("Aborting %s" % (repr(e)))
+        self.configure(configParam)
 
 

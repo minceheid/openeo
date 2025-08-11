@@ -4,7 +4,7 @@ OpenEO Class for handling configuration get/set
 """
 #################################################################################
 
-import sqlite3,logging
+import sqlite3,logging,json
 from threading import Lock
 
 # logging for use in this module
@@ -68,23 +68,24 @@ class openeoConfigClass:
         # Flag that something may have changed, which will trigger all plugin modules to reload config
         self.changed=True
         
-        if isinstance(key_or_dict, dict):
-            # Bulk insert
-            for key, val in key_or_dict.items():
+        with self.lock:
+            if isinstance(key_or_dict, dict):
+                # Bulk insert
+                for key, val in key_or_dict.items():
+                    self.cursor.execute(f'''
+                        INSERT INTO {self.CONFIG_TABLE} (module, key, value) 
+                        VALUES (?, ?, ?)
+                        ON CONFLICT(module, key) DO UPDATE SET value=excluded.value
+                    ''', (module, key, val))
+            else:
+                # Single insert
+                key = key_or_dict
                 self.cursor.execute(f'''
                     INSERT INTO {self.CONFIG_TABLE} (module, key, value) 
                     VALUES (?, ?, ?)
                     ON CONFLICT(module, key) DO UPDATE SET value=excluded.value
-                ''', (module, key, val))
-        else:
-            # Single insert
-            key = key_or_dict
-            self.cursor.execute(f'''
-                INSERT INTO {self.CONFIG_TABLE} (module, key, value) 
-                VALUES (?, ?, ?)
-                ON CONFLICT(module, key) DO UPDATE SET value=excluded.value
-            ''', (module, key, value))
-        self.conn.commit()
+                ''', (module, key, value))
+            self.conn.commit()
 
 
     def setDict(self, data, strict=True):
@@ -120,11 +121,11 @@ class openeoConfigClass:
                     for key, value in entries.items():
                         if strict:
                             try:
-                                value_str = str(value) if value is not None else ""
+                                value_str = json.dumps(value) if value is not None else ""
                             except Exception:
                                 raise ValueError(f"Value for {module}.{key} cannot be converted to string")
                         else:
-                            value_str = str(value) if value is not None else ""
+                            value_str = json.dumps(value) if value is not None else ""
                         self.cursor.execute(insert_sql, (str(module), str(key), value_str))
                 self.conn.commit()
             except Exception:
@@ -162,7 +163,6 @@ class openeoConfigClass:
         for module,entriesDict in defaultConfig.items():
             if not self.get(module):
                 _LOGGER.info(f"applying configuration defaults for module: {module}")
-                print("applying defaults for module: ",module)
                 for key,value in entriesDict.items():
                     self.set(module,key,value)
 

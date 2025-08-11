@@ -21,21 +21,17 @@ _LOGGER = logging.getLogger(__name__)
 
 #################################################################################
 class schedulerClassPlugin(PluginSuperClass):
-    myName=""
-
     PRETTY_NAME = "Scheduler"
     CORE_PLUGIN = True  
-    pluginConfig = []
-    pluginParamSpec={"enabled":"bool"}
+    pluginParamSpec={ "enabled":      {"type": "bool","default": True},
+			"schedule": {"type": "json","default":'[{"start": "2200", "end": "0400", "amps": 32}]'}}
     parsedSchedule = []
-    myName=""
 
 
     def configure(self,configParam):
         super().configure(configParam)
 
-        self.pluginConfig["schedule"]=json.loads(self.pluginConfig["schedule_json"])
-        self.parsedSchedule = []
+        self.parsedScheduled=[]
         for n, i in enumerate(self.pluginConfig["schedule"]):
             sched = {}
             sched['start'] = datetime.time(int(i['start'][:2]), int(i['start'][-2:]),0,0)

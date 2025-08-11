@@ -79,6 +79,7 @@ def main():
                     except Exception as e:
                         _LOGGER.error("Aborting - Module '%s' defined and enabled in config file but another error occurred loading  - %s" % (modulename, repr(e)))
 
+
             # Do we have any modules that are currently loaded, but not in the configfile
             # file (for example, perhaps the config file has been updated to remove one)
             for modulename,module in globalState.stateDict["_moduleDict"].copy().items():
@@ -95,7 +96,6 @@ def main():
         
 
         for module_name, module in globalState.stateDict["_moduleDict"].items():
-            print("YYY: ",module_name,module.get_config())
             if module.get_config().get("enabled", True):
                 module_current = module.poll()
                 if (not isinstance(module_current, numbers.Number)):
