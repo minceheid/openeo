@@ -17,9 +17,9 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 <img src="https://github.com/user-attachments/assets/db492985-58e3-4b18-8bb2-5eb0fb31cb6d" style="width:25%; height:auto;" />
 </p>
 
-3. In the Raspberry PI imager "General" settings - set your Hostname, Username/Password, Wirelss LAN and Locale settings as appropriate. There are no restrictions on what to set your hostname and username, though I tend to go with "eo".
+3. In the Raspberry PI imager "General" settings - set your Hostname, Username/Password, Wirelss LAN and Locale settings as appropriate. There are no restrictions on what to set your hostname, but you must create a user of "pi"
 
-<p align="center"><img alt="Screenshot 2025-07-19 142812" src="https://github.com/user-attachments/assets/f3db2cc0-9055-4817-b135-2864c760de57" style="width:25%; height:auto;" /></p>
+<p align="center"><img  alt="image" src="https://github.com/user-attachments/assets/da0e365a-141b-4f70-8be8-5f23a900dfa3" style="width:25%; height:auto;"/></p>
 
 4. In the Raspberry PI imager "Services" settings - ensure that SSH is enabled, and I would recommend that public-key authentication is enabled, and you should add your SSH public key as approprate.
 
