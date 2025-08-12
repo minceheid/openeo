@@ -67,9 +67,9 @@ stateDict={
 
 defaultConfig = {
         "scheduler" : { "enabled" : True },
-        "switch" : { "enabled" : True },
+        "switch" : { "enabled" : False },
         "configserver" : { "enabled" : True },
         "logger" : { "enabled" : True },
-        "chargeroptions" : { "enabled" : True }}
+        "chargeroptions" : { "enabled" : True, "mode" : "schedule" }}
 
 configDB = openeoConfigClass(defaultConfig)
