@@ -31,7 +31,7 @@ class schedulerClassPlugin(PluginSuperClass):
     def configure(self,configParam):
         super().configure(configParam)
 
-        self.parsedScheduled=[]
+        self.parsedSchedule=[]
         for n, i in enumerate(self.pluginConfig["schedule"]):
             sched = {}
             sched['start'] = datetime.time(int(i['start'][:2]), int(i['start'][-2:]),0,0)
