@@ -69,6 +69,7 @@ defaultConfig = {
         "scheduler" : { "enabled" : True },
         "switch" : { "enabled" : True },
         "configserver" : { "enabled" : True },
+        "logger" : { "enabled" : True },
         "chargeroptions" : { "enabled" : True }}
 
 configDB = openeoConfigClass(defaultConfig)

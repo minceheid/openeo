@@ -102,7 +102,7 @@ def main():
                     _LOGGER.error(f"ERROR: Module {module} returned "+str(type(module_current))+"- Ignoring")
                 else:
                     globalState.stateDict["eo_amps_requested"] = max(globalState.stateDict["eo_amps_requested"], module_current)
-                    _LOGGER.info("polled %s, amps_requested=%d" % (module_name, module_current))
+                    _LOGGER.debug("polled %s, amps_requested=%d" % (module_name, module_current))
         
         if globalState.stateDict["eo_always_supply_current"]:
             globalState.stateDict["eo_amps_requested"] = 32
@@ -213,7 +213,10 @@ if __name__ == "__main__":
     )
 
     # Defaults to INFO level, but can be overridden in config.json
-    logging.basicConfig(level=logging.INFO, handlers=[syslog_handler, console_handler])
+    #logging.basicConfig(level=logging.INFO, handlers=[syslog_handler, console_handler])
+    # MMS: disabling console_handler as the journal is getting pretty noisy when running under
+    # systemd
+    logging.basicConfig(level=logging.INFO, handlers=[syslog_handler])
 
     # logging for use in this module
     _LOGGER = logging.getLogger(__name__)

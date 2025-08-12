@@ -47,14 +47,6 @@ fi
 # ensure that we're not just appending it, but refreshing it completely leaving it
 # in a workable state
 
-if [ -n "$VERSION" ]; then
-    # The crontab will allow openeo to start automatically at boot
-    echo "@reboot openeo-${VERSION}/boot.bash" >/tmp/crontab 
-else 
-    echo "@reboot openeo/boot.bash" >/tmp/crontab 
-fi
-crontab /tmp/crontab
-
 # Install prereq packages
 sudo apt-get update
 sudo apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil dnsmasq nginx fcgiwrap spawn-fcgi iptables at
@@ -71,11 +63,22 @@ sudo sh -c 'sed "s/#dtparam=spi=on/dtparam=spi=on/" </tmp/config.txt >/boot/firm
 # www-data needs to be able to see the pi directory
 chmod 755 /home/pi
 
-echo ">> Deploying Config"
-sudo cp -r $MYDIR/portal/config/* /
+#####################
+# Give Python the capability of binding to port 80. This will give our
+# script the ability to run without full root privs, which is a Good Thing.
+sudo setcap CAP_NET_BIND_SERVICE=+eip $(realpath $(which python3))
+# Ensure that we are in the right groups
+# spi & gpio for communications with the EO control board
+# video gives access to pi temperature
+sudo usermod -a -G spi,gpio,video $(whoami)
+sudo chmod 666 /dev/vcio
+
+cp $MYDIR/etc/openeo.service /etc/systemd/service
 
 #############
 # Setup Portal
+echo ">> Deploying Portal Config"
+sudo cp -r $MYDIR/portal/config/* /
 sudo rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/openeo_portal.conf
 sudo ln -s /etc/nginx/sites-available/openeo_portal.conf  /etc/nginx/sites-enabled/openeo_portal.conf
 
@@ -83,6 +86,8 @@ echo ">> Enabling services..."
 sudo systemctl daemon-reload
 sudo systemctl disable nginx
 sudo systemctl disable dnsmasq
+sudo systemctl enable openeo
+sudo systemctl restart openeo
 ##########
 ## Portal disabled for now - we have some sort of race condition error
 sudo systemctl disable openeo_portal

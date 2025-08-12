@@ -1,0 +1,12 @@
+[Unit]
+Description=openeo startup
+After=multi-user.target
+
+[Service]
+WorkingDirectory=/home/pi/openeo
+ExecStart=/home/pi/openeo/openeo.py
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
