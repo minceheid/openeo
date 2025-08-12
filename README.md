@@ -40,16 +40,9 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 To download the latest
 
 ~~~~
-wget https://raw.githubusercontent.com/minceheid/openeo/refs/heads/main/deploy.bash
-bash deploy.bash
-sudo reboot
-~~~~
-
-To download a specific version (you will need to migrate your config.json by hand)
-
-~~~~
-wget https://raw.githubusercontent.com/minceheid/openeo/refs/heads/main/deploy.bash
-bash deploy.bash v0.4
+curl -qLl https://github.com/minceheid/openeo/archive/refs/heads/main.tar.gz |tar xzf -
+mv openeo-main openeo
+NODOWNOAD=1 openeo/deploy.bash
 sudo reboot
 ~~~~
 
