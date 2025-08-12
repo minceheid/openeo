@@ -73,7 +73,7 @@ sudo setcap CAP_NET_BIND_SERVICE=+eip $(realpath $(which python3))
 sudo usermod -a -G spi,gpio,video $(whoami)
 sudo chmod 666 /dev/vcio
 
-sudo cp $MYDIR/etc/openeo.service /etc/systemd/service
+sudo cp $MYDIR/etc/openeo.service /etc/systemd/system/
 ###
 # Remove old crontab
 crontab -r
