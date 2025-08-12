@@ -8,6 +8,7 @@ critical ones.
 """
 
 import logging
+from openeoConfig  import openeoConfigClass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -62,3 +63,13 @@ stateDict={
     # Application (openeo) version
     "app_version" : appVer
 }
+
+
+defaultConfig = {
+        "scheduler" : { "enabled" : True },
+        "switch" : { "enabled" : True },
+        "configserver" : { "enabled" : True },
+        "logger" : { "enabled" : True },
+        "chargeroptions" : { "enabled" : True }}
+
+configDB = openeoConfigClass(defaultConfig)

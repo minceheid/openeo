@@ -27,47 +27,25 @@ from datetime import datetime, timedelta
 import json
 import globalState
 import re
+from lib.PluginSuperClass import PluginSuperClass
+
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
 
 
 #################################################################################
-class loggerClassPlugin: 
+class loggerClassPlugin(PluginSuperClass):
     pretty_name = "Data Logger"
     CORE_PLUGIN = True # Can't be disabled from the UI 
-    pluginConfig={}
-    myName=""
- #   myData=None
+    pluginParamSpec={"enabled": {"type":"bool","default":True},
+		"hires_interval": {"type":"int","default":30},
+		"hires_maxage": {"type":"int","default":60*60},
+		"lowres_interval": {"type":"int","default":5*60},
+		"lowres_maxage": {"type":"int","default":60*60*48}}
+
     nextDatapoint=None
 
-    def __str__(self):
-        return self.myName
-
-    def get_config(self):
-        return self.pluginConfig
-        
-    def configure(self,configParam):
-        _LOGGER.debug("Plugin Configured: "+self.myName)
-
-        if (not isinstance(configParam.get("hires_interval",0),(int))):
-            del configParam["hires_interval"]
-            _LOGGER.error("logger hires_interval parameter malformed ("+str(configParam["hires_interval"])+"). Ignoring and will use default value")
-        if (not isinstance(configParam.get("hires_maxage",0),(int))):
-            del configParam["hires_maxage"]
-            _LOGGER.error("logger hires_maxage parameter malformed ("+str(configParam["hires_maxage"])+"). Ignoring and will use default value")
-        if (not isinstance(configParam.get("lowres_interval",0),(int))):
-            del configParam["lowres_interval"]
-            _LOGGER.error("logger lowres_interval parameter malformed ("+str(configParam["lowres_interval"])+"). Ignoring and will use default value")
-        if (not isinstance(configParam.get("lowres_maxage",0),(int))):
-            del configParam["lowres_maxage"]
-            _LOGGER.error("logger lowres_maxage parameter malformed ("+str(configParam["lowres_maxage"])+"). Ignoring and will use default value")
-
-        self.pluginConfig["hires_interval"]=configParam.get("hires_interval",30)
-        self.pluginConfig["hires_maxage"]=configParam.get("hires_maxage",60*60)
-        self.pluginConfig["lowres_interval"]=configParam.get("lowres_interval",5*60)
-        self.pluginConfig["lowres_maxage"]=configParam.get("lowres_maxage",60*60*48)
-        
     def poll(self):
         if datetime.now()>self.nextDatapoint:
             # Time to record 
@@ -77,10 +55,7 @@ class loggerClassPlugin:
         return 0
 
     def __init__(self,configParam):
-       # Store the name of the plugin for reuse elsewhere
-        self.myName=re.sub('ClassPlugin$','',type(self).__name__)
-        _LOGGER.debug("Initialising Module: "+self.myName)
-        self.configure(configParam)        
+        super().__init__(configParam)
 
         self.nextDatapoint=datetime.now()
 

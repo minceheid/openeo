@@ -67,31 +67,3 @@ The openeo charger cannot currently accommodate the following features:
 * Control is currently only possible locally via the web interface and some phones when connected to the same wireless network as the charger.  Whilst it is possible to expose your openeo instance to the public internet, we strongly advise that you do not do so, since the application has not been audited for security vulnerabilities yet.  This also means you can't (yet) control charging remotely, though we will be releasing Home Assistant support in the near future which should allow this.
 
 Disclaimer:  The software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software.   Please see the important terms and conditions in the `LICENSE.txt` file.   The software has been developed by clean-room reverse engineering of the existing EO software and no copyrighted EO code is used in this application.  
-
-## Configuration
-The software is configured by a json configuration file, an example is provided. The main functions are provided by plugin modules, each of which must be listed in the json config file, along with the configuration parameters. See the source of the module in the eo/openeo/ directory for more information on each module. If a configuration file does not initially exist, a default configuration will be generated and saved for you.
-
-~~~~
-{
-  "scheduler" : { "enabled" : False, "schedule" : [{"start" : "2200", "end" : "0400", "amps" : 32}] },
-  "switch" : { "enabled" : True, "on" : True, "amps" : 32 },
-  "configserver": { "enabled": True, "port": 80 },
-  "chargeroptions" : { "mode" : "switch" },
-  "logger": {
-      "enabled": True,
-      "hires_interval": 2,        # 2 seconds
-      "hires_maxage": 60*10,      # 10 minutes
-      "lowres_interval": 60*5,    # 5 minutes
-      "lowres_maxage": 60*60*48   # 48 hours
-  },
-}
-
-~~~~
-
-## Debugging
-All logs are written to the linux journal, and can be viewed using the ```journalctl``` command. Additionally, if you set ```log_level``` in the chargeroptions statement in config.json to ```debug```, and restart (reboot the pi) then additional debug messages are logged
-~~~~
-  "chargeroptions" : { "log_level" : "debug" },
-~~~~
-
-

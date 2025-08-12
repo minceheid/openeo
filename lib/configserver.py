@@ -16,6 +16,7 @@ Configuration example:
 import re, logging, threading, json, http.server, socketserver, datetime, socket, os
 import copy, time, numbers, urllib.parse, tempfile
 import globalState, util
+from lib.PluginSuperClass import PluginSuperClass
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
@@ -45,37 +46,15 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         super().server_bind()
         
 #################################################################################
-class configserverClassPlugin:
+class configserverClassPlugin(PluginSuperClass):
     pretty_name = "Config Server"
     CORE_PLUGIN = True # Can't be disabled from the UI
     
-    pluginConfig = {}
-    myName = ""
-
-    def __str__(self):
-        return self.myName
-
-    def get_config(self):
-        return self.pluginConfig
-        
-    def configure(self,configParam):
-        _LOGGER.debug("Plugin Configured: "+self.myName)
-        self.pluginConfig=configParam
-        
-    def poll(self):
-        # Webserver should never need to influence the charger, I think
-        # However - we must always return a zero value (zero amps)
-        return 0
+    pluginParamSpec={   "enabled":      {"type": "bool","default": True},
+                        "port":  {"type": "int","default":80}}
 
     def __init__(self,configParam):
-        # Store the name of the plugin for reuse elsewhere
-        self.myName=re.sub('ClassPlugin$','',type(self).__name__)
-        _LOGGER.debug("Initialising Module: "+self.myName)
-
-        self.pluginConfig["port"]=configParam.get("port",80)
-        if (isinstance(self.pluginConfig["port"],(int))!=True):
-            _LOGGER.error("Invalid port ({}) in {} plugin config in {}. Defaulting to 80".format(self.pluginConfig["port"],self.myName,globalState.stateDict["eo_config_file"]))
-            self.pluginConfig["port"]=80
+        super().__init__(configParam)
 
         serverthread = threading.Thread(target=self.webserver, name='serverthread')
         serverthread.start()
@@ -89,7 +68,7 @@ class configserverClassPlugin:
             except KeyboardInterrupt:
                 httpd.shutdown()
 
-    ###############
+    #################################################################################
     # Everything from here down is the config handling
     
     class CustomHandler(http.server.BaseHTTPRequestHandler):
@@ -97,44 +76,20 @@ class configserverClassPlugin:
         _context = {}
         selected_page = ""
 
+
         # Load initial configuration
         def load_config(self):
-            try:
-                with open(globalState.stateDict["eo_config_file"], "r") as f:
-                    self.config = json.load(f)
-                    return True
-            except (FileNotFoundError, ValueError):
-                self.config = {}
-                return False
+            ##self.config=globalState.configDB.dict()
+            # We can't load config directly from sqlite, as we need the modules to interpret and typecast
+            # the attributes, so instead, we need to recompile the full config from polling the plugin modules
+            # There must be a better way...
 
-        def save_config(self):
-            # Configuration save must be done atomically, because there are potentially multiple threads
-            # reading and writing to this file.  Create a tmpfile on the SD card.
-            # 'delete' must be set to False as 'os.replace' will effectively delete the file from underneath of
-            # the tempfile wrapper.
-            with tempfile.NamedTemporaryFile(mode='w+b', delete=False, dir=os.path.expanduser('~')) as tmp:
-                _LOGGER.info("Writing config to tempfile: %s" % tmp.name)
-                tmp.write(json.dumps(self.config, indent=2).encode('utf-8'))
-                tmp.flush()
-                os.fsync(tmp.fileno())
-                # It's possible that we can't replace the file because the file has been opened by another thread.
-                # To resolve this condition, we can block for a little bit until we can write it.
-                # There's a possibility of a deadlock here if two writers end up waiting for each other, so we 
-                # give up after 1 second and fail to write the file if that happens.  
-                # (This might not be an issue on POSIX, but I'm not 100% sure.)
-                for n in range(100):
-                    try:
-                        os.replace(tmp.name, globalState.stateDict["eo_config_file"])
-                        break
-                    except (OSError, IOError):
-                        time.sleep(0.01)
-                if n == 99:
-                    _LOGGER.error("Failed to sync the config due to a blocking I/O operation or another error")
-                    os.unlink(tmp.name) # Delete the temporary file, to avoid cluttering up tmpfs
-                os.chmod(globalState.stateDict["eo_config_file"], 0o0777)
-                
-            with open(globalState.stateDict["eo_config_file"], "w") as f:
-                f.write(json.dumps(self.config, indent=2))
+            self.config={}
+            for modulename,module in globalState.stateDict["_moduleDict"].items():
+                    self.config[modulename]=module.pluginConfig
+
+            return True
+            
 
         def do_GET(self):
             ################################
@@ -192,16 +147,15 @@ class configserverClassPlugin:
                 util.restart_python()
                 
             ###################################################################
-            ## expose the configuration from the config file to the api
+            ## expose the configuration the running config to the api
             ## we can also use POST/setconfig to write the configuration
             if self.path == "/getconfig":
-                with open(globalState.stateDict["eo_config_file"], "r") as f:
-                    parsed_config = json.load(f)
-                    self.send_response(200)
-                    self.send_header("Content-type", "application/json")
-                    self.end_headers()
-                    self.wfile.write(json.dumps(parsed_config).encode("utf-8"))
-                    return
+                self.load_config()
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(self.config).encode("utf-8"))
+                return
             
             ###################################################################
             ## expose the logger module metrics to the api, if that is available
@@ -336,22 +290,6 @@ class configserverClassPlugin:
             self.send_error(404, "Not Found")
             return
         
-        def merge(self,a: dict, b: dict, path=[]):
-            """Recursive merge of dictionary/lists
-            @TODO: More testing required. This might be buggy."""
-            for key in b:
-                if key in a:
-                    if isinstance(a[key], dict) and isinstance(b[key], dict):
-                        self.merge(a[key], b[key], path + [str(key)])
-                    elif isinstance(a[key], list) and isinstance(b[key], list):
-                        for i in range(len(b[key])):
-                            self.merge(a[key][i], b[key][i], path+[str(i)])
-                    elif a[key] != b[key]:
-                        a[key] = b[key]
-                else:
-                    a[key] = b[key]
-            return a  
-
         def do_POST(self):
             _LOGGER.info("do_POST(%s)" % self.path)
             
@@ -365,32 +303,28 @@ class configserverClassPlugin:
                 content_length = int(self.headers['Content-Length'])
                 post_data = json.loads(self.rfile.read(content_length).decode('utf-8'))
 
-                print(post_data)
-                if not "chargeroptions" in post_data:
-                    post_data["chargeroptions"]={}
-                post_data["chargeroptions"]["config_update_time"] = str(datetime.datetime.now())
-                
-                self.load_config()
-                self.merge(self.config, post_data)
-                _LOGGER.info('Merged config %r' % self.config)
+                # write configuration update to sqlite
+                globalState.configDB.setDict(post_data,False)
+                print(globalState.configDB)
 
-                try:
-                    self.save_config()
+                # Now instruct all modules to reconfigure themselves. Probably overkill
+                newconfig={}
+                for modulename,module in globalState.stateDict["_moduleDict"].copy().items():
+                    module.configure(globalState.configDB.get(modulename))
+                    newconfig[modulename]=module.pluginConfig
 
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"status": "success", "config": self.config}).encode("utf-8"))
-                    _LOGGER.info('Config saved')
-                    return
-                except Exception as e:
-                    _LOGGER.error("Unable to write to config file:"+globalState.stateDict["eo_config_file"],repr(e))
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"status": "failed", "config" : self.config}).encode("utf-8"))
-                    _LOGGER.info('Config save error: %r' % e)
-                    return
+                # reload local config from modules
+                # note there is a chance/probability that the modules may not have seen the configuration
+                # update yet, as configure() will only be run on the next main loop iteration after the 
+                # setDict() has completed, so we probably don't want to *depend* on that.
+                #self.load_config()
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success", "config": newconfig}).encode("utf-8"))
+                _LOGGER.info('Config saved')
+                return
+
             elif self.path == "/setsettings":
                 ##################################
                 # API for syncing settings via POST variables.
@@ -400,28 +334,27 @@ class configserverClassPlugin:
                 content_length = int(self.headers['Content-Length'])
                 post_data = self.rfile.read(content_length).decode('utf-8')
                 post_vars = urllib.parse.parse_qsl(post_data)
-                new_dict = {}
                 
                 # It is legal for POST keys to be duplicated; that shouldn't happen when saving settings, but #
                 # even if it does, we'll just take the last value we see.
-                for key, value in post_vars:
-                    _LOGGER.info("%r : %r" % (key, value))
-                    util.set_nested_value_from_colon_key(new_dict, key, value)
-                    
-                _LOGGER.info("Result dict: %r" % new_dict)
+
+                modulelist=[]
+                for modulekey, value in post_vars:
+                    module,key=modulekey.split(':',1)
+                    # keep a list of modules that we're touching
+                    if module not in modulelist:
+                        modulelist.append(module)
+                    _LOGGER.debug("%r : %r : %r" % (module, key, value))
+                    globalState.configDB.set(module,key,value)
                 
-                self.load_config()
-                self.merge(self.config, new_dict)
-                self.save_config()
+                # Now instruct all modules to reconfigure themselves. Probably overkill
+                newconfig={}
+                for modulename,module in globalState.stateDict["_moduleDict"].copy().items():
+                    module.configure(globalState.configDB.get(modulename))
+                    newconfig[modulename]=module.pluginConfig
+
                 self.set_context()
-                _LOGGER.info("New config: %r" % self.config)
-                
-                # Force all modules in the config set to update
-                for modulename, module in globalState.stateDict["_moduleDict"].items():
-                    if hasattr(module, "configure"):
-                        _LOGGER.info("Force module %s to update config" % modulename)
-                        module.configure(self.config[modulename])
-                
+               
                 self.send_response(303) # 303 See Other, used after POST request to indicate resubmission should not occur
                 self.send_header('Location', '/settings.html?toast2success=1')
                 self.end_headers()
@@ -434,43 +367,50 @@ class configserverClassPlugin:
                 try:
                     post_data = json.loads(self.rfile.read(content_length).decode('utf-8'))
                     new_mode = str(post_data["newmode"]).lower().strip()
-                    self.load_config()
+                    #self.load_config()
                     
                     _LOGGER.info("Set mode request: '%s'" % new_mode)
                 
                     if new_mode == "schedule":
                         # Disable all modules except the reserved ones
-                        self.switch_modules(0)
+                        #self.switch_modules(0)
                         # Enable the scheduler
-                        self.config["scheduler"]["enabled"] = 1
+                        globalState.configDB.set("scheduler","enabled",True)
+                        globalState.configDB.set("switch","enabled",False)
+
                     elif new_mode == "manual":
                         # Disable all modules except the reserved ones
-                        self.switch_modules(0)
+                        #self.switch_modules(0)
                         # Enable the switch module
-                        self.config["switch"]["enabled"] = 1
+                        globalState.configDB.set("scheduler","enabled",False)
+                        globalState.configDB.set("switch","enabled",True)
+
                     elif new_mode == "remote":
                         # Disable the switch & schedule module
-                        self.config["scheduler"]["enabled"] = 0
-                        self.config["switch"]["enabled"] = 0
+                        globalState.configDB.set("scheduler","enabled",False)
+                        globalState.configDB.set("switch","enabled",False)
+
                         # Enable all modules, don't touch the reserved ones.
-                        self.switch_modules(1)
+                        #self.switch_modules(1)
                     else:
                         raise RuntimeError("unsupported mode %s" % new_mode)
                         
-                    # Save the mode string
-                    if "chargeroptions" not in self.config:
-                        self.config["chargeroptions"] = {}
-                    self.config["chargeroptions"]["mode"] = new_mode
-                    _LOGGER.info("New config: %s" % repr(self.config))
                     
                     # Sync to disk.  This is required to keep the scheduler up to date,
                     # which is probably a limitation that should be fixed eventually.
-                    self.save_config()
+                    # write configuration update to sqlite
+                    globalState.configDB.set("chargeroptions","mode",new_mode)
                     
+                    # Now instruct all modules to reconfigure themselves. Probably overkill
+                    newconfig={}
+                    for modulename,module in globalState.stateDict["_moduleDict"].copy().items():
+                        module.configure(globalState.configDB.get(modulename))
+                        newconfig[modulename]=module.pluginConfig
+
                     self.send_response(200)
                     self.send_header('Content-type', 'application/json')
                     self.end_headers()
-                    self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
+                    self.wfile.write(json.dumps({"status": "success", "config": newconfig}).encode("utf-8"))
                     return
                 except Exception as e:
                     _LOGGER.error("Error passing mode request: %s" % repr(e))
