@@ -27,7 +27,7 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 </p>
 
 5. *IMPORTANT* Once the new SD card has been created, remove power to your EO box by disconnecting it or by switching off the relevant breaker in your consumer unit. Please ensure that it is completely isolated from the mains electricity. *If you are unsure that the electricity is fully disconnected, then do not proceed*.
-6. Open the EO mini by loosening the four captive screws that are visible on the front of the case (you may need to remove the four rubber covers, if they are fitted), and you will see the RPi Zero inside. You can now switch the SD cards, keeping the original safe.
+6. Open the EO mini by loosening the four captive screws that are visible on the front of the case (you may need to remove the four rubber covers, if they are fitted), and you will see the RPi Zero inside. You can now switch the SD cards, keeping the original safe. Whilst you are doing this, take care to not accidentally dislodge the cables connecting the raspberry pi board with the main control board in the lid of the unit.
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/5488462c-a5c6-44c0-843b-16ec874e846a" style="width:25%; height:auto;" />
@@ -42,13 +42,22 @@ To download the latest
 ~~~~
 curl -qLl https://github.com/minceheid/openeo/archive/refs/heads/main.tar.gz |tar xzf -
 mv openeo-main openeo
-NODOWNOAD=1 openeo/deploy.bash
+NODOWNLOAD=1 openeo/deploy.bash
 sudo reboot
 ~~~~
 
 Once the RPi Zero reboots, it should all be working. You should be able to point your browser at the IP address (or you can use mDNS to navigate to _hostname_.local - where _hostname_ is whichever hostname you set in step 3 above). You should see the configuration web page, showing the charger status, and giving you control.
 
 *Note* - at this time, only the **_Schedule_** mode and **_Manual_** mode is available. We will be adding **_Remote_** (OCPP) shortly.
+## Troubleshooting
+After installation - if you recieve a red "Controller Error" message that persists, then this indicates that the Raspberry Pi has not been able to establish serial communication with the charger contol board. With the power isolated.
+
+<p align="center"><img src="https://github.com/user-attachments/assets/bcc180dc-f8c1-4e36-a994-a1190989f947" style="width:50%; height:auto;"/></p>
+
+1. turn power to the charger off at the consumer unit
+2. take the cover off
+3. check carefully that the cable that runs between the Raspberry Pi board and the power board (the one with the big relay) is fully and correctly seated on both ends
+4. assembly is the reverse of disassembly
 
 ## Important Notes
 The openeo charger cannot currently accommodate the following features:
