@@ -17,6 +17,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from urllib.error import URLError, HTTPError
 from urllib.request import urlopen
@@ -140,19 +141,48 @@ def prepare_release_dir():
     os.chdir(RELEASEDIR)
 
 
+
 def download_and_extract(url: str, destdir: str):
-    """Download and extract a tarball from GitHub."""
+    """Download and extract a tarball from GitHub, retrying on 403 errors."""
+
     if os.path.exists(destdir):
         print(f"Removing existing installation at {destdir}")
-        run_command(["sudo", "rm", "-rf", destdir])
+        subprocess.run(["sudo", "rm", "-rf", destdir], check=True)
 
-    cmd = ["curl", "-sSL", url]
-    try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        subprocess.run(["tar", "xvzf", "-"], stdin=proc.stdout, check=True)
-    except subprocess.CalledProcessError:
-        raise DeploymentError(f"Failed to extract tarball from {url}")
+    retries = 3
+    for attempt in range(1, retries + 1):
+        print(f"Attempt {attempt} to download {url}...")
 
+        # Run curl with -f (fail silently on HTTP errors) and pipe into tar
+        try:
+            curl_cmd = ["curl", "-sSL", "-f", url]
+            tar_cmd = ["tar", "xvzf", "-"]
+
+            curl_proc = subprocess.Popen(curl_cmd, stdout=subprocess.PIPE)
+            tar_proc = subprocess.Popen(tar_cmd, stdin=curl_proc.stdout)
+            curl_proc.stdout.close()  # allow curl_proc to receive SIGPIPE if tar_proc exits
+            tar_proc.communicate()
+
+            if curl_proc.wait() == 0 and tar_proc.returncode == 0:
+                print("Download and extraction successful.")
+                return
+            else:
+                # If curl fails, check if it was 403
+                curl_returncode = curl_proc.returncode
+                if curl_returncode == 22:  # curl exit code 22 = HTTP error
+                    print("Received HTTP error (possibly 403). Waiting 60s before retry...")
+                    if attempt < retries:
+                        time.sleep(60)
+                        continue
+                    else:
+                        raise DeploymentError(f"Failed to download {url} after {retries} attempts.")
+                else:
+                    raise DeploymentError(f"curl or tar failed (curl={curl_returncode}, tar={tar_proc.returncode})")
+
+        except subprocess.CalledProcessError as e:
+            raise DeploymentError(f"Command failed: {e}")
+
+    raise DeploymentError(f"Failed to download and extract {url} after {retries} attempts.")
 
 def write_release_file(destdir: str, release_name: str):
     """Write release/branch name into release.txt inside extracted dir."""
