@@ -4,7 +4,7 @@ OpenEO Class for handling configuration get/set
 """
 #################################################################################
 
-import sqlite3,logging,json
+import sqlite3,logging,json,os
 from threading import Lock
 
 # logging for use in this module
@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 class openeoConfigClass:
 
     DB_FILE = "config.db"
-    JSON_FILE = "config.json_new"
+    JSON_FILE = "config.json"
     CONFIG_TABLE = "configuration"
 
     def exists(self, module):
@@ -166,16 +166,23 @@ class openeoConfigClass:
                 for key,value in entriesDict.items():
                     self.set(module,key,value)
 
-        '''
-        # Load initial config from JSON if database is empty
-        self.cursor.execute(f"SELECT COUNT(*) FROM {self.CONFIG_TABLE}")
-        if self.cursor.fetchone()[0] == 0 and os.path.exists(self.JSON_FILE):
-            with open(self.JSON_FILE, 'r') as f:
-                initial_config = json.load(f)
-                for module, entries in initial_config.items():
-                    for key, value in entries.items():
-                        self.setConfig(module, key, value)
-        '''
+        #################
+        # Load initial config from JSON file if it exists. Once done,
+        # then we can rename the JSON file to prevent reloading it in the future.
+        if os.path.exists(self.JSON_FILE):
+            try:
+                with open(self.JSON_FILE, 'r') as f:
+                    initial_config = json.load(f)
+                    for module, entries in initial_config.items():
+                        for key, value in entries.items():
+                            _LOGGER.info(f"applying configuration from {self.JSON_FILE} for {module}: {key} = {value}")
+                            self.set(module, key, value)
+                # Rename the JSON file to prevent reloading it in the future
+                os.rename(self.JSON_FILE, self.JSON_FILE + "_loaded")
+            except json.JSONDecodeError as e:
+                _LOGGER.error(f"Failed to decode JSON config file '{self.JSON_FILE}': {e}")
+            except Exception as e:
+                _LOGGER.error(f"Error loading initial config from '{self.JSON_FILE}': {e}")
 
         # Set changed to True, so that configured modules will load in the main loop
         self.changed=True
