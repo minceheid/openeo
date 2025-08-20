@@ -14,7 +14,8 @@ Configuration example:
 """
 #################################################################################
 import re, logging, threading, json, http.server, socketserver, datetime, socket, os
-import copy, time, numbers, urllib.parse, tempfile
+import copy, time, numbers, urllib.parse, subprocess
+
 import globalState, util
 from lib.PluginSuperClass import PluginSuperClass
 
@@ -156,7 +157,34 @@ class configserverClassPlugin(PluginSuperClass):
                 self.end_headers()
                 self.wfile.write(json.dumps(self.config).encode("utf-8"))
                 return
-            
+            ###################################################################
+            ## expose the logger module metrics to the api, if that is available
+            ## in cfg
+            if re.search("^/debugdata",self.path):
+                results = {}
+                for cmd in ["whoami",
+                            "df -k",
+                            "netstat -4l",
+                            "ps -ef | grep openeo",
+                            "free -h",
+                            "systemctl status openeo --no-pager  --output=short-precise",
+                            "ls -l /home/pi/releases/"]:
+                    try:
+                        result = subprocess.run(
+                            cmd,
+                            shell=True,           # allows string commands
+                            capture_output=True,  # capture stdout/stderr
+                            text=True,            # decode to string
+                            check=True            # raise exception if exit code != 0
+                        )
+                        results[cmd] = result.stdout.strip()
+                    except subprocess.CalledProcessError as e:
+                        results[cmd] = f"Error: {e.stderr.strip() or e}"
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(results).encode("utf-8"))
+                return
             ###################################################################
             ## expose the logger module metrics to the api, if that is available
             ## in cfg
