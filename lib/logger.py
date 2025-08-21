@@ -64,7 +64,11 @@ class loggerClassPlugin(PluginSuperClass):
         # charts requested
         globalState.stateDict["_dataLog"]=databufferClass(self.pluginConfig,{"eo_power_requested":"Power Requested (kW)",
                                                        "eo_power_delivered":"Power Delivered (kW)",
-                                                       "eo_charger_state_id":"Charger State"})
+                                                       "eo_charger_state_id":"Charger State",
+                                                       "eo_p1_current":"P1 Current (A)",
+                                                       "eo_p2_current":"P2 Current (A)",
+                                                       "eo_p3_current":"P3 Current (A)"
+                                                       })
 
 
 #################################################################################
@@ -74,13 +78,13 @@ class databufferClass:
     def __str__(self):
         return json.dumps(self.databuffer,default=str)
     
-    def get_plotly(self,since=None):
-        myData=self.get_data(since)
+    def get_plotly(self,since=None,seriesList=None):
+        myData=self.get_data(since,seriesList)
 
         series=[]
 
         for key,value in myData.items():
-            if key!="time":
+            if key!="time" and (seriesList is None or key in seriesList):
                 if key=="eo_charger_state_id":
                     series.append({
                         "type": "line",
@@ -100,7 +104,7 @@ class databufferClass:
         return series
 
 
-    def get_data(self,since=None):
+    def get_data(self,since=None,seriesList=None):
         # Get and return raw data, with optionally providing a subset based on time.
         # the idea there is to allow dynamic updates to a chart, without having to transfer
         # the whole dataset on each update. The javascript could poll based on the maximum
@@ -131,8 +135,9 @@ class databufferClass:
         newdatabuffer={}
 
         for key,value in self.databuffer.items():
-            newdatabuffer[key]=[] if i==0 else value[-i:]   # [-0:] will return whole list, so if required
-                                                            # to return an empty list here 
+            if seriesList is None or key in seriesList or key=="time":
+                newdatabuffer[key]=[] if i==0 else value[-i:]   # [-0:] will return whole list, so if required
+                                                                # to return an empty list here 
 
         return newdatabuffer
 

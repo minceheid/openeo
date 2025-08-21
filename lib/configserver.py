@@ -194,28 +194,30 @@ class configserverClassPlugin(PluginSuperClass):
                     query_components = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                     query_type = query_components.get('type', [''])[0]  # Default to empty string if not found
                     query_since = query_components.get('since', [''])[0]  # Default to empty string if not found
+                    query_series = query_components.get('series', [''])[0]  # Default to None if not found
+
                     try:
                         query_since = datetime.datetime.strptime(query_since,"%Y-%m-%d %H:%M:%S.%f")
                     except ValueError:
                         query_since=None
+
+                    try:
+                        query_series = query_series.split(",")
+                    except ValueError:
+                        query_series=None
+                    if query_series==['']:
+                        query_series=None
 
                     self.send_response(200)
                     self.send_header("Content-type", "application/json")
                     self.end_headers()
 
                     if (query_type=="plotly"):
-                        if (query_since==""):
-                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_plotly(),default=str).encode("utf-8"))
-                            return
-                        else:
-                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_plotly(query_since),default=str).encode("utf-8"))
+
+                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_plotly(query_since,query_series),default=str).encode("utf-8"))
                             return
                     else:
-                        if (query_since==""):
-                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_data(),default=str).encode("utf-8"))
-                            return
-                        else:
-                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_data(query_since),default=str).encode("utf-8"))
+                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_data(query_since,query_series),default=str).encode("utf-8"))
                             return 
 
                 else:
@@ -333,7 +335,6 @@ class configserverClassPlugin(PluginSuperClass):
 
                 # write configuration update to sqlite
                 globalState.configDB.setDict(post_data,False)
-                print(globalState.configDB)
 
                 # Now instruct all modules to reconfigure themselves. Probably overkill
                 newconfig={}
