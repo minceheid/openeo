@@ -14,7 +14,8 @@ Configuration example:
 """
 #################################################################################
 import re, logging, threading, json, http.server, socketserver, datetime, socket, os
-import copy, time, numbers, urllib.parse, tempfile
+import copy, time, numbers, urllib.parse, subprocess
+
 import globalState, util
 from lib.PluginSuperClass import PluginSuperClass
 
@@ -156,7 +157,34 @@ class configserverClassPlugin(PluginSuperClass):
                 self.end_headers()
                 self.wfile.write(json.dumps(self.config).encode("utf-8"))
                 return
-            
+            ###################################################################
+            ## expose the logger module metrics to the api, if that is available
+            ## in cfg
+            if re.search("^/debugdata",self.path):
+                results = {}
+                for cmd in ["whoami",
+                            "df -k",
+                            "netstat -4l",
+                            "ps -ef | grep openeo",
+                            "free -h",
+                            "systemctl status openeo --no-pager  --output=short-precise",
+                            "ls -l /home/pi/releases/"]:
+                    try:
+                        result = subprocess.run(
+                            cmd,
+                            shell=True,           # allows string commands
+                            capture_output=True,  # capture stdout/stderr
+                            text=True,            # decode to string
+                            check=True            # raise exception if exit code != 0
+                        )
+                        results[cmd] = result.stdout.strip()
+                    except subprocess.CalledProcessError as e:
+                        results[cmd] = f"Error: {e.stderr.strip() or e}"
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(results).encode("utf-8"))
+                return
             ###################################################################
             ## expose the logger module metrics to the api, if that is available
             ## in cfg
@@ -166,28 +194,30 @@ class configserverClassPlugin(PluginSuperClass):
                     query_components = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                     query_type = query_components.get('type', [''])[0]  # Default to empty string if not found
                     query_since = query_components.get('since', [''])[0]  # Default to empty string if not found
+                    query_series = query_components.get('series', [''])[0]  # Default to None if not found
+
                     try:
                         query_since = datetime.datetime.strptime(query_since,"%Y-%m-%d %H:%M:%S.%f")
                     except ValueError:
                         query_since=None
+
+                    try:
+                        query_series = query_series.split(",")
+                    except ValueError:
+                        query_series=None
+                    if query_series==['']:
+                        query_series=None
 
                     self.send_response(200)
                     self.send_header("Content-type", "application/json")
                     self.end_headers()
 
                     if (query_type=="plotly"):
-                        if (query_since==""):
-                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_plotly(),default=str).encode("utf-8"))
-                            return
-                        else:
-                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_plotly(query_since),default=str).encode("utf-8"))
+
+                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_plotly(query_since,query_series),default=str).encode("utf-8"))
                             return
                     else:
-                        if (query_since==""):
-                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_data(),default=str).encode("utf-8"))
-                            return
-                        else:
-                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_data(query_since),default=str).encode("utf-8"))
+                            self.wfile.write(json.dumps(globalState.stateDict["_dataLog"].get_data(query_since,query_series),default=str).encode("utf-8"))
                             return 
 
                 else:
@@ -305,7 +335,6 @@ class configserverClassPlugin(PluginSuperClass):
 
                 # write configuration update to sqlite
                 globalState.configDB.setDict(post_data,False)
-                print(globalState.configDB)
 
                 # Now instruct all modules to reconfigure themselves. Probably overkill
                 newconfig={}
