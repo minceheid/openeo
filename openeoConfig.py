@@ -12,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class openeoConfigClass:
 
-    DB_FILE = "config.db"
+    DB_FILE = "/home/pi/etc/config.db"
     JSON_FILE = "config.json_new"
     CONFIG_TABLE = "configuration"
 
