@@ -17,9 +17,9 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 <img src="https://github.com/user-attachments/assets/db492985-58e3-4b18-8bb2-5eb0fb31cb6d" style="width:25%; height:auto;" />
 </p>
 
-3. In the Raspberry PI imager "General" settings - set your Hostname, Username/Password, Wirelss LAN and Locale settings as appropriate. There are no restrictions on what to set your hostname and username, though I tend to go with "eo".
+3. In the Raspberry PI imager "General" settings - set your Hostname, Username/Password, Wirelss LAN and Locale settings as appropriate. There are no restrictions on what to set your hostname, but you must create a user of "pi"
 
-<p align="center"><img alt="Screenshot 2025-07-19 142812" src="https://github.com/user-attachments/assets/f3db2cc0-9055-4817-b135-2864c760de57" style="width:25%; height:auto;" /></p>
+<p align="center"><img  alt="image" src="https://github.com/user-attachments/assets/da0e365a-141b-4f70-8be8-5f23a900dfa3" style="width:25%; height:auto;"/></p>
 
 4. In the Raspberry PI imager "Services" settings - ensure that SSH is enabled, and I would recommend that public-key authentication is enabled, and you should add your SSH public key as approprate.
 
@@ -27,7 +27,7 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 </p>
 
 5. *IMPORTANT* Once the new SD card has been created, remove power to your EO box by disconnecting it or by switching off the relevant breaker in your consumer unit. Please ensure that it is completely isolated from the mains electricity. *If you are unsure that the electricity is fully disconnected, then do not proceed*.
-6. Open the EO mini by loosening the four captive screws that are visible on the front of the case (you may need to remove the four rubber covers, if they are fitted), and you will see the RPi Zero inside. You can now switch the SD cards, keeping the original safe.
+6. Open the EO mini by loosening the four captive screws that are visible on the front of the case (you may need to remove the four rubber covers, if they are fitted), and you will see the RPi Zero inside. You can now switch the SD cards, keeping the original safe. Whilst you are doing this, take care to not accidentally dislodge the cables connecting the raspberry pi board with the main control board in the lid of the unit.
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/5488462c-a5c6-44c0-843b-16ec874e846a" style="width:25%; height:auto;" />
@@ -35,27 +35,28 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 </p>
 
 7. Close the EO enclosure, and apply power to it. The RPi Zero should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take 10-15 minutes to fully boot before it is seen on the network.
-8. Log onto your account on the RPi Zero via SSH over the WiFi network, and run the following three commands. This will download a deployment script from github, run it to install the software onto your RPi, then reboots your RPi to allow the software to finish configuring and start up.
+8. Log onto your account on the RPi Zero via SSH over the WiFi network, and run the following commands. This will download the software github and run the installation process, then reboots your RPi to allow the software to finish configuring and start up.
 
-To download the latest
-
+(this is an interim deployment process whilst we continue to develop it)
 ~~~~
-wget https://raw.githubusercontent.com/minceheid/openeo/refs/heads/main/deploy.bash
-bash deploy.bash
-sudo reboot
-~~~~
-
-To download a specific version (you will need to migrate your config.json by hand)
-
-~~~~
-wget https://raw.githubusercontent.com/minceheid/openeo/refs/heads/main/deploy.bash
-bash deploy.bash v0.4
+curl -qLl https://github.com/minceheid/openeo/archive/refs/heads/main.tar.gz |tar xzf -
+mv openeo-main openeo
+NODOWNLOAD=1 openeo/deploy.bash
 sudo reboot
 ~~~~
 
 Once the RPi Zero reboots, it should all be working. You should be able to point your browser at the IP address (or you can use mDNS to navigate to _hostname_.local - where _hostname_ is whichever hostname you set in step 3 above). You should see the configuration web page, showing the charger status, and giving you control.
 
 *Note* - at this time, only the **_Schedule_** mode and **_Manual_** mode is available. We will be adding **_Remote_** (OCPP) shortly.
+## Troubleshooting
+After installation - if you recieve a red "Controller Error" message that persists, then this indicates that the Raspberry Pi has not been able to establish serial communication with the charger contol board. With the power isolated.
+
+<p align="center"><img src="https://github.com/user-attachments/assets/bcc180dc-f8c1-4e36-a994-a1190989f947" style="width:50%; height:auto;"/></p>
+
+1. turn power to the charger off at the consumer unit
+2. take the cover off
+3. check carefully that the cable that runs between the Raspberry Pi board and the power board (the one with the big relay) is fully and correctly seated on both ends
+4. assembly is the reverse of disassembly
 
 ## Important Notes
 The openeo charger cannot currently accommodate the following features:

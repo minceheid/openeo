@@ -42,11 +42,11 @@ class HomeHub(object):
                 stopbits=serial.STOPBITS_ONE,
                 bytesize=serial.EIGHTBITS,
                 timeout=0.4 ) 
-        self.flush_serial(self.EOSerial)
+        self.flush_serial()
         _LOGGER.debug("EO COMMS - HomeHub initialised")
 
     def tx(self,command):
-        self.flush_serial(self.EOSerial)
+        self.flush_serial()
         command += '\r'
         self.EOSerial.write(command.encode("ascii"))
     

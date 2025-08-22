@@ -184,6 +184,7 @@ class openeoConfigClass:
             except Exception as e:
                 _LOGGER.error(f"Error loading initial config from '{self.JSON_FILE}': {e}")
 
+
         # Set changed to True, so that configured modules will load in the main loop
         self.changed=True
     
