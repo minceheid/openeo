@@ -30,7 +30,6 @@ class schedulerClassPlugin(PluginSuperClass):
 
     def configure(self,configParam):
         super().configure(configParam)
-
         self.parsedSchedule=[]
         for n, i in enumerate(self.pluginConfig["schedule"]):
             sched = {}

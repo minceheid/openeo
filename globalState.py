@@ -20,9 +20,6 @@ except:
     appVer = "0.0"
     
 stateDict={
-    # Name of the Configuration File
-    "eo_config_file": "config.json", 
-
     # amps_requested: This is the number of Amps that will are requested by the polling
     # of the plugin modules (e.g. time scheduler)
     # amps_limit: This is the final amps limit after it has been moderated by the charger
