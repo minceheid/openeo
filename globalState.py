@@ -7,7 +7,7 @@ Values don't *need* to be predeclared here, but probably important that we docum
 critical ones.
 """
 
-import logging
+import logging, os
 from openeoConfig  import openeoConfigClass
 
 _LOGGER = logging.getLogger(__name__)
@@ -58,7 +58,10 @@ stateDict={
     "eo_serial_errors": 0,
     
     # Application (openeo) version
-    "app_version" : appVer
+    "app_version" : appVer,
+    
+    # This confirms the commit id of the branch or version that is running
+    "app_deploy_directory" : os.path.basename(os.path.realpath(os.getcwd()))
 }
 
 

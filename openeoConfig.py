@@ -12,8 +12,8 @@ _LOGGER = logging.getLogger(__name__)
 
 class openeoConfigClass:
 
-    DB_FILE = "config.db"
-    JSON_FILE = "config.json"
+    DB_FILE = "/home/pi/etc/config.db"
+    JSON_FILE = "/home/pi/etc/config.json"
     CONFIG_TABLE = "configuration"
 
     def exists(self, module):
