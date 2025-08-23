@@ -29,7 +29,7 @@ import importlib
 
 import globalState, util
 from openeoCharger import openeoChargerClass
-from openeoConfig  import openeoConfigClass
+#from openeoConfig  import openeoConfigClass
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
@@ -40,13 +40,16 @@ def main():
     charger = openeoChargerClass()
         
     # Set logging level from config file.  Use the common dict to look up log levels to 
-    # avoid a possible eval exploit from crafted config json.
+    # avoid a possible eval exploit from crafted config json. Note that we're reading this directly
+    # from the sqlite database out of necessity because the chargeroptions module is not yet
+    # initialised. Once the modules are initialised, most config access should be done through
+    # the module.
     logLevel = str(globalState.configDB.get("chargeroptions","log_level","info")).upper()
 
     if logLevel in logging._nameToLevel:
         _LOGGER.setLevel(logging._nameToLevel[logLevel])
     else:
-        _LOGGER.error("Invalid log level "+logLevel+"in config file - ignoring")
+        _LOGGER.error("Invalid log level "+logLevel+"in config - ignoring")
 
     # Main loop
     loop = 0
@@ -112,6 +115,20 @@ def main():
         _LOGGER.info("Amps Requested: %d amps (overall limit: %d amps, always supply: %r), Charger State: %s" % \
             (int(globalState.stateDict["eo_amps_requested"]), globalState.stateDict["eo_overall_limit_current"], globalState.stateDict["eo_always_supply_current"],
              globalState.stateDict["eo_charger_state"]))
+
+
+        ############
+        # Handle Limiting from solar CT data
+        if globalState.stateDict["_moduleDict"]["chargeroptions"].get_config("limit_current_to_solar_output") and globalState.stateDict["eo_amps_requested"]>globalState.stateDict["eo_p3_current"]:
+            _LOGGER.debug("CT - Solar Limiting")
+            globalState.stateDict["eo_amps_requested"]=min(globalState.stateDict["p3_current"],32)
+
+        ############
+        # Handle Limiting for Load Management CT data
+        max_current_available=globalState.stateDict["_moduleDict"]["chargeroptions"].get_config("overall_property_limit_current")-globalState.stateDict["eo_p2_current"]
+        if globalState.stateDict["eo_amps_requested"]>max_current_available:
+            _LOGGER.debug("CT - Load Management Limiting")
+            globalState.stateDict["eo_amps_requested"]=min(max_current_available,32)
 
         # In order for us to find the status of the charger (e.g. whether a car is connected), we
         # need to set the amp limit first as part of the request. Action may be taken off the back of that 

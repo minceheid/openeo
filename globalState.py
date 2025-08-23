@@ -1,6 +1,8 @@
 #################################################################################
 """
-This is the place for globals. For consistency all globals should be prefixed with "eo_"
+This is the place for global shared values. Only ephermeral values should be stored here
+configuration settings should be persisted in the configuration database and set as a default
+value where necessary. For consistency all globals should be prefixed with "eo_"
 and any "private" globals that should not be exported through public means 
 (e.g. Prometheus or Home Assistant exporters) should be prefixed with underscore.
 Values don't *need* to be predeclared here, but probably important that we document the
@@ -31,8 +33,10 @@ stateDict={
     "eo_charger_state_id":0,
     "eo_charger_state":"",
 
-    # Phase 1 Current (Amps)
-    "eo_p1_current":0,
+    # CT Sensor Current (Amps)
+    "eo_p1_current":0,  #current delivered to the vehicle
+    "eo_p2_current":0,  #load management?
+    "eo_p3_current":0,  #solar?
     # Power Delivered and requested (kW). Calculated from current and voltage
     "eo_power_delivered":0,
     "eo_power_requested":0,

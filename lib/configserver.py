@@ -161,7 +161,7 @@ class configserverClassPlugin(PluginSuperClass):
             ## expose the logger module metrics to the api, if that is available
             ## in cfg
             if re.search("^/debugdata",self.path):
-                results = {}
+                results = {"configDB":str(globalState.configDB)}
                 for cmd in ["whoami",
                             "df -k",
                             "netstat -4l",
