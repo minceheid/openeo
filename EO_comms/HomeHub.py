@@ -57,7 +57,7 @@ class HomeHub(object):
         return bytes(data)
     
 
-    def get_hat_readings(self,address):
+    def get_hat_readings(self,address="BE00BE93"):
         """
         Retrieves CT readings. Requires a hardware address.
         """
@@ -90,7 +90,7 @@ class HomeHub(object):
                     ct_readings[f"p{index}"]=None
                 else:
                     # decode packet
-                    ct_readings[f"p{index}"]= int.from_bytes(response[8:12], "big")
+                    ct_readings[f"p{index}"]= int.from_bytes(response[8:12], "big")/1000
         
         # Switch baud and timeout back to what it was previously
         self.EOSerial.baudrate = 115200

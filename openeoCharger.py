@@ -144,12 +144,24 @@ class openeoChargerClass:
             self.persistant_ID = result[53:61]
             self.watchdog_current = result[61:64]
             self.watchdog_time = result[64:67]
-            self.p1_current = result[67:70]
-            self.p2_current = result[70:73]
-            self.p3_current = result[73:76]
             self.eco_7_switch = result[76]
             self.checksum = result[77:79]
+
+            if MiniPro2.identify_hardware():
+                # For the Mini Pro 2, the CT readings are provided by the firmware, so
+                # we can just interpret them here
+                self.p1_current = round(int(result[67:70], 16) / 10, 2)
+                self.p2_current = round(int(result[70:73], 16) / 10, 2)
+                self.p3_current = round(int(result[73:76], 16) / 10, 2)
+            else:
+                # For the Home Hub, we need to query CT readings separately
+                ct=self.rs485.get_hat_readings()
+                self.p1_current=ct["p1"]
+                self.p2_current=ct["p2"]
+                self.p3_current=ct["p3"]
+
             return True
+        
         return None
 
 
