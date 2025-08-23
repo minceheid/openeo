@@ -68,8 +68,8 @@ After installation - if you recieve a red "Controller Error" message that persis
 
 ## openeo_download.py
 The openeo_download.py program helps to manage the download and deployment of the software. Run with no parameters, it will locate and download/install the latest release. Parameters available to further assist are:
-* --list : list available releases or branches (for dev use only)
-* --release <name>: install the given release. This might allow for install of an earlier release. The <name> can also be a branch name, in which case it will download and try to deploy the head of the named branch.   
+* ```--list``` : list available releases or branches (for dev use only)
+* ```--release <name>```: install the given release. This might allow for install of an earlier release, for example. The ```<name>``` can also be a branch name, in which case it will download and try to deploy the head of the named branch, though this is intended for development use only.   
 
 ## Important Notes
 The openeo charger cannot currently accommodate the following features:

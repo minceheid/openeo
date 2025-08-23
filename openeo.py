@@ -140,6 +140,7 @@ def main():
                 ),
                 2,
             )
+            globalState.stateDict["eo__firmware_version"] = int(charger.version, 16)
             globalState.stateDict["eo_p1_current"] = round(int(charger.p1_current, 16) / 10, 2)
             globalState.stateDict["eo_p2_current"] = round(int(charger.p2_current, 16) / 10, 2)
             globalState.stateDict["eo_p3_current"] = round(int(charger.p3_current, 16) / 10, 2)
