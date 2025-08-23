@@ -125,7 +125,7 @@ def main():
 
         ############
         # Handle Limiting for Load Management CT data
-        max_current_available=globalState.stateDict["_moduleDict"]["chargeroptions"].get_config("overall_property_limit_current")-globalState.stateDict["eo_p2_current"]
+        max_current_available=globalState.stateDict["_moduleDict"]["chargeroptions"].get_config("overall_property_limit_current")-globalState.stateDict["eo_p1_current"]
         if globalState.stateDict["eo_amps_requested"]>max_current_available:
             _LOGGER.debug("CT - Load Management Limiting")
             globalState.stateDict["eo_amps_requested"]=min(max_current_available,32)
