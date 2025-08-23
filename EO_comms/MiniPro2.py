@@ -143,9 +143,12 @@ class MiniPro2(HomeHub):
                 result = comms.rx(0.6)
                 
                 voltage = round(int(result[13:16], 16) / 3.78580786, 1) # divisor is an estimate, based on voltmeter readings
-                frequency = int(result[22:25], 16)
                 amps_set = round(int(result[29:32],16)/(1/0.06))
-                print("Voltage: {0}V    Frequency: {1}Hz    Amps Requested: {2}A    Amps Set: {3}A".format(voltage,frequency,amps_requested,amps_set))
+                p1_current = round(int(result[67:70],16)/(1/0.06),1)
+                p2_current = round(int(result[70:73],16)/(1/0.06),1)
+                p3_current = round(int(result[73:76],16)/(1/0.06),1)
+                
+                print(f"Voltage:{voltage:>7}V | Amps Requested: {amps_requested:>2}A | Amps Set: {amps_set:>2}A | p1:{p1_current:>5.1f}A | p2:{p2_current:>5.1f}A | p3:{p3_current:>5.1f}A")
                 loop=loop+1
                 time.sleep(5)
         else:
