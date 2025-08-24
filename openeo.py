@@ -29,7 +29,6 @@ import importlib
 
 import globalState, util
 from openeoCharger import openeoChargerClass
-#from openeoConfig  import openeoConfigClass
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)

@@ -167,6 +167,10 @@ class databufferClass:
             while (i>=0 and self.databuffer["time"][i]!=None and self.databuffer["time"][i]>since):
                 i=i-1
 
+            # we always want to retrieve the last two, so that we can detect any state changes.
+            # this might result in duplicate datapoints, but I don't think this is a big issue
+            i=i-1
+
             # We want to count from the end of the list, so    
             i=len(self.databuffer["time"])-i-1
 
