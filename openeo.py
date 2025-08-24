@@ -75,7 +75,6 @@ def main():
                         moduleClass=getattr(importlib.import_module("lib."+modulename),modulename+"ClassPlugin")
                         # instantiate an object, configure it, and add to the list of active modules
                         mod = moduleClass(pluginConfig)
-                        mod.configure(pluginConfig)
                         globalState.stateDict["_moduleDict"][modulename] = mod
                     except ImportError as e:
                         _LOGGER.error("Aborting - Module '%s' defined and enabled in config file but could not be imported - %s" % (modulename, repr(e)))
@@ -125,10 +124,11 @@ def main():
 
         ############
         # Handle Limiting for Load Management CT data
-        max_current_available=globalState.stateDict["_moduleDict"]["chargeroptions"].get_config("overall_property_limit_current")-globalState.stateDict["eo_p1_current"]
-        if globalState.stateDict["eo_amps_requested"]>max_current_available:
-            _LOGGER.debug("CT - Load Management Limiting")
-            globalState.stateDict["eo_amps_requested"]=min(max_current_available,32)
+        max_current_available=globalState.stateDict["_moduleDict"]["chargeroptions"].get_config("overall_property_limit_current")
+        delta=globalState.stateDict["eo_current_vehicle"]-max_current_available
+        if delta>0:
+            # Site load is too high - we need to reduce
+            globalState.stateDict["eo_amps_requested"]=globalState.stateDict["eo_amps_requested"]-delta
 
         # In order for us to find the status of the charger (e.g. whether a car is connected), we
         # need to set the amp limit first as part of the request. Action may be taken off the back of that 
@@ -159,10 +159,10 @@ def main():
             )
             globalState.stateDict["eo_firmware_version"] = int(charger.version, 16)
             globalState.stateDict["eo_current_switch_setting"] = int(charger.current_switch_setting, 16)
-            globalState.stateDict["eo_p1_current"] = charger.p1_current
-            globalState.stateDict["eo_p2_current"] = charger.p2_current
-            globalState.stateDict["eo_p3_current"] = charger.p3_current
-            globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_p1_current"]) / 1000, 2)        # P=VA
+            globalState.stateDict["eo_current_site"] = charger.current_site
+            globalState.stateDict["eo_current_vehicle"] = charger.current_vehicle
+            globalState.stateDict["eo_current_solar"] = charger.current_solar
+            globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"]) / 1000, 2)        # P=VA
             globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
             globalState.stateDict["eo_mains_frequency"] = int(charger.mains_frequency, 16)
             globalState.stateDict["eo_charger_state_id"] = int(charger.charger_state, 16)

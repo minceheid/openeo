@@ -30,7 +30,7 @@ class PluginSuperClass:
                 case "bool":
                     return ((isinstance(value,numbers.Number) and value==1) or (isinstance(value,str) and value.lower()=="true") or (isinstance(value,str) and value.isnumeric() and int(value)==1))
                 case "int":
-                    if isinstance(value,(float,int)) or (isinstance(value,str) and re.match(r'^-?\d+(?:\.?\d+)$', value)):
+                    if isinstance(value,(float,int)) or (isinstance(value,str) and re.match(r'^-?\d+(?:\.?\d+)?$', value)):
                         return int(float(value))
                 case "float":
                     if isinstance(value,(float,int)) or (isinstance(value,str) and re.match(r'^-?\d+(?:\.?\d+)$', value)):
@@ -45,6 +45,10 @@ class PluginSuperClass:
                         except Exception as e:
                             _LOGGER.error(f"Invalid JSON syntax ({value})")
                             return json.loads(default)
+                    else:
+                        _LOGGER.error(f"Non-str value passed to json decoder")
+                        return(value)
+                            
 
 	# If we didn't match any of these conditions, then we should return the default value
 	# But we should also check to see that the default value is either None
@@ -72,7 +76,6 @@ class PluginSuperClass:
     def configure(self,configParam):
         _LOGGER.debug("Plugin Configured: "+self.myName)
         self.pluginConfig=configParam
-
         # Does type conversion, based on the pluginParamSpec{} dict
         for attribute,spec in self.pluginParamSpec.items():
             self.pluginConfig[attribute]=self._convertType(self.pluginConfig.get(attribute,None),spec["type"],spec["default"])

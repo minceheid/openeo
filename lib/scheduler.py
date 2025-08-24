@@ -12,8 +12,9 @@ Configuration example:
 
 """
 #################################################################################
-import logging,json, datetime,re
+import logging, datetime
 from lib.PluginSuperClass import PluginSuperClass
+import traceback
 
 
 # logging for use in this module
@@ -36,7 +37,7 @@ class schedulerClassPlugin(PluginSuperClass):
             sched['start'] = datetime.time(int(i['start'][:2]), int(i['start'][-2:]),0,0)
             sched['end'] = datetime.time(int(i['end'][:2]), int(i['end'][-2:]),0,0)
             sched['amps'] = int(i['amps'])
-            self.parsedSchedule.append(sched)
+            self.parsedSchedule.append(sched)    
         
 
     def poll(self):

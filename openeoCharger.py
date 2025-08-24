@@ -153,6 +153,14 @@ class openeoChargerClass:
                 self.p1_current = round(int(result[67:70], 16) / 10, 2)
                 self.p2_current = round(int(result[70:73], 16) / 10, 2)
                 self.p3_current = round(int(result[73:76], 16) / 10, 2)
+
+                # assigning function specific names for the CT readings.
+                # note that it would appear that MiniPro2 and HomeHub have different
+                # CT assignments
+                self.current_vehicle=self.p1_current
+                self.current_site=self.p2_current
+                self.current_solar=self.p3_current
+                
             else:
                 # For the Home Hub, we need to query CT readings separately
                 ct=self.rs485.get_hat_readings()
@@ -160,6 +168,9 @@ class openeoChargerClass:
                 self.p2_current=ct["p2"]
                 self.p3_current=ct["p3"]
 
+                self.current_vehicle=self.p2_current
+                self.current_site=self.p1_current
+                self.current_solar=self.p3_current
             return True
         
         return None

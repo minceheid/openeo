@@ -511,7 +511,7 @@ class ocppClassPlugin:
         if self.service:
             try:
                 self.service.measured_parameters["Voltage"] = configParam["eo_live_voltage"]
-                self.service.measured_parameters["Current.Import"] = configParam["eo_p1_current"]
+                self.service.measured_parameters["Current.Import"] = configParam["eo_current_vehicle"]
                 self.service.measured_parameters["Current.Offered"] = self.charger_amps_limit
                 self.service.measured_parameters["Frequency"] = configParam["eo_mains_frequency"]
                 self.service.measured_parameters["Power.Active.Import"] = configParam["eo_power_delivered"]

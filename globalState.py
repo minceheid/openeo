@@ -34,9 +34,10 @@ stateDict={
     "eo_charger_state":"",
 
     # CT Sensor Current (Amps)
-    "eo_p1_current":0,  #site
-    "eo_p2_current":0,  #vehicle
-    "eo_p3_current":0,  #solar
+    "eo_current_site":0,  #site
+    "eo_current_vehicle":0,  #vehicle
+    "eo_current_solar":0,  #solar
+    
     # Power Delivered and requested (kW). Calculated from current and voltage
     "eo_power_delivered":0,
     "eo_power_requested":0,

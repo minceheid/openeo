@@ -334,7 +334,14 @@ class configserverClassPlugin(PluginSuperClass):
                 post_data = json.loads(self.rfile.read(content_length).decode('utf-8'))
 
                 # write configuration update to sqlite
-                globalState.configDB.setDict(post_data,False)
+                #globalState.configDB.setDict(post_data,False)
+                for module, entries in post_data.items():
+                    if not isinstance(entries, dict):
+                        raise ValueError(f"Module '{module}' must map to a dict of key/value pairs")
+                    for key, value in entries.items():
+                        value_str = json.dumps(value) if value is not None else ""
+                        print(f"Writing config module:{module} key:{key} value:\"{value_str}\"")
+                        globalState.configDB.set(module,key,value_str)
 
                 # Now instruct all modules to reconfigure themselves. Probably overkill
                 newconfig={}

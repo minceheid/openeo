@@ -65,9 +65,9 @@ class loggerClassPlugin(PluginSuperClass):
         globalState.stateDict["_dataLog"]=databufferClass(self.pluginConfig,{"eo_power_requested":"Power Requested (kW)",
                                                        "eo_power_delivered":"Power Delivered (kW)",
                                                        "eo_charger_state_id":"Charger State",
-                                                       "eo_p1_current":"P1 Current (A)",
-                                                       "eo_p2_current":"P2 Current (A)",
-                                                       "eo_p3_current":"P3 Current (A)"
+                                                       "eo_current_site":"Site Import Current (A)",
+                                                       "eo_current_vehicle":"Vehicle Supply Current (A)",
+                                                       "eo_current_solar":"Solar Import Current (A)"
                                                        })
 
 
@@ -78,28 +78,48 @@ class databufferClass:
     def __str__(self):
         return json.dumps(self.databuffer,default=str)
     
-    def get_plotly(self,since=None,seriesList=None):
+    def get_plotly(self,since=None,seriesList=None,subplot_index=None):
         myData=self.get_data(since,seriesList)
+
+
+        using_subplots=False
+        if seriesList is not None:
+            for index,series in enumerate(seriesList):
+                if re.search(":",series):
+                    seriesList[index]=series.split(":")
+                    using_subplots=True
 
         series=[]
 
-        for key,value in myData.items():
-            if key!="time" and (seriesList is None or key in seriesList):
-                if key=="eo_charger_state_id":
-                    series.append({
-                        "type": "line",
-                        "line": {"shape": 'hv'},
-                        "mode": "lines",
-                        "name": self.seriesDict[key],
-                        "x": myData["time"],
-                        "y": value})
-                else:
-                    series.append({
-                        "type": "line",
-                        "mode": "lines",
-                        "name": self.seriesDict[key],
-                        "x": myData["time"],
-                        "y": value})
+        if not using_subplots:
+
+            for key,value in myData.items():
+                if key!="time" and (seriesList is None or key in seriesList):
+                    if key=="eo_charger_state_id":
+                        series.append({
+                            "type": "line",
+                            "line": {"shape": 'hv'},
+                            "mode": "lines",
+                            "name": self.seriesDict[key],
+                            "x": myData["time"],
+                            "y": value,
+                            "xaxis" : "x" if subplot_index is None else f"x{subplot_index}",
+                            "yaxis" : "y" if subplot_index is None else f"y{subplot_index}" })
+                            
+                    else:
+                        series.append({
+                            "type": "line",
+                            "mode": "lines",
+                            "name": self.seriesDict[key],
+                            "x": myData["time"],
+                            "y": value,
+                            "xaxis" : "x" if subplot_index is None else f"x{subplot_index}",
+                            "yaxis" : "y" if subplot_index is None else f"y{subplot_index}" })
+                        
+        else:
+            for index,subplot in enumerate(seriesList):
+                series.extend(self.get_plotly(since,subplot,index+1))
+
 
         return series
 
