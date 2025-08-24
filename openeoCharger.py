@@ -7,9 +7,8 @@ the serial number of the EO controller board and setting the maximum charging ra
 
 """
 #################################################################################
-import logging,math
+import logging
 import RPi.GPIO as GPIO
-import globalState
 from EO_comms.HomeHub import HomeHub
 from EO_comms.MiniPro2 import MiniPro2
 

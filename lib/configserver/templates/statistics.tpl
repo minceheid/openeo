@@ -11,14 +11,25 @@
 <script>
 
 var chartdata = [];
+const layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
+                  legend1: {y:0.9, yanchor:'top'},
+                  legend2: {y:0.65, yanchor:'top'},                          
+                  legend3: {y:0.27, yanchor:'top'}, 
+                  showlegend:true,
+                  y1: {rangemode: 'tozero'},              
+                  y2: {rangemode: 'tozero'},  
+                  y3: {rangemode: 'tozero'},  
+                  };
 
-fetch('/getchartdata?type=plotly&series=eo_power_requested:eo_power_delivered:eo_charger_state_id,eo_current_vehicle:eo_current_site:eo_current_solar', {method: 'GET'})
+fetch('/getchartdata?type=plotly&series=eo_charger_state_id,eo_power_requested:eo_power_delivered,eo_current_vehicle:eo_current_site:eo_current_solar', {method: 'GET'})
     .then(function(response) { return response.json(); })
     .then(function(data) {
         chartdata=data
-        const layout = { grid: {rows: 2,columns: 1, pattern: 'independent'}};
+
         Plotly.newPlot('chart_Power',chartdata,layout);
         timer_Power=setInterval(chartUpdate_Power,30000);
+        myplot=Plotly.newPlot('chart_Power',chartdata,layout);
+
     })
 
 
@@ -27,7 +38,7 @@ fetch('/getchartdata?type=plotly&series=eo_power_requested:eo_power_delivered:eo
 
     function chartUpdate_Power() {
           maxtime=chartdata[0].x[(chartdata[0].x.length)-1];
-          fetch('/getchartdata?type=plotly&series=eo_power_requested:eo_power_delivered:eo_charger_state_id,eo_current_vehicle:eo_current_site:eo_current_solar&since='+maxtime, {method: 'GET'})
+          fetch('/getchartdata?type=plotly&series=eo_charger_state_id,eo_power_requested:eo_power_delivered,eo_current_vehicle:eo_current_site:eo_current_solar&since='+maxtime, {method: 'GET'})
               .then(function(response) { return response.json(); })
               .then(function(data) {
               
@@ -37,7 +48,6 @@ fetch('/getchartdata?type=plotly&series=eo_power_requested:eo_power_delivered:eo
                 });
           
                 newmaxtime=chartdata[0].x[(chartdata[0].x.length)-1];
-                const layout = { grid: {rows: 2,columns: 1, pattern: 'independent'}};
                 Plotly.newPlot('chart_Power',chartdata,layout);
               });
     }

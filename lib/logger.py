@@ -28,6 +28,7 @@ import json
 import globalState
 import re
 from lib.PluginSuperClass import PluginSuperClass
+from openeoCharger import openeoChargerClass
 
 
 # logging for use in this module
@@ -67,7 +68,7 @@ class loggerClassPlugin(PluginSuperClass):
                                                        "eo_charger_state_id":"Charger State",
                                                        "eo_current_site":"Site Import Current (A)",
                                                        "eo_current_vehicle":"Vehicle Supply Current (A)",
-                                                       "eo_current_solar":"Solar Import Current (A)"
+                                                       "eo_current_solar":"Solar Generation Current (A)"
                                                        })
 
 
@@ -96,13 +97,28 @@ class databufferClass:
             for key,value in myData.items():
                 if key!="time" and (seriesList is None or key in seriesList):
                     if key=="eo_charger_state_id":
+
+                        # Generate annotations for state_id chart
+                        text=[]
+                        last_datum=None
+                        for datum in value:
+                            if datum==last_datum:
+                                text.append(None)
+                            else:
+                                text.append(openeoChargerClass.CHARGER_STATES[datum])
+                            last_datum=datum
+
                         series.append({
                             "type": "line",
                             "line": {"shape": 'hv'},
-                            "mode": "lines",
+                            "mode": "lines+text",
                             "name": self.seriesDict[key],
                             "x": myData["time"],
                             "y": value,
+                            "textposition":"top center",
+                            "text": text,
+                            "legend" : f"legend1" if subplot_index is None else f"legend{subplot_index}",
+                            "legendgroup" : "1" if subplot_index is None else f"{subplot_index}",
                             "xaxis" : "x" if subplot_index is None else f"x{subplot_index}",
                             "yaxis" : "y" if subplot_index is None else f"y{subplot_index}" })
                             
@@ -113,6 +129,8 @@ class databufferClass:
                             "name": self.seriesDict[key],
                             "x": myData["time"],
                             "y": value,
+                            "legend" : f"legend1" if subplot_index is None else f"legend{subplot_index}",
+                            "legendgroup" : "1" if subplot_index is None else f"{subplot_index}",
                             "xaxis" : "x" if subplot_index is None else f"x{subplot_index}",
                             "yaxis" : "y" if subplot_index is None else f"y{subplot_index}" })
                         
