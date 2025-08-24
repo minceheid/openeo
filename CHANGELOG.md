@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/minceheid/openeo/compare/v0.4.2...v0.5.0) (2025-08-24)
+
+
+### Features
+
+* improved aesthetics of statistics page ([26c615b](https://github.com/minceheid/openeo/commit/26c615b60d41aae97d8440062305c9910ffee7b1))
+
+
+### Bug Fixes
+
+* integrating HomeHub CT ([a395ab2](https://github.com/minceheid/openeo/commit/a395ab2b6474e6912847ac14f56ee9652011cda7))
+* minor adjustments ([5f34e25](https://github.com/minceheid/openeo/commit/5f34e256c706a218157930bf17e7595f1c490733))
+* monster bugfix ([ed524b3](https://github.com/minceheid/openeo/commit/ed524b342748f90ecba70e17f9a1c36dee6d938c))
+
 ## [0.2.3](https://github.com/minceheid/openeo/compare/v0.2.2...v0.2.3) (2025-07-24)
 
 
