@@ -101,7 +101,7 @@ class configserverClassPlugin(PluginSuperClass):
                 self.end_headers()
 
                 # Dump all global variables in prometheus exporter format
-                for cfgkey,cfgvalue in globalState.stateDict.items():
+                for cfgkey,cfgvalue in globalState.stateSnapshot.items():
                     if cfgkey[0]!="_":
                         # Convert any bool values to int
                         if isinstance(cfgvalue, (bool)):
@@ -110,7 +110,7 @@ class configserverClassPlugin(PluginSuperClass):
                         # Then only show numerics
                         if isinstance(cfgvalue, numbers.Number):
                             if (cfgkey=="eo_charger_state_id"):
-                                self.wfile.write(str("# HELP "+cfgkey+" "+globalState.stateDict["eo_charger_state"]+"\n").encode('utf-8'))
+                                self.wfile.write(str("# HELP "+cfgkey+" "+globalState.stateSnapshot["eo_charger_state"]+"\n").encode('utf-8'))
 
                             self.wfile.write(str("# TYPE "+cfgkey+" gauge\n").encode('utf-8'))
                             self.wfile.write(str(cfgkey+"{} "+str(cfgvalue)+"\n").encode('utf-8'))   
@@ -120,10 +120,10 @@ class configserverClassPlugin(PluginSuperClass):
             # Home Assistant
             if format(self.path)=="/api":
                 status={}
-                status["eo_charger_state"]={"id":globalState.stateDict["eo_charger_state_id"],"status":globalState.stateDict["eo_charger_state"]}
+                status["eo_charger_state"]={"id":globalState.stateSnapshot["eo_charger_state_id"],"status":globalState.stateSnapshot["eo_charger_state"]}
 
 
-                for cfgkey,cfgvalue in globalState.stateDict.items():
+                for cfgkey,cfgvalue in globalState.stateSnapshot.items():
                     if cfgkey[0]!="_":
                         if isinstance(cfgvalue, numbers.Number):
                             if (cfgkey!="eo_harger_state_id") and (cfgkey!="eo_charger_state"):
@@ -229,8 +229,8 @@ class configserverClassPlugin(PluginSuperClass):
             if self.path == "/getstatus":
                 # copy is needed to avoid a RuntimeError due to this dict changing size
                 # we can't deepcopy because in some cases the modules within cannot be pickled (e.g. thread objects)
-                status = copy.copy(globalState.stateDict)
-                for x in globalState.stateDict:
+                status = copy.copy(globalState.stateSnapshot)
+                for x in globalState.stateSnapshot:
                     if x[0]=="_":
                         # an underscore denotes a private configuration that probably shouldn't be exposed
                         status.pop(x,None)

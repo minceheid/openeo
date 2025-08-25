@@ -22,7 +22,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-import logging,numbers
+import logging,numbers,copy
 import logging.handlers
 import time, math
 import importlib
@@ -49,6 +49,9 @@ def main():
         _LOGGER.setLevel(logging._nameToLevel[logLevel])
     else:
         _LOGGER.error("Invalid log level "+logLevel+"in config - ignoring")
+
+    # Make a snapshot of the stateDict for the configserver module to refer to
+    globalState.stateSnapshot=copy.copy(globalState.stateDict)
 
     # Main loop
     loop = 0
@@ -156,16 +159,7 @@ def main():
             # Global Load Management Logic 
 
             if "loadmanagement" in globalState.stateDict["_moduleDict"]:
-                ############
-                # Handle Limiting from solar CT data
-                # If the global setting of "solar_limit_all_output" is true, and a module is requesting more than solar generation current, 
-                # minus the reservation amount, then reduce the eo_amps_requested amount.
                 lm_config=globalState.stateDict["_moduleDict"]["loadmanagement"].pluginConfig
-                if lm_config.get("solar_limit_all_output",False) \
-                    and globalState.stateDict["eo_amps_requested"]> (globalState.stateDict["eo_current_solar"] - lm_config.get("solar_reservation_current",0)):
-                    _LOGGER.debug("CT - Solar Limiting active")
-                    globalState.stateDict["eo_amps_requested"]=min(globalState.stateDict["eo_current_solar"] - lm_config.get("solar_reservation_current",0),32)
-
                 ############
                 # Handle Limiting for Load Management CT data
                 max_current_available=lm_config.get("overall_property_limit_current",60)
@@ -179,9 +173,14 @@ def main():
 
             globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
 
+
+
             # After all adjustments have been made, record data for the logger
             if "logger" in globalState.stateDict["_moduleDict"]:
                 globalState.stateDict["_moduleDict"]["logger"].late_poll()
+
+            # And make a snapshot of the stateDict for the configserver module to refer to
+            globalState.stateSnapshot=copy.copy(globalState.stateDict)
 
             # If we are ready to charge (that is, there is a cable/car connected), and there is demand from the 
             # modules, then raise the Amp limit to the maximum requested by the modules
