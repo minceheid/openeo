@@ -11,6 +11,7 @@ import logging
 import RPi.GPIO as GPIO
 from EO_comms.HomeHub import HomeHub
 from EO_comms.MiniPro2 import MiniPro2
+import globalState
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
@@ -170,6 +171,19 @@ class openeoChargerClass:
                 self.current_vehicle=self.p2_current
                 self.current_site=self.p1_current
                 self.current_solar=self.p3_current
+
+
+            # Inject simulated values, for testing purposes
+            if "loadmanagement" in globalState.stateDict["_moduleDict"]:
+                simulate_ct_site=globalState.stateDict["_moduleDict"]["loadmanagement"].pluginConfig.get("simulate_ct_site",0)
+
+                if simulate_ct_site>0:
+                    self.current_site=simulate_ct_site
+
+                simulate_ct_solar=globalState.stateDict["_moduleDict"]["loadmanagement"].pluginConfig.get("simulate_ct_solar",0)
+                if simulate_ct_solar>0:
+                    self.current_solar=simulate_ct_solar
+
             return True
         
         return None

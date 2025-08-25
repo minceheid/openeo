@@ -115,20 +115,6 @@ def main():
              globalState.stateDict["eo_charger_state"]))
 
 
-        ############
-        # Handle Limiting from solar CT data
-        if globalState.stateDict["_moduleDict"]["chargeroptions"].get_config("limit_current_to_solar_output") and globalState.stateDict["eo_amps_requested"]>globalState.stateDict["eo_p3_current"]:
-            _LOGGER.debug("CT - Solar Limiting")
-            globalState.stateDict["eo_amps_requested"]=min(globalState.stateDict["p3_current"],32)
-
-        ############
-        # Handle Limiting for Load Management CT data
-        max_current_available=globalState.stateDict["_moduleDict"]["chargeroptions"].get_config("overall_property_limit_current")
-        delta=globalState.stateDict["eo_current_vehicle"]-max_current_available
-        if delta>0:
-            # Site load is too high - we need to reduce
-            globalState.stateDict["eo_amps_requested"]=globalState.stateDict["eo_amps_requested"]-delta
-
         # In order for us to find the status of the charger (e.g. whether a car is connected), we
         # need to set the amp limit first as part of the request. Action may be taken off the back of that 
         # status on the next iteration (e.g. if the car is unplugged, then we'll need to wait for the next
@@ -162,10 +148,40 @@ def main():
             globalState.stateDict["eo_current_vehicle"] = charger.current_vehicle
             globalState.stateDict["eo_current_solar"] = charger.current_solar
             globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"]) / 1000, 2)        # P=VA
-            globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
             globalState.stateDict["eo_mains_frequency"] = int(charger.mains_frequency, 16)
             globalState.stateDict["eo_charger_state_id"] = int(charger.charger_state, 16)
             globalState.stateDict["eo_charger_state"] = openeoChargerClass.CHARGER_STATES[globalState.stateDict["eo_charger_state_id"]]
+
+
+            # Global Load Management Logic 
+
+            if "loadmanagement" in globalState.stateDict["_moduleDict"]:
+                ############
+                # Handle Limiting from solar CT data
+                # If the global setting of "solar_limit_all_output" is true, and a module is requesting more than solar generation current, 
+                # minus the reservation amount, then reduce the eo_amps_requested amount.
+                lm_config=globalState.stateDict["_moduleDict"]["loadmanagement"].pluginConfig
+                if lm_config.get("solar_limit_all_output",False) \
+                    and globalState.stateDict["eo_amps_requested"]> (globalState.stateDict["eo_current_solar"] - lm_config.get("solar_reservation_current",0)):
+                    _LOGGER.debug("CT - Solar Limiting active")
+                    globalState.stateDict["eo_amps_requested"]=min(globalState.stateDict["eo_current_solar"] - lm_config.get("solar_reservation_current",0),32)
+
+                ############
+                # Handle Limiting for Load Management CT data
+                max_current_available=lm_config.get("overall_property_limit_current",60)
+                delta=globalState.stateDict["eo_current_vehicle"]-max_current_available
+
+                #print(f"max_current_available={max_current_available} site_ct={globalState.stateDict['eo_current_vehicle']} delta={delta}")
+                if delta>0:
+                    print(f"CT - site limit active (delta={delta})")
+                    # Site load is too high - we need to reduce
+                    globalState.stateDict["eo_amps_requested"]=globalState.stateDict["eo_amps_requested"]-delta
+
+            globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
+
+            # After all adjustments have been made, record data for the logger
+            if "logger" in globalState.stateDict["_moduleDict"]:
+                globalState.stateDict["_moduleDict"]["logger"].late_poll()
 
             # If we are ready to charge (that is, there is a cable/car connected), and there is demand from the 
             # modules, then raise the Amp limit to the maximum requested by the modules
