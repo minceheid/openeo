@@ -225,7 +225,7 @@ def main():
             else:
                 module.sync_state(globalState.stateDict)
 
-        time.sleep(1)
+        time.sleep(5)
         loop += 1
 
 #################################################################################

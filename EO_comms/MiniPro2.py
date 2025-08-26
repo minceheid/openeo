@@ -82,6 +82,10 @@ class MiniPro2(HomeHub):
         _LOGGER.debug("EO COMMS - HomeHub initialised")
 
 
+        self.ct=SPI_EM_IC()
+        self.ct.configure()
+
+
     def tx(self,command):
         self._register_set(self.REG_FCR_IIR, 0x07)
         data = [0]
@@ -116,6 +120,17 @@ class MiniPro2(HomeHub):
         else:
              return bytes(data)
 
+    def get_ct_readings(self):
+        """
+        Retrieves CT readings.
+        """
+
+        return({ 
+                "site":     self.ct.reg_get(self.ct.AIRMS,4)/10000,
+                "vehicle":  self.ct.reg_get(self.ct.BIRMS,4)/10000,
+                "solar":    self.ct.reg_get(self.ct.CIRMS,4)/10000})
+
+
     def test(self):
         # Just some tests
         def generateChecksum(text):
@@ -148,8 +163,154 @@ class MiniPro2(HomeHub):
                 p2_current = round(int(result[70:73],16)/(1/0.06),1)
                 p3_current = round(int(result[73:76],16)/(1/0.06),1)
                 
-                print(f"Voltage:{voltage:>7}V | Amps Requested: {amps_requested:>2}A | Amps Set: {amps_set:>2}A | p1:{p1_current:>5.1f}A | p2:{p2_current:>5.1f}A | p3:{p3_current:>5.1f}A")
+                # Get CT readings
+                ct=self.get_ct_readings()
+   
+                print(f"Voltage:{voltage:>7}V | Amps Requested: {amps_requested:>2}A | Amps Set: {amps_set:>2}A | site:{ct['site']:>5.1f}A | vehicle:{ct['vehicle']:>5.1f}A | solar:{ct['solar']:>5.1f}A")
                 loop=loop+1
                 time.sleep(5)
         else:
                 print("No response")
+
+
+
+
+
+# ------------------------------------------------------------------------------
+class SPI_EM_IC(object):
+    # Registers
+    STATUS1 = 0xE503
+    RUN = 0xE228
+    CFMODE = 0xE610
+    CONFIG = 0xE618
+    HPFDIS = 0x43B6
+    GAIN = 0xE60F
+    VERSION = 0xE707
+
+    AIGAIN = 0x4380
+    BIGAIN = 0x4382
+    CIGAIN = 0x4384
+
+    AIRMSOS = 0x4387
+    BIRMSOS = 0x4389
+    CIRMSOS = 0x438B
+
+    AIRMS = 0x43C0
+    BIRMS = 0x43C2
+    CIRMS = 0x43C4
+    pinmap = {
+        "SCK": 11,  # pin 23
+        "MISO": 9,  # pin 21
+        "MOSI": 10,  # pin 19
+        "NSS": 7,  # pin 26
+        "IRQ0": 20,  # pin 38
+        "NRESET": 22,  # pin 15
+        "CF1": 27,  # pin 13
+        "PM1": 17,  # pin 11
+    }
+    def __init__(self):
+        self.IRQ0 = self.pinmap["IRQ0"]
+        self.NRESET = self.pinmap["NRESET"]
+        self.CF1 = self.pinmap["CF1"]
+        self.PM1 = self.pinmap["PM1"]
+        self.spi = None
+        self.configure_pins()
+        self.reset()
+        self.configure_spi()
+        self.enable_spi()
+
+    def configure_pins(self):
+        # inputs
+        GPIO.setup(self.IRQ0, GPIO.IN)
+
+        # outputs
+        for pin in (self.NRESET, self.PM1):
+            GPIO.setup(pin, GPIO.OUT)
+
+    def reset(self):
+        GPIO.output(self.PM1, GPIO.LOW)
+        GPIO.output(self.NRESET, GPIO.HIGH)
+        time.sleep(0.001)
+        GPIO.output(self.NRESET, GPIO.LOW)
+        time.sleep(0.001)
+        GPIO.output(self.NRESET, GPIO.HIGH)
+        time.sleep(0.02)
+
+    def configure_spi(self):
+        self.spi = spidev.SpiDev()
+        self.spi.open(0, 1)
+        self.spi.max_speed_hz = 1000000
+        self.spi.mode = 0b11
+
+    def enable_spi(self):
+        for i in range(3):
+            self.spi.xfer2([0x00])
+            time.sleep(0.001)
+
+    def reg_get(self, register, size=4):
+        # register always a two byte address
+        assert size >= 1 and size <= 4
+
+        #construct packet
+        data = [1, register >> 8, register & 0xFF]
+        data += [0] * size
+        #send/recieve
+        rx = self.spi.xfer2(data)[3:]
+        result = 0
+        for i in rx:
+            result <<= 8
+            result += i
+        return result
+
+    def reg_set(self, register, value, size=4):
+        assert size >= 1 and size <= 4
+        # Reverse the byte order of the value
+        reverse = 0
+        for i in range(size):
+            reverse <<= 8
+            reverse += value & 0xFF
+            value >>= 8
+
+        # construct packet
+        data = [0, register >> 8, register & 0xFF]
+        for i in range(size):
+            data += [reverse & 0xFF]
+            reverse >>= 8
+
+        # send
+        self.spi.xfer2(data)
+
+    def configure(self):
+
+        RMSOS = 0x0002E45C
+        GAIN = 0x0FE6060C
+
+        cfg = (
+            (SPI_EM_IC.CFMODE, 0x0E88, 2),
+            (SPI_EM_IC.CONFIG, 0, 2),
+            (SPI_EM_IC.HPFDIS, 0, 4),
+            (SPI_EM_IC.GAIN, 0, 2),
+            (SPI_EM_IC.AIGAIN, GAIN, 4),
+            (SPI_EM_IC.BIGAIN, GAIN, 4),
+            (SPI_EM_IC.CIGAIN, GAIN, 4),
+            (SPI_EM_IC.AIRMSOS, RMSOS, 4),
+            (SPI_EM_IC.BIRMSOS, RMSOS, 4),
+            (SPI_EM_IC.CIRMSOS, RMSOS, 4),
+        )
+        self.reg_set(self.RUN, 0, 2)
+
+        # configure IC
+        for reg, val, s in cfg:
+            self.reg_set(reg, val, s)
+
+        # update DSP pipeline
+        self.reg_set(*cfg[-1])
+        self.reg_set(*cfg[-1])
+
+        # check
+        for reg, val, s in cfg:
+            res = self.reg_get(reg, s)
+            if res != val:
+                _LOGGER.error("Problem setting EM IC register 0x%04x" % reg)
+
+        self.reg_set(self.RUN, 1,2)

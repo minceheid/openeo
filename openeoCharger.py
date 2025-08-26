@@ -144,33 +144,32 @@ class openeoChargerClass:
             self.persistant_ID = result[53:61]
             self.watchdog_current = result[61:64]
             self.watchdog_time = result[64:67]
+            self.p1_current = round(int(result[67:70], 16) / 10, 2)
+            self.p2_current = round(int(result[70:73], 16) / 10, 2)
+            self.p3_current = round(int(result[73:76], 16) / 10, 2)
             self.eco_7_switch = result[76]
             self.checksum = result[77:79]
 
-            if MiniPro2.identify_hardware():
-                # For the Mini Pro 2, the CT readings are provided by the firmware, so
-                # we can just interpret them here
-                self.p1_current = round(int(result[67:70], 16) / 10, 2)
-                self.p2_current = round(int(result[70:73], 16) / 10, 2)
-                self.p3_current = round(int(result[73:76], 16) / 10, 2)
+            ct=self.rs485.get_ct_readings()
+            self.current_site=ct["site"]
+            self.current_vehicle=ct["vehicle"]
+            self.current_solar=ct["solar"]
 
-                # assigning function specific names for the CT readings.
-                # note that it would appear that MiniPro2 and HomeHub have different
-                # CT assignments
-                self.current_vehicle=self.p1_current
-                self.current_site=self.p2_current
-                self.current_solar=self.p3_current
-                
-            else:
-                # For the Home Hub, we need to query CT readings separately
-                ct=self.rs485.get_hat_readings()
-                self.p1_current=ct["p1"]
-                self.p2_current=ct["p2"]
-                self.p3_current=ct["p3"]
+            # CT Calibration
 
-                self.current_vehicle=self.p2_current
-                self.current_site=self.p1_current
-                self.current_solar=self.p3_current
+            if "loadmanagement" in globalState.stateDict["_moduleDict"]:
+                lm_config=globalState.stateDict["_moduleDict"]["loadmanagement"].pluginConfig
+                ct_calibration_site=lm_config.get("ct_calibration_site",None)
+                ct_calibration_vehicle=lm_config.get("ct_calibration_vehicle",None)
+                ct_calibration_solar=lm_config.get("ct_calibration_solar",None)
+
+                if ct_calibration_site is not None:
+                    self.current_site=self.current_site*ct_calibration_site
+                if ct_calibration_vehicle is not None:
+                    self.current_vehicle=self.current_site*ct_calibration_vehicle
+                if ct_calibration_solar is not None:
+                    self.current_solar=self.current_site*ct_calibration_solar
+
 
 
             # Inject simulated values, for testing purposes

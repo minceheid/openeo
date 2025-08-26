@@ -57,40 +57,45 @@ class HomeHub(object):
         return bytes(data)
     
 
-    def get_hat_readings(self,address="BE00BE93"):
+    def get_ct_readings(self):
         """
-        Retrieves CT readings. Requires a hardware address.
+        Retrieves CT readings.
         """
-        
+
         # Temporary switch of baud and timeout
         self.EOSerial.baudrate = 9600
         self.EOSerial.timeout = 0.1
 
-        address_bytes=binascii.unhexlify(address)
+        # This is a fixed hardware address that all HomeHub/Mini Pro 1 devices appear to have
+        address_bytes=binascii.unhexlify("BE00BE93")
 
         # List of registers to query. The first one is repeated because we expect it to
         # fail due to the switching of the baud rate
-        REGLIST=[b"\x00\x13",b"\x00\x13",b"\x00\x14",b"\x00\x15"]
+        REGDICT={"ignore":  b"\x00\x13",
+                "site":     b"\x00\x13",
+                "vehicle":  b"\x00\x14",
+                "solar":    b"\x00\x15"}
+
         ct_readings={}
 
-        for index,reg in enumerate(REGLIST):
+        for index,reg in REGDICT.items():
             packet = b"UU" + address_bytes + reg + b"\x00\x00\x00\x00" + b"\x00\x00"  
             self.flush_serial()
             self.EOSerial.write(packet)
             response=self.EOSerial.read(14)
             time.sleep(0.01)
 
-            if (index>0):
+            if (index!="ignore"):
                 # the first reg is expected to fail, so only take action on index 1,2 and 3
                 if response == b"" or None:
                     _LOGGER.info("HomeHub CT query is empty")
-                    ct_readings[f"p{index}"]=None
+                    ct_readings[f"{index}"]=None
                 elif len(response)!=14:
                     _LOGGER.info(f"HomeHub CT query response invalid size")
-                    ct_readings[f"p{index}"]=None
+                    ct_readings[f"{index}"]=None
                 else:
                     # decode packet
-                    ct_readings[f"p{index}"]= int.from_bytes(response[8:12], "big")/1000
+                    ct_readings[f"{index}"]= int.from_bytes(response[8:12], "big")/1000
         
         # Switch baud and timeout back to what it was previously
         self.EOSerial.baudrate = 115200
@@ -128,10 +133,10 @@ class HomeHub(object):
                 voltage = round(int(result[13:16], 16) / 3.78580786, 1) # divisor is an estimate, based on voltmeter readings
                 amps_set = round(int(result[29:32],16)/(1/0.06))
                 
-                # Get CT readings. Address is currently hardcoded! - need to understand the discovery procedure
-                ct=self.get_hat_readings("BE00BE93")
+                # Get CT readings
+                ct=self.get_ct_readings()
    
-                print(f"Voltage:{voltage:>7}V | Amps Requested: {amps_requested:>2}A | Amps Set: {amps_set:>2}A | p1:{ct['p1']:>5.1f}A | p2:{ct['p2']:>5.1f}A | p3:{ct['p3']:>5.1f}A")
+                print(f"Voltage:{voltage:>7}V | Amps Requested: {amps_requested:>2}A | Amps Set: {amps_set:>2}A | site:{ct['site']:>5.1f}A | vehicle:{ct['vehicle']:>5.1f}A | solar:{ct['solar']:>5.1f}A")
                 loop=loop+1
                 time.sleep(5)
         else:

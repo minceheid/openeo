@@ -25,7 +25,10 @@ class loadmanagementClassPlugin(PluginSuperClass):
 			"solar_reservation_current":	{"type": "int", "default": 1},
 			"site_limit_current":	{"type": "int", "default": 60},
             "simulate_ct_solar":    {"type": "int", "default": 0},
-            "simulate_ct_site":     {"type": "int", "default": 0}
+            "simulate_ct_site":     {"type": "int", "default": 0},
+            "ct_calibration_site":   {"type": "float", "default": 1},
+            "ct_calibration_vehicle":{"type": "float", "default": 1},
+            "ct_calibration_solar":  {"type": "float", "default": 1}
             }
         
     def poll(self):
