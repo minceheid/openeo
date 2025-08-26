@@ -155,6 +155,10 @@ class openeoChargerClass:
             self.current_vehicle=ct["vehicle"]
             self.current_solar=ct["solar"]
 
+
+            if MiniPro2.identify_hardware():
+                self.current_vehicle=self.p1_current
+
             # CT Calibration
 
             if "loadmanagement" in globalState.stateDict["_moduleDict"]:
