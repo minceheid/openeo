@@ -162,14 +162,14 @@ def main():
                 lm_config=globalState.stateDict["_moduleDict"]["loadmanagement"].pluginConfig
                 ############
                 # Handle Limiting for Load Management CT data
-                max_current_available=lm_config.get("overall_property_limit_current",60)
-                delta=globalState.stateDict["eo_current_vehicle"]-max_current_available
+                overall_property_limit_current=lm_config.get("overall_property_limit_current",60)
+                available_current=overall_property_limit_current - globalState.stateDict["eo_current_site"]
 
-                #print(f"max_current_available={max_current_available} site_ct={globalState.stateDict['eo_current_vehicle']} delta={delta}")
-                if delta>0:
-                    print(f"CT - site limit active (delta={delta})")
+                _LOGGER.debug(f"overall_property_limit_current={overall_property_limit_current} site_ct={globalState.stateDict['eo_current_site']} available_current={available_current} amps_requested={globalState.stateDict['eo_amps_requested']}")
+                if globalState.stateDict["eo_amps_requested"]>available_current:
+                    _LOGGER.debug(f"CT - site limit active (available_current={available_current})")
                     # Site load is too high - we need to reduce
-                    globalState.stateDict["eo_amps_requested"]=globalState.stateDict["eo_amps_requested"]-delta
+                    globalState.stateDict["eo_amps_requested"]=available_current
 
             globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
 
