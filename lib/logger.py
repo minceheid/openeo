@@ -47,7 +47,11 @@ class loggerClassPlugin(PluginSuperClass):
 
     nextDatapoint=None
 
-    def poll(self):
+    # The logger is a special case. We want the data to be recorded after all adjustments
+    # have been made, and after all other modules have had a turn to speak, so we don't
+    # do anything on the normal poll() method, but instead have a late_poll() method
+    # that is called at the end of the main loop
+    def late_poll(self):
         if datetime.now()>self.nextDatapoint:
             # Time to record 
             globalState.stateDict["_dataLog"].push(globalState.stateDict)

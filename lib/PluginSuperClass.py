@@ -33,7 +33,7 @@ class PluginSuperClass:
                     if isinstance(value,(float,int)) or (isinstance(value,str) and re.match(r'^-?\d+(?:\.?\d+)?$', value)):
                         return int(float(value))
                 case "float":
-                    if isinstance(value,(float,int)) or (isinstance(value,str) and re.match(r'^-?\d+(?:\.?\d+)$', value)):
+                    if isinstance(value,(float,int)) or (isinstance(value,str) and re.match(r'^-?\d+(?:\.?\d+)?$', value)):
                         return float(value)
                 case "str":
                     if isinstance(value,(str)):

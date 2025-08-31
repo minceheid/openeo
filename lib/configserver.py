@@ -52,7 +52,10 @@ class configserverClassPlugin(PluginSuperClass):
     CORE_PLUGIN = True # Can't be disabled from the UI
     
     pluginParamSpec={   "enabled":      {"type": "bool","default": True},
-                        "port":  {"type": "int","default":80}}
+                        "port":  {"type": "int","default":80},
+                        "update_start": {"type": "int","default":0},
+                        "update_finish": {"type": "int","default":0},
+                        "update_log": {"type": "str","default":""}}
 
     def __init__(self,configParam):
         super().__init__(configParam)
@@ -101,7 +104,7 @@ class configserverClassPlugin(PluginSuperClass):
                 self.end_headers()
 
                 # Dump all global variables in prometheus exporter format
-                for cfgkey,cfgvalue in globalState.stateDict.items():
+                for cfgkey,cfgvalue in globalState.stateSnapshot.items():
                     if cfgkey[0]!="_":
                         # Convert any bool values to int
                         if isinstance(cfgvalue, (bool)):
@@ -110,7 +113,7 @@ class configserverClassPlugin(PluginSuperClass):
                         # Then only show numerics
                         if isinstance(cfgvalue, numbers.Number):
                             if (cfgkey=="eo_charger_state_id"):
-                                self.wfile.write(str("# HELP "+cfgkey+" "+globalState.stateDict["eo_charger_state"]+"\n").encode('utf-8'))
+                                self.wfile.write(str("# HELP "+cfgkey+" "+globalState.stateSnapshot["eo_charger_state"]+"\n").encode('utf-8'))
 
                             self.wfile.write(str("# TYPE "+cfgkey+" gauge\n").encode('utf-8'))
                             self.wfile.write(str(cfgkey+"{} "+str(cfgvalue)+"\n").encode('utf-8'))   
@@ -120,10 +123,10 @@ class configserverClassPlugin(PluginSuperClass):
             # Home Assistant
             if format(self.path)=="/api":
                 status={}
-                status["eo_charger_state"]={"id":globalState.stateDict["eo_charger_state_id"],"status":globalState.stateDict["eo_charger_state"]}
+                status["eo_charger_state"]={"id":globalState.stateSnapshot["eo_charger_state_id"],"status":globalState.stateSnapshot["eo_charger_state"]}
 
 
-                for cfgkey,cfgvalue in globalState.stateDict.items():
+                for cfgkey,cfgvalue in globalState.stateSnapshot.items():
                     if cfgkey[0]!="_":
                         if isinstance(cfgvalue, numbers.Number):
                             if (cfgkey!="eo_harger_state_id") and (cfgkey!="eo_charger_state"):
@@ -229,8 +232,8 @@ class configserverClassPlugin(PluginSuperClass):
             if self.path == "/getstatus":
                 # copy is needed to avoid a RuntimeError due to this dict changing size
                 # we can't deepcopy because in some cases the modules within cannot be pickled (e.g. thread objects)
-                status = copy.copy(globalState.stateDict)
-                for x in globalState.stateDict:
+                status = copy.copy(globalState.stateSnapshot)
+                for x in globalState.stateSnapshot:
                     if x[0]=="_":
                         # an underscore denotes a private configuration that probably shouldn't be exposed
                         status.pop(x,None)
@@ -322,7 +325,28 @@ class configserverClassPlugin(PluginSuperClass):
         
         def do_POST(self):
             _LOGGER.info("do_POST(%s)" % self.path)
-            
+            """
+            if self.path == "/update":
+                ##################################
+                # API for updating the software. This will sensecheck what it's being asked, then return a result
+                # and then leave the thread running with the upgrade process updating the output into the database
+                content_length = int(self.headers['Content-Length'])
+                post_data = json.loads(self.rfile.read(content_length).decode('utf-8'))
+
+                update_start=globalState.configDB.get("chargeroptions","update_start")
+                update_finish=globalState.configDB.get("chargeroptions","update_finish")
+
+                if update_start is within 30 minutes and update_finish=0:
+                    # Update in Progress
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                else
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    time.sleep(60)
+            """
             if self.path == "/setconfig":
                 ##################################
                 # API for writing configuration. This allows an arbitrary length dict to be passed via JSON

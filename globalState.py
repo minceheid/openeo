@@ -16,9 +16,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # Read the application version; if not present, default to 0.0.
 try:
-    appVer = open("version.txt", "r").read()
+    appVer = open("release.txt", "r").read().strip()
 except:
-    _LOGGER.warning("Unable to get application version")
+    _LOGGER.warning("Unable to get application version from release.txt")
     appVer = "0.0"
     
 stateDict={
@@ -75,6 +75,7 @@ defaultConfig = {
         "switch" : { "enabled" : False },
         "configserver" : { "enabled" : True },
         "logger" : { "enabled" : True },
-        "chargeroptions" : { "enabled" : True, "mode" : "schedule" }}
+        "chargeroptions" : { "enabled" : True, "mode" : "schedule" },
+        "loadmanagement" : { "enabled" : True }}
 
 configDB = openeoConfigClass(defaultConfig)
