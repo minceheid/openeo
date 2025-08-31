@@ -53,9 +53,9 @@ class configserverClassPlugin(PluginSuperClass):
     
     pluginParamSpec={   "enabled":      {"type": "bool","default": True},
                         "port":  {"type": "int","default":80},
-                        "update_start": {"type": "int","defult":0},
-                        "update_finish": {"type": "int","defult":0},
-                        "update_log": {"type": "str","defult":""}}
+                        "update_start": {"type": "int","default":0},
+                        "update_finish": {"type": "int","default":0},
+                        "update_log": {"type": "str","default":""}}
 
     def __init__(self,configParam):
         super().__init__(configParam)
