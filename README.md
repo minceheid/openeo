@@ -1,5 +1,6 @@
 # openeo
-Cloudless software install for the EO Mini 2 EV charger
+Cloudless software install for the EO Home Hub and Mini Pro 2 EV charger.
+In November 2025, EO is deprecating their cloud facilities that allows the Home Hub/Mini Pro 1 and Mini Pro 2 EV charger devices to be "smart". This removes the ability for owners to set automated timed schedules and to directly manage their device. This project aims to provide an alternate, open source software that can be directly installed on these devices to allow control from the local WiFi network without the use of the EO Cloud. 
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/e4592063-7f7b-485f-af75-c6b6009f6c96" style="width:25%; height:auto;"  />
@@ -46,6 +47,16 @@ Once the RPi Zero reboots, it should all be working. You should be able to point
 
 *Note* - at this time, only the **_Schedule_** mode and **_Manual_** mode is available. We will be adding **_Remote_** (OCPP) shortly.
 
+## Solar Integration
+Where there is a CT clamp measuring solar generation, openeo can control vehicle charge, based on the solar generation. To enable this feature, select the "Solar Charging Enabled" options in the settings. Additionally, you can optionally set a solar reservation value. As an example, if your CT clamp is reporting 10A of solar generation, and your Solar Reservation is set at 3A, then your vehicle will charge at 7A. This may allow you to reduce grid consumption for power requirements elsewhere in your home. 
+
+## Updating
+From time to time, we will update the software. When a new release is tagged on GitHub, your openeo installation can be updated by simply repeating the install procedure. This will retrieve the latest release, install and activate it:
+~~~~
+curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -
+sudo reboot
+~~~~
+
 ## Configuration
 On first start, the default configuration will be loaded into ~pi/etc/config.db. Any settings changes (schedule timing, mode change, etc) will be persisted by updating this configuration database. To revert entirely to defaults, the ~pi/etc/config.db can be deleted, and the software restarted.
 
@@ -74,9 +85,7 @@ The openeo_download.py program helps to manage the download and deployment of th
 ## Important Notes
 The openeo charger cannot currently accommodate the following features:
 
-* Total current limiting at the mains fuse ("load balancing").  If this charger is used on a looped supply, a small fuse, or shares a supply with another charger, it might require load balancing to avoid a failure of the main incoming fuse.  This would result in a total power outage to the home should it occur, and would require your DNO to visit to correct the failure.   We will look to introduce load balancing in the near future, but for now, *DO NOT* use this software if you depend upon that.  
-
-* Solar system integration.  This means the openeo charger won't start charging when there is an excess of solar being exported to the grid.  This is also a feature we are looking to add in the future and we are interested in hearing from users who have systems like this that we can test the openeo software on.
+* Total current limiting at the mains fuse ("load balancing"). If this charger is used on a looped supply, a small fuse, or shares a supply with another charger, it might require load balancing to avoid a failure of the main incoming fuse.  This would result in a total power outage to the home should it occur, and would require your DNO to visit to correct the failure. The load balancing feature is included for testing purposes but for now, *DO NOT* use this software if you depend upon that.  
 
 * Control is currently only possible locally via the web interface and some phones when connected to the same wireless network as the charger.  Whilst it is possible to expose your openeo instance to the public internet, we strongly advise that you do not do so, since the application has not been audited for security vulnerabilities yet.  This also means you can't (yet) control charging remotely, though we will be releasing Home Assistant support in the near future which should allow this.
 

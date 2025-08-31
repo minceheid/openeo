@@ -81,9 +81,9 @@ class MiniPro2(HomeHub):
         self._register_set(self.REG_EFCR, 0x30)
         _LOGGER.debug("EO COMMS - HomeHub initialised")
 
-
-        self.ct=SPI_EM_IC()
-        self.ct.configure()
+        # Create an object for communicating with the energy monitor
+        # IC over SPI 0,1
+        self.ct=CtSpiClass()
 
 
     def tx(self,command):
@@ -172,14 +172,10 @@ class MiniPro2(HomeHub):
         else:
                 print("No response")
 
-
-
-
-
 # ------------------------------------------------------------------------------
-class SPI_EM_IC(object):
+class CtSpiClass(object):
     # Registers
-    STATUS1 = 0xE503
+    #STATUS1 = 0xE503
     RUN = 0xE228
     CFMODE = 0xE610
     CONFIG = 0xE618
@@ -198,36 +194,19 @@ class SPI_EM_IC(object):
     AIRMS = 0x43C0
     BIRMS = 0x43C2
     CIRMS = 0x43C4
-    pinmap = {
-        "SCK": 11,  # pin 23
-        "MISO": 9,  # pin 21
-        "MOSI": 10,  # pin 19
-        "NSS": 7,  # pin 26
-        "IRQ0": 20,  # pin 38
-        "NRESET": 22,  # pin 15
-        "CF1": 27,  # pin 13
-        "PM1": 17,  # pin 11
-    }
+
     def __init__(self):
-        self.IRQ0 = self.pinmap["IRQ0"]
-        self.NRESET = self.pinmap["NRESET"]
-        self.CF1 = self.pinmap["CF1"]
-        self.PM1 = self.pinmap["PM1"]
+        self.IRQ0 = 20 
+        self.NRESET = 22
+        self.PM1 = 17
         self.spi = None
-        self.configure_pins()
-        self.reset()
-        self.configure_spi()
-        self.enable_spi()
 
-    def configure_pins(self):
-        # inputs
+        # Set up GPIO Pins
         GPIO.setup(self.IRQ0, GPIO.IN)
+        GPIO.setup(self.NRESET, GPIO.OUT)
+        GPIO.setup(self.PM1, GPIO.OUT)
 
-        # outputs
-        for pin in (self.NRESET, self.PM1):
-            GPIO.setup(pin, GPIO.OUT)
-
-    def reset(self):
+        # Reset
         GPIO.output(self.PM1, GPIO.LOW)
         GPIO.output(self.NRESET, GPIO.HIGH)
         time.sleep(0.001)
@@ -236,49 +215,19 @@ class SPI_EM_IC(object):
         GPIO.output(self.NRESET, GPIO.HIGH)
         time.sleep(0.02)
 
-    def configure_spi(self):
+        # Configure and Enable SPI
         self.spi = spidev.SpiDev()
         self.spi.open(0, 1)
         self.spi.max_speed_hz = 1000000
         self.spi.mode = 0b11
 
-    def enable_spi(self):
+        # Enable SPI with three calls to xfer2()
         for i in range(3):
             self.spi.xfer2([0x00])
             time.sleep(0.001)
 
-    def reg_get(self, register, size=4):
-        # register always a two byte address
-        assert size >= 1 and size <= 4
+        self.configure()
 
-        #construct packet
-        data = [1, register >> 8, register & 0xFF]
-        data += [0] * size
-        #send/recieve
-        rx = self.spi.xfer2(data)[3:]
-        result = 0
-        for i in rx:
-            result <<= 8
-            result += i
-        return result
-
-    def reg_set(self, register, value, size=4):
-        assert size >= 1 and size <= 4
-        # Reverse the byte order of the value
-        reverse = 0
-        for i in range(size):
-            reverse <<= 8
-            reverse += value & 0xFF
-            value >>= 8
-
-        # construct packet
-        data = [0, register >> 8, register & 0xFF]
-        for i in range(size):
-            data += [reverse & 0xFF]
-            reverse >>= 8
-
-        # send
-        self.spi.xfer2(data)
 
     def configure(self):
 
@@ -286,20 +235,20 @@ class SPI_EM_IC(object):
         GAIN = 0x0FE6060C
 
         cfg = (
-            (SPI_EM_IC.CFMODE, 0x0E88, 2),
-            (SPI_EM_IC.CONFIG, 0, 2),
-            (SPI_EM_IC.HPFDIS, 0, 4),
-            (SPI_EM_IC.GAIN, 0, 2),
-            (SPI_EM_IC.AIGAIN, GAIN, 4),
-            (SPI_EM_IC.BIGAIN, GAIN, 4),
-            (SPI_EM_IC.CIGAIN, GAIN, 4),
-            (SPI_EM_IC.AIRMSOS, RMSOS, 4),
-            (SPI_EM_IC.BIRMSOS, RMSOS, 4),
-            (SPI_EM_IC.CIRMSOS, RMSOS, 4),
+            (CtSpiClass.CFMODE, 0x0E88, 2),
+            (CtSpiClass.CONFIG, 0, 2),
+            (CtSpiClass.HPFDIS, 0, 4),
+            (CtSpiClass.GAIN, 0, 2),
+            (CtSpiClass.AIGAIN, GAIN, 4),
+            (CtSpiClass.BIGAIN, GAIN, 4),
+            (CtSpiClass.CIGAIN, GAIN, 4),
+            (CtSpiClass.AIRMSOS, RMSOS, 4),
+            (CtSpiClass.BIRMSOS, RMSOS, 4),
+            (CtSpiClass.CIRMSOS, RMSOS, 4),
         )
         self.reg_set(self.RUN, 0, 2)
 
-        # configure IC
+        # configure IC by setting all cfg settings
         for reg, val, s in cfg:
             self.reg_set(reg, val, s)
 
@@ -307,10 +256,34 @@ class SPI_EM_IC(object):
         self.reg_set(*cfg[-1])
         self.reg_set(*cfg[-1])
 
-        # check
+        #validate that all settings were made
         for reg, val, s in cfg:
             res = self.reg_get(reg, s)
             if res != val:
                 _LOGGER.error("Problem setting EM IC register 0x%04x" % reg)
 
         self.reg_set(self.RUN, 1,2)
+
+    def reg_get(self, register, size=4):
+        # register always a two byte address
+        assert size >= 1 and size <= 4
+
+        #construct packet
+        data = [1]
+        data += list(register.to_bytes(2,"big"))
+        data += [0] * size
+
+        #send/recieve
+        rx = self.spi.xfer2(data)[3:]
+        return(int.from_bytes(rx,"big",signed=False))
+
+    def reg_set(self, register, value, size=4):
+        assert size >= 1 and size <= 4
+
+        # construct packet
+        data = [0]
+        data += list(register.to_bytes(2,"big"))
+        data += list(value.to_bytes(size,"big"))
+
+        # send
+        self.spi.xfer2(data)

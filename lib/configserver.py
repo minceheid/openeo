@@ -52,7 +52,10 @@ class configserverClassPlugin(PluginSuperClass):
     CORE_PLUGIN = True # Can't be disabled from the UI
     
     pluginParamSpec={   "enabled":      {"type": "bool","default": True},
-                        "port":  {"type": "int","default":80}}
+                        "port":  {"type": "int","default":80},
+                        "update_start": {"type": "int","defult":0},
+                        "update_finish": {"type": "int","defult":0},
+                        "update_log": {"type": "str","defult":""}}
 
     def __init__(self,configParam):
         super().__init__(configParam)
@@ -322,7 +325,28 @@ class configserverClassPlugin(PluginSuperClass):
         
         def do_POST(self):
             _LOGGER.info("do_POST(%s)" % self.path)
-            
+            """
+            if self.path == "/update":
+                ##################################
+                # API for updating the software. This will sensecheck what it's being asked, then return a result
+                # and then leave the thread running with the upgrade process updating the output into the database
+                content_length = int(self.headers['Content-Length'])
+                post_data = json.loads(self.rfile.read(content_length).decode('utf-8'))
+
+                update_start=globalState.configDB.get("chargeroptions","update_start")
+                update_finish=globalState.configDB.get("chargeroptions","update_finish")
+
+                if update_start is within 30 minutes and update_finish=0:
+                    # Update in Progress
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                else
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    time.sleep(60)
+            """
             if self.path == "/setconfig":
                 ##################################
                 # API for writing configuration. This allows an arbitrary length dict to be passed via JSON
