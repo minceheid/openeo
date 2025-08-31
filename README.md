@@ -95,7 +95,7 @@ Example ```~pi/etc/config.json``` file to set the default log level to debug (no
 ```
 
 ## Troubleshooting
-After installation - if you recieve a red "Controller Error" message that persists for more than a minute, then this indicates that the Raspberry Pi has not been able to establish serial communication with the charger contol board. We recommend that you doublecheck the connection within the unit (these instructions assume Mini Pro 2)
+After installation - it is normal to sometimes briefly recieve a "Controller Error" message on startup. This is simply the software establishing communications with the charger. If the red "Controller Error" message persists for more than a minute, then this indicates that the Raspberry Pi has not been able to establish serial communication with the charger contol board. We recommend that you doublecheck the connection within the unit (these instructions assume Mini Pro 2)
 
 <p align="center"><img src="https://github.com/user-attachments/assets/bcc180dc-f8c1-4e36-a994-a1190989f947" style="width:50%; height:auto;"/></p>
 
