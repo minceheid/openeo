@@ -12,8 +12,9 @@ This project has been designed to be compatible with the EO Smart Home Hub/Mini 
 
 ### [Smart Home Hub/Mini](https://github.com/user-attachments/files/22066221/EO_Home_Hub.pdf)
 <p align="center">
-<img src="https://github.com/user-attachments/assets/b9dc3e18-3b20-448b-b75f-bd454560a7b9" style="width:50%; height:auto;" />
-<img src="https://github.com/user-attachments/assets/0af275d7-857c-4c6b-a171-9837792890fa" style="width:25%; height:auto;" />
+<img src="https://github.com/user-attachments/assets/1ad1ba51-ef88-4cb6-9a99-9f922e32f02c" style="width:25%; height:auto;" />
+<img src="https://github.com/user-attachments/assets/62a2e6cc-128f-49bd-8265-9c09de2d08fe" style="width:25%; height:auto;" />
+  
 </p>
 
 ### [Mini Pro 2](https://github.com/user-attachments/files/22066224/eo-mini-pro-2-installation-and-userguide.pdf)
