@@ -57,8 +57,8 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 </figure>
 </p>
 </td></tr></table>
-7. Close the EO enclosure, and apply power to it. The RPi Zero should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take about five minutes to fully boot before it is seen on the network.
-8. Log onto your account on the RPi Zero via SSH over the WiFi network, and run the following commands. This will download the software from github and run the installation process, then reboots your RPi to allow the software to finish configuring and start up.
+7. Close the EO enclosure, and apply power to it. The Raspberry Pi should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take about five minutes to fully boot before it is seen on the network.
+8. Log onto your account on the RPi via SSH (e.g. PuTTY) over the WiFi network, and run the following commands. This will download the software from github and run the installation process, then reboots your RPi to allow the software to finish configuring and start up.
 
 ~~~~
 curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -
