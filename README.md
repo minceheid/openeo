@@ -1,5 +1,4 @@
-# openeo
-Cloudless software install for the EO Home Hub and Mini Pro 2 EV charger.
+# Cloudless software for the EO Smart Home Hub/Mini and Mini Pro 2 EV charger
 EO Charging announced in July 2025 that their EO Smart Home app is being discontinued on November 30th 2025. This disables the ability for owners to set automated timed schedules and to directly manage their device, which will then operate purely as a "plug & play" charger. This project aims to provide an alternate, open source software that can be directly installed on these devices to allow control from the local WiFi network without the use of the EO Cloud. 
 
 <p align="center">
