@@ -25,7 +25,7 @@ This project has been designed to be compatible with the EO Smart Home Hub/Mini 
 This software can be installed onto a Raspberry OS Lite install. We recommend that you keep your original EO SD card safe and separate, so that you can revert easily, should things don't work out for you.
 
 1. Obtain a 8GB (or larger) SD card
-2. Flash the SD card with the Raspberry PI imager (Device: Raspberry Pi Zero, Operating System: Raspberry PI OS Lite (32 bit))
+2. Flash the SD card with the Raspberry PI imager (Device: Raspberry Pi 3 for Home Hub and Raspberry Pi Zero for Mini Pro 2, Operating System: Raspberry PI OS Lite (32 bit))
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/58fc15c4-ed2e-403d-b8f1-7e83a6c8c2b7" style="width:25%; height:auto;" />
@@ -65,7 +65,7 @@ curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_downloa
 sudo reboot
 ~~~~
 
-Once the RPi Zero reboots, it should all be working. You should be able to point your browser at the IP address (or you can use mDNS to navigate to _hostname_.local - where _hostname_ is whichever hostname you set in step 3 above). You should see the configuration web page, showing the charger status, and giving you control.
+Once the Raspberry Pi reboots, it should all be working. You should be able to point your browser at the IP address (or you can use mDNS to navigate to _hostname_.local - where _hostname_ is whichever hostname you set in step 3 above). You should see the configuration web page, showing the charger status, and giving you control.
 
 *Note* - at this time, only the **_Schedule_** mode and **_Manual_** mode is available. We will be adding **_Remote_** (OCPP) shortly.
 
