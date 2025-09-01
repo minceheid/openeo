@@ -168,11 +168,11 @@ class openeoChargerClass:
                 ct_calibration_solar=lm_config.get("ct_calibration_solar",None)
 
                 if ct_calibration_site is not None:
-                    self.current_site=self.current_site*ct_calibration_site
+                    self.current_site*=ct_calibration_site
                 if ct_calibration_vehicle is not None:
-                    self.current_vehicle=self.current_vehicle*ct_calibration_vehicle
+                    self.current_vehicle*=ct_calibration_vehicle
                 if ct_calibration_solar is not None:
-                    self.current_solar=self.current_solar*ct_calibration_solar
+                    self.current_solar*=*ct_calibration_solar
 
 
 
