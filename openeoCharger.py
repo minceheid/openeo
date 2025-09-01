@@ -172,7 +172,7 @@ class openeoChargerClass:
                 if ct_calibration_vehicle is not None:
                     self.current_vehicle*=ct_calibration_vehicle
                 if ct_calibration_solar is not None:
-                    self.current_solar*=*ct_calibration_solar
+                    self.current_solar*=ct_calibration_solar
 
 
 
