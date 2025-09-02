@@ -4,7 +4,7 @@ OpenEO Class for handling configuration get/set
 """
 #################################################################################
 
-import sqlite3,logging,json,os
+import sqlite3,logging,json,os,time
 from threading import Lock
 
 # logging for use in this module
@@ -15,6 +15,29 @@ class openeoConfigClass:
     DB_FILE = "/home/pi/etc/config.db"
     JSON_FILE = "/home/pi/etc/config.json"
     CONFIG_TABLE = "configuration"
+    LOG_TABLE = "log"
+
+    def logwrite(self,message):
+        """
+        inserts an entry into a table called "log" in the sqlite database
+        """
+        with self.lock:
+            self.cursor.execute(f'''
+                INSERT INTO {self.LOG_TABLE} (timestamp, message) 
+                VALUES (?, ?)
+            ''', (int(time.time()), message))
+            self.conn.commit()
+
+    def logpurge(self):
+        """
+        Purges log entries older than an hour ago
+        """
+        with self.lock:
+            self.cursor.execute(f'''
+                DELETE FROM log where timestamp<? 
+            ''', (int(time.time()-3600),))
+            self.conn.commit()
+
 
     def exists(self, module):
         """
@@ -110,6 +133,13 @@ class openeoConfigClass:
                 key TEXT NOT NULL,
                 value,
                 PRIMARY KEY (module, key)
+            )
+        ''')
+
+        self.cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {self.LOG_TABLE} (
+                timestamp INTEGER NOT NULL,
+                message TEXT NOT NULL
             )
         ''')
         self.conn.commit()

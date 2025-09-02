@@ -28,7 +28,10 @@ class loadmanagementClassPlugin(PluginSuperClass):
             "simulate_ct_site":     {"type": "float", "default": 0},
             "ct_calibration_site":   {"type": "float", "default": 1.0},
             "ct_calibration_vehicle":{"type": "float", "default": 1.0},
-            "ct_calibration_solar":  {"type": "float", "default": 1.0}
+            "ct_calibration_solar":  {"type": "float", "default": 1.0},
+            "ct_offset_site":   {"type": "float", "default": 0.0},
+            "ct_offset_vehicle":{"type": "float", "default": 0.0},
+            "ct_offset_solar":  {"type": "float", "default": 0.0}
             }
         
     def poll(self):

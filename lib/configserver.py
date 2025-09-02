@@ -14,7 +14,7 @@ Configuration example:
 """
 #################################################################################
 import re, logging, threading, json, http.server, socketserver, datetime, socket, os
-import copy, time, numbers, urllib.parse, subprocess
+import copy, time, numbers, urllib.parse, subprocess,sys
 
 import globalState, util
 from lib.PluginSuperClass import PluginSuperClass
@@ -60,8 +60,8 @@ class configserverClassPlugin(PluginSuperClass):
     def __init__(self,configParam):
         super().__init__(configParam)
 
-        serverthread = threading.Thread(target=self.webserver, name='serverthread')
-        serverthread.start()
+        self.serverthread = threading.Thread(target=self.webserver, name='serverthread', daemon=True)
+        self.serverthread.start()
 
     def webserver(self):
         socketserver.TCPServer.allow_reuse_address = True
@@ -96,6 +96,7 @@ class configserverClassPlugin(PluginSuperClass):
             
 
         def do_GET(self):
+
             ################################
             # Prometheus exporter
             if format(self.path)=="/metrics":

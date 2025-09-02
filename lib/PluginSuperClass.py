@@ -85,9 +85,6 @@ class PluginSuperClass:
             return self.pluginConfig
         else:
             return self.pluginConfig[key]
-        
-    def poll(self):
-        return 0
             
     def get_user_settings(self):
         return []

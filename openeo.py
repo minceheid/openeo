@@ -92,7 +92,7 @@ def main():
                     _LOGGER.info("Unloading %s",modulename)
                     del globalState.stateDict["_moduleDict"][modulename]
 
-
+        #print("configserver alive:",globalState.stateDict["_moduleDict"]["configserver"].serverthread.is_alive())
         # Take any action necessary - the module poll() function should return a numeric value
         # the maximum value returned by any module will be the max amp setting for the charger
         # If all modules return 0, then the charger will be set to "off"
@@ -101,14 +101,16 @@ def main():
 
         for module_name, module in globalState.stateDict["_moduleDict"].items():
             if module.get_config().get("enabled", True):
-		# Get the current from a module, whilst ensuring that it's an integer,
-		# and also between 0>=x>=32
-                module_current = max(min(int(module.poll()),32),0)
-                if (not isinstance(module_current, numbers.Number)):
-                    _LOGGER.error(f"ERROR: Module {module} returned "+str(type(module_current))+"- Ignoring")
-                else:
-                    globalState.stateDict["eo_amps_requested"] = max(globalState.stateDict["eo_amps_requested"], module_current)
-                    _LOGGER.debug("polled %s, amps_requested=%d" % (module_name, module_current))
+                if callable(getattr(module,"poll",None)):
+                    # Get the current from a module, whilst ensuring that it's an integer,
+                    # and also between 0>=x>=32
+                    module_current = max(min(int(module.poll()),32),0)
+                    globalState.configDB.logwrite(f"module:{module_name} current:{module_current}")
+                    if (not isinstance(module_current, numbers.Number)):
+                        _LOGGER.error(f"ERROR: Module {module} returned "+str(type(module_current))+"- Ignoring")
+                    else:
+                        globalState.stateDict["eo_amps_requested"] = max(globalState.stateDict["eo_amps_requested"], module_current)
+                        _LOGGER.debug("polled %s, amps_requested=%d" % (module_name, module_current))
         
         if globalState.stateDict["eo_always_supply_current"]:
             globalState.stateDict["eo_amps_requested"] = 32
@@ -126,9 +128,11 @@ def main():
         # iteration to set amps_limit to zero)
         try:
             _LOGGER.debug("Setting amp limit: %d" % globalState.stateDict["eo_amps_requested"])
+            globalState.configDB.logwrite(f"site_ct={globalState.stateDict['eo_current_site']} vehicle_ct={globalState.stateDict['eo_current_vehicle']} solar_ct={globalState.stateDict['eo_current_solar']}")
+            globalState.configDB.logwrite(f"sending amp limit={globalState.stateDict['eo_amps_requested']}")
             result = charger.set_amp_limit(globalState.stateDict["eo_amps_requested"])
         except:
-            _LOGGER.exception("Problem getting result from serial command: ("+str(result)+")")
+            _LOGGER.error("Problem getting result from serial command: ("+str(result)+")")
             result = None
 
         if result:
@@ -197,6 +201,11 @@ def main():
             
         else:
             _LOGGER.debug("Ignoring State Update, we probably had a serial overrun")
+
+        # Housekeeping actions
+        if (loop % 12) == 0:
+            # Once a minute, purge the log table
+            globalState.configDB.logpurge()
 
         # Measure Pi CPU temperature. This is returned via OCPP and might be exposed in other interfaces later.
         # I'm not sure how useful this is, but presumably on a hot day under high CPU load whilst charging, 

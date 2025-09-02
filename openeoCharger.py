@@ -162,19 +162,22 @@ class openeoChargerClass:
             # CT Calibration
 
             if "loadmanagement" in globalState.stateDict["_moduleDict"]:
+
                 lm_config=globalState.stateDict["_moduleDict"]["loadmanagement"].pluginConfig
-                ct_calibration_site=lm_config.get("ct_calibration_site",None)
-                ct_calibration_vehicle=lm_config.get("ct_calibration_vehicle",None)
-                ct_calibration_solar=lm_config.get("ct_calibration_solar",None)
+                ct_calibration_site=lm_config.get("ct_calibration_site",1)
+                ct_calibration_vehicle=lm_config.get("ct_calibration_vehicle",1)
+                ct_calibration_solar=lm_config.get("ct_calibration_solar",1)
+                ct_offset_site=lm_config.get("ct_offset_site",0)
+                ct_offset_vehicle=lm_config.get("ct_offset_vehicle",0)
+                ct_offset_solar=lm_config.get("ct_offset_solar",0)
 
-                if ct_calibration_site is not None:
-                    self.current_site*=ct_calibration_site
-                if ct_calibration_vehicle is not None:
-                    self.current_vehicle*=ct_calibration_vehicle
-                if ct_calibration_solar is not None:
-                    self.current_solar*=ct_calibration_solar
+                self.current_site*=ct_calibration_site
+                self.current_vehicle*=ct_calibration_vehicle
+                self.current_solar*=ct_calibration_solar
 
-
+                self.current_site+=ct_offset_site
+                self.current_vehicle+=ct_offset_vehicle
+                self.current_solar+=ct_offset_solar
 
             # Inject simulated values, for testing purposes
             if "loadmanagement" in globalState.stateDict["_moduleDict"]:

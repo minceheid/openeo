@@ -1,0 +1,36 @@
+#!/usr/bin/bash
+
+echo "= PS"
+echo "================="
+ps -fLu pi
+echo
+echo "= NETSTAT"
+echo "================="
+netstat -4l
+echo
+echo "= JOURNALCTL"
+echo "================="
+journalctl |tail -250
+echo
+echo "= SYSTEMCTL"
+echo "================="
+systemctl status openeo
+
+cat <<EOF | /usr/bin/python3 -
+import sqlite3
+
+# Initialize SQLite DB and table
+conn = sqlite3.connect("/home/pi/etc/config.db")
+cursor = conn.cursor()
+
+cursor.execute(f"SELECT module, key, value FROM configuration")
+rows = cursor.fetchall()
+for row in rows:
+    print(row)
+
+cursor.execute(f"SELECT timestamp, message FROM log")
+rows = cursor.fetchall()
+for row in rows:
+    print(row)
+
+EOF
