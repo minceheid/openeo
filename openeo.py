@@ -101,7 +101,9 @@ def main():
 
         for module_name, module in globalState.stateDict["_moduleDict"].items():
             if module.get_config().get("enabled", True):
-                module_current = module.poll()
+		# Get the current from a module, whilst ensuring that it's an integer,
+		# and also between 0>=x>=32
+                module_current = max(min(int(module.poll()),32),0)
                 if (not isinstance(module_current, numbers.Number)):
                     _LOGGER.error(f"ERROR: Module {module} returned "+str(type(module_current))+"- Ignoring")
                 else:
@@ -186,10 +188,11 @@ def main():
             # modules, then raise the Amp limit to the maximum requested by the modules
             # Note - we have had some unusual states reported here, preventing charging, so we are now checking
             # for state_id >= 5 to eliminate suspected error states, but to otherwise be permissive.
-            if (globalState.stateDict["eo_charger_state_id"] >= 5) and (globalState.stateDict["eo_amps_requested"] > 0):
+            if (globalState.stateDict["eo_charger_state_id"] >= 5) and (globalState.stateDict["eo_amps_requested"] > 0) and (globalState.stateDict["eo_amps_requested"] <= 32):
                 globalState.stateDict["eo_amps_limit"]=globalState.stateDict["eo_amps_requested"]
             else:
                 globalState.stateDict["eo_amps_limit"]=0
+
             _LOGGER.debug("Amps Limit: "+str(globalState.stateDict["eo_amps_limit"])+"A")
             
         else:
