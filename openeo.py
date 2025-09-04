@@ -124,8 +124,7 @@ def main():
 
         # In order for us to find the status of the charger (e.g. whether a car is connected), we
         # need to set the amp limit first as part of the request. Action may be taken off the back of that 
-        # status on the next iteration (e.g. if the car is unplugged, then we'll need to wait for the next
-        # iteration to set amps_limit to zero)
+        # status on the next iteration 
         try:
             _LOGGER.debug("Setting amp limit: %d" % globalState.stateDict["eo_amps_requested"])
             globalState.configDB.logwrite(f"site_ct={globalState.stateDict['eo_current_site']} vehicle_ct={globalState.stateDict['eo_current_vehicle']} solar_ct={globalState.stateDict['eo_current_solar']}")
@@ -188,17 +187,6 @@ def main():
             # And make a snapshot of the stateDict for the configserver module to refer to
             globalState.stateSnapshot=copy.copy(globalState.stateDict)
 
-            # If we are ready to charge (that is, there is a cable/car connected), and there is demand from the 
-            # modules, then raise the Amp limit to the maximum requested by the modules
-            # Note - we have had some unusual states reported here, preventing charging, so we are now checking
-            # for state_id >= 5 to eliminate suspected error states, but to otherwise be permissive.
-            if (globalState.stateDict["eo_charger_state_id"] >= 5) and (globalState.stateDict["eo_amps_requested"] > 0) and (globalState.stateDict["eo_amps_requested"] <= 32):
-                globalState.stateDict["eo_amps_limit"]=globalState.stateDict["eo_amps_requested"]
-            else:
-                globalState.stateDict["eo_amps_limit"]=0
-
-            _LOGGER.debug("Amps Limit: "+str(globalState.stateDict["eo_amps_limit"])+"A")
-            
         else:
             _LOGGER.debug("Ignoring State Update, we probably had a serial overrun")
 

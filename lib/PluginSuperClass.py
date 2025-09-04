@@ -19,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class PluginSuperClass:
 
-    def _convertType(self,value,typeClass,default=None):
+    def _convertType(self,attribute,value,typeClass,default=None):
         """
         Internal method used by the configure() method. This attempts to do type conversion, or
         if not possible, returns a default value.    
@@ -56,10 +56,10 @@ class PluginSuperClass:
         defaultType=type(default).__name__
         if typeClass=="json":
             return json.loads(default)
-        elif default==None or defaultType==typeClass:
+        elif default==None or defaultType==typeClass or (defaultType=="int" and typeClass=="float"):
             return(default)
         else:
-            _LOGGER.error(f"Given default value ({default}({defaultType})) does not match given typeClass ({typeClass}). Returning None from _convertType - check pluginParamSpec")
+            _LOGGER.error(f"Given default value ({default}({defaultType})) for {attribute} that does not match given typeClass ({typeClass}). Returning None from _convertType - check pluginParamSpec")
             return(None)
 
     
@@ -78,7 +78,7 @@ class PluginSuperClass:
         self.pluginConfig=configParam
         # Does type conversion, based on the pluginParamSpec{} dict
         for attribute,spec in self.pluginParamSpec.items():
-            self.pluginConfig[attribute]=self._convertType(self.pluginConfig.get(attribute,None),spec["type"],spec["default"])
+            self.pluginConfig[attribute]=self._convertType(attribute,self.pluginConfig.get(attribute,None),spec["type"],spec["default"])
 
     def get_config(self,key=None):
         if key is None:
