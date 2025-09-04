@@ -96,6 +96,7 @@ class configserverClassPlugin(PluginSuperClass):
             
 
         def do_GET(self):
+            globalState.configDB.logwrite(f"page GET request:{self.path}")
 
             ################################
             # Prometheus exporter
@@ -325,7 +326,9 @@ class configserverClassPlugin(PluginSuperClass):
             return
         
         def do_POST(self):
-            _LOGGER.info("do_POST(%s)" % self.path)
+            #_LOGGER.info("do_POST(%s)" % self.path)
+            globalState.configDB.logwrite(f"page POST request:{self.path}")
+
             """
             if self.path == "/update":
                 ##################################
