@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.4](https://github.com/minceheid/openeo/compare/v0.5.3...v0.5.4) (2025-09-04)
+
+
+### Bug Fixes
+
+* added web instrumentation ([1affe53](https://github.com/minceheid/openeo/commit/1affe5347cdb48d4de6b7c71096a70dd480a9808))
+* instrumentation updates ([5a0edc0](https://github.com/minceheid/openeo/commit/5a0edc008ede1996407520276cf20f7e865716db))
+
 ## [0.2.3](https://github.com/minceheid/openeo/compare/v0.2.2...v0.2.3) (2025-07-24)
 
 
