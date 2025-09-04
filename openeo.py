@@ -50,6 +50,9 @@ def main():
     else:
         _LOGGER.error("Invalid log level "+logLevel+"in config - ignoring")
 
+
+    globalState.configDB.logwrite(f"+++++ startup:{globalState.stateDict['app_version']} directory:{globalState.stateDict['app_deploy_directory']}")
+
     # Make a snapshot of the stateDict for the configserver module to refer to
     globalState.stateSnapshot=copy.copy(globalState.stateDict)
 
