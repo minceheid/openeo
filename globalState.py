@@ -94,6 +94,7 @@ defaultConfig = {
         "logger" : { "enabled" : True },
         "checkversion" : { "enabled" : True },
         "chargeroptions" : { "enabled" : True, "mode" : "schedule" },
-        "loadmanagement" : { "enabled" : True }}
+        "loadmanagement" : { "enabled" : True },
+        "homeassistant" : { "enabled" : False }}
 
 configDB = openeoConfigClass(defaultConfig)
