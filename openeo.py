@@ -24,7 +24,7 @@ SOFTWARE.
 """
 import logging,numbers,copy
 import logging.handlers
-import time, math
+import time, math, datetime
 import importlib
 
 import globalState, util
@@ -58,6 +58,7 @@ def main():
 
     # Main loop
     loop = 0
+    lastloop=datetime.datetime.now()
     globalState.stateDict["_moduleDict"]={}
     while True:
         _LOGGER.debug("-- START LOOP --")
@@ -172,6 +173,7 @@ def main():
             result = None
 
         if result:
+
             # Take values that have been recorded by the charger object, and squirrel them away in 
             # globalState.stateDict{}.
 
@@ -197,8 +199,6 @@ def main():
             globalState.stateDict["eo_charger_state_id"] = int(charger.charger_state, 16)
             globalState.stateDict["eo_charger_state"] = openeoChargerClass.CHARGER_STATES[globalState.stateDict["eo_charger_state_id"]]
 
-
-            
             globalState.stateDict["eo_amps_requested_grid"] = globalState.stateDict["eo_amps_requested"] - globalState.stateDict["eo_amps_requested_solar"]
             if globalState.stateDict["eo_amps_requested_grid"] <0:
                 globalState.stateDict["eo_amps_requested_solar"]+=globalState.stateDict["eo_amps_requested_grid"]
@@ -210,6 +210,20 @@ def main():
             globalState.stateDict["eo_power_requested_site_limit"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested_site_limit"]) / 1000, 2)    # P=VA
             globalState.stateDict["eo_amps_delivered"] = round(((globalState.stateDict["eo_power_delivered"] * 1000) / globalState.stateDict["eo_live_voltage"]), 2)    # P=VA
 
+
+            # If charger state indicates that the car might not be disconnected, then
+            # we reset the session kWh count, otherwise we calculate how many additional
+            # joules have been added to the count
+            if globalState.stateDict["eo_charger_state_id"]<9:
+                globalState.stateDict["eo_session_joules"]=0
+            else:
+                thisloop=datetime.datetime.now()
+                secondsSinceLastLoop=(thisloop-lastloop).total_seconds()
+                # 1J = 1Ws = 1 x V * A * s
+                globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"] * secondsSinceLastLoop)
+                globalState.stateDict["eo_session_kwh"]= round(globalState.stateDict["eo_session_joules"] / 3600000,2)
+                # Reset the time counter for next time.
+                lastloop=thisloop
 
 
             # After all adjustments have been made, record data for the logger

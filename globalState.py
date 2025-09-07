@@ -40,6 +40,11 @@ stateDict={
     "eo_charger_state_id":0,
     "eo_charger_state":"",
 
+    # Number of joules that the connected vehicle has recieved in this session
+    # This figure is reset to zero when we detect that the car has been disconnected
+    "eo_session_joules":0,
+    "eo_session_kwh":0,
+
     # CT Sensor Current (Amps)
     "eo_current_site":0,  #site
     "eo_current_vehicle":0,  #vehicle
