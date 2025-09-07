@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0](https://github.com/minceheid/openeo/compare/v0.5.3...v0.6.0) (2025-09-07)
+
+
+### Features
+
+* load balancing bugfix, and improved instrumentation on the statistics page ([e68efb5](https://github.com/minceheid/openeo/commit/e68efb5536c25d0e5b0c8129d5621cf23af9a01b))
+
+
+### Bug Fixes
+
+* added web instrumentation ([1affe53](https://github.com/minceheid/openeo/commit/1affe5347cdb48d4de6b7c71096a70dd480a9808))
+* instrumentation updates ([5a0edc0](https://github.com/minceheid/openeo/commit/5a0edc008ede1996407520276cf20f7e865716db))
+
 ## [0.2.3](https://github.com/minceheid/openeo/compare/v0.2.2...v0.2.3) (2025-07-24)
 
 
