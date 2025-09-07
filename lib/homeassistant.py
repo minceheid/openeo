@@ -410,7 +410,7 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "name": "Charger Switch",
                 "state_topic": f"openeo/{device_id}/state",
                 "command_topic": f"openeo/{device_id}/command/switch/set",
-                "value_template": "{{ 'ON' if value_json.charging_active else 'OFF' }}",
+                "value_template": "{{ 'ON' if (value_json.switch_enabled and value_json.switch_on) else 'OFF' }}",
                 "payload_on": "ON",
                 "payload_off": "OFF",
                 "icon": "mdi:ev-station",
@@ -513,6 +513,8 @@ class homeassistantClassPlugin(PluginSuperClass):
             "vehicle_connected": vehicle_connected,
             "charging_active": charging_active,
             "mode": current_mode,
+            "switch_on": globalState.configDB.get("switch", "on", False),
+            "switch_enabled": globalState.configDB.get("switch", "enabled", False),
             "serial_errors": globalState.stateDict.get("eo_serial_errors", 0),
             "app_version": globalState.stateDict.get("app_version", "unknown"),
             "timestamp": int(time.time())
