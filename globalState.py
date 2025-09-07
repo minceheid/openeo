@@ -12,6 +12,10 @@ critical ones.
 import logging, os
 from openeoConfig  import openeoConfigClass
 
+# Charging current limits (based on EV charging standards)
+MIN_CHARGING_CURRENT = 6  # Minimum safe charging current (IEC 61851)
+MAX_CHARGING_CURRENT = 32  # Maximum hardware current limit
+
 _LOGGER = logging.getLogger(__name__)
 
 # Read the application version; if not present, default to 0.0.

@@ -178,11 +178,15 @@ class homeassistantClassPlugin(PluginSuperClass):
     def _handle_current_limit_command(self, payload):
         """Handle current limit commands"""
         try:
-            # Parse and validate current value (6-32 amps)
+            # Parse and validate current value using global constants
             current_limit = int(float(payload))
             
-            if not 6 <= current_limit <= 32:
-                _LOGGER.error(f"Invalid current limit: {current_limit}. Must be 6-32 amps")
+            # Also respect the user-configured overall limit
+            max_allowed = min(globalState.MAX_CHARGING_CURRENT, 
+                            globalState.stateDict.get("eo_overall_limit_current", globalState.MAX_CHARGING_CURRENT))
+            
+            if not globalState.MIN_CHARGING_CURRENT <= current_limit <= max_allowed:
+                _LOGGER.error(f"Invalid current limit: {current_limit}. Must be {globalState.MIN_CHARGING_CURRENT}-{max_allowed} amps")
                 return
             
             # Set current limit for switch plugin
@@ -394,6 +398,10 @@ class homeassistantClassPlugin(PluginSuperClass):
             }
         ]
         
+        # Get dynamic current limits
+        max_allowed_current = min(globalState.MAX_CHARGING_CURRENT, 
+                                globalState.stateDict.get("eo_overall_limit_current", globalState.MAX_CHARGING_CURRENT))
+        
         # Define control entities for Home Assistant
         control_entities = [
             {
@@ -415,8 +423,8 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "state_topic": f"openeo/{device_id}/state",
                 "command_topic": f"openeo/{device_id}/command/current_limit/set",
                 "value_template": "{{ value_json.amps_limit }}",
-                "min": 6,
-                "max": 32,
+                "min": globalState.MIN_CHARGING_CURRENT,
+                "max": max_allowed_current,
                 "step": 1,
                 "unit_of_measurement": "A",
                 "device_class": "current",
