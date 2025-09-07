@@ -1,26 +1,34 @@
 /* Settings page */
-.settings {
-	width: 50%;
+.settings-outer {
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
-	font-size: 14pt;
+	height: 80vh;
 	overflow-x: hidden;
 	overflow-y: auto;
+	padding-left: 1em;
+	padding-right: 1em;
+	position: relative;
+	top: 15vh;
+	width: 70vw;
+}
+
+.settings-inner {
+	width: 100%;
+	height: 100%;
+	font-size: 14pt;
 	pointer-events: all;
 	z-index: 1000;
-	position: relative;
-	top: 6em;
 }
 
 /* Hidden icon sorts out the emoji positioning */
-.settings input + span, span.setting-radio-space {
+.settings-inner input + span, span.setting-radio-space {
 	display: inline-block;
 	width: 1em;
 	height: 1em;
 }
 
-.settings input[type=text], .settings input[type=number], .settings input[type=url] {
+.settings-inner input[type=text], .settings-inner input[type=number], .settings-inner input[type=url] {
 	background-color: #222222;
 	color: #ffffff;
 	border: 1px solid #888888;
@@ -28,33 +36,33 @@
 	width: 10em;  /* accounts for most strings we'll use, review later */
 }
 
-.settings input:focus {
+.settings-inner input:focus {
 	border: 1px solid #cccccc !important;
 	outline: none;
 }
 
-.settings input:invalid {
+.settings-inner input:invalid {
 	border: 1px solid #ff0000 !important;
 }
 
-.settings input:invalid + span::after {
+.settings-inner input:invalid + span::after {
 	content: "✖";
 	font-size: 0.5em;
 	color: red;
 	visibility: visible;
 }
 
-.settings input[type=range], .settings input[type=radio] {
+.settings-inner input[type=range], .settings-inner input[type=radio] {
 	accent-color: #4dabf7;
 	border-color: #888888;
 	background-color: #222222;
 }
 
-.settings input[type=range] {
+.settings-inner input[type=range] {
 	width: 10em;  /* reduce the size compared to default */
 }
 
-.settings input[type=submit], .settings input[type=button], .settings input[type=reset] {
+.settings-inner input[type=submit], .settings-inner input[type=button], .settings-inner input[type=reset] {
 	background-color: #222222;
 	color: #ffffff;
 	border: 1px solid #888888;
@@ -68,7 +76,7 @@
 	border: 1px solid #ff8888 !important;
 }
 
-.settings input[type=number] {
+.settings-inner input[type=number] {
 	width: 5em;  /* accounts for most numbers we'll use, review later */
 }
 
@@ -130,14 +138,14 @@
 
 /* Portrait phone tweaks */
 @media (orientation: portrait) and (max-width: 500px) {
-	.settings {
-		width: 90%;
+	.settings-inner {
+		width: 80vw;
 		font-size: 10pt;
-		position: relative;
-		top: 8em;
+		padding-bottom: 15em;
 	}
 	
-	.settings input[type=range] {
+	.settings-inner input[type=range] {
 		width: 7em;  
 	}
 }
+

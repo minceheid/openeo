@@ -52,6 +52,6 @@ class chargeroptionsClassPlugin(PluginSuperClass):
         #    range=(16,100), default=60, value_unit="A")
         #util.add_simple_setting(self.pluginConfig, settings, 'boolean', "chargeroptions", ("limit_current_to_solar_output",), 'Limit charging current to solar output', \
         #    note="Tracks solar current generation through the current sensor, and limits vehicle charging current to match", default=False)
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "chargeroptions", ("log_level",), 'Logging level', note='(info,warn,error,debug)')
+        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "chargeroptions", ("log_level",), 'Logging level', note='One of: info, warn, error or debug')
 
         return settings
