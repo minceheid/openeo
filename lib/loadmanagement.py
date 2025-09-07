@@ -49,5 +49,5 @@ class loadmanagementClassPlugin(PluginSuperClass):
             range=(0,8), default=1, value_unit="A")
         util.add_simple_setting(self.pluginConfig, settings, 'slider', "loadmanagement", ("site_limit_current",), 'Maximum Site Consumption', \
             note="When a current sensor is installed on the site electrical feed, setting this value may restrict charger output if electricity consumption measured at the sensor is high.", \
-            range=(16,100), default=60, value_unit="A")
+            range=(1,100), default=60, value_unit="A")
         return settings

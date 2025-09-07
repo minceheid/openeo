@@ -27,7 +27,14 @@ stateDict={
     # amps_limit: This is the final amps limit after it has been moderated by the charger
     # status (that is, if the car is not plugged in, it will be moderated down to zero)
     "eo_amps_requested":0,
-    "eo_amps_limit": 0,
+
+    # The following three are subcomponents of eo_amps_requested, for the purpose of 
+    # visualisation. It's an attempt to show the solar and grid requested amounts, and to
+    # visualise when a site load limit is in play, and consequently blocking potnetial
+    # charging capacity 
+    "eo_amps_requested_grid":0,
+    "eo_amps_requested_solar":0,
+    "eo_amps_requested_site_limit":0,
 
     # Numeric and descriptive (text) state identifier for the status of the charger
     "eo_charger_state_id":0,
@@ -41,6 +48,9 @@ stateDict={
     # Power Delivered and requested (kW). Calculated from current and voltage
     "eo_power_delivered":0,
     "eo_power_requested":0,
+    "eo_power_requested_grid":0,
+    "eo_power_requested_solar":0,
+    "eo_power_requested_site_limit":0,
 
     # Voltage
     "eo_live_voltage": 0,

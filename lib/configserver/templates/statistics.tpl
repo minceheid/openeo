@@ -21,11 +21,50 @@ const layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
                   y3: {rangemode: 'tozero'},  
                   };
 
-fetch('/getchartdata?type=plotly&series=eo_charger_state_id,eo_power_requested:eo_power_delivered,eo_current_vehicle:eo_current_site:eo_current_solar', {method: 'GET'})
+//url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_power_requested:eo_power_requested_solar:eo_power_requested_grid:eo_power_requested_site_limit:eo_power_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
+//url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested:eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
+url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_requested:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
+
+fetch(url, {method: 'GET'})
     .then(function(response) { return response.json(); })
     .then(function(data) {
-        chartdata=data
+        chartdata=data;
+        // further process plotly data
+        data.forEach(function (item, index) {
 
+          switch (item.key) {
+            case 'eo_power_requested','eo_amps_requested':
+              item.line={color:'blue',dash:'dot',width:4};
+              break;
+            case 'eo_power_delivered','eo_amps_delivered':
+              item.line={color:'red',width:4};
+              break;
+            case 'eo_power_requested_grid','eo_amps_requested_grid':
+              item.fillcolor='lightblue';
+              item.line={color:'black',width:0.25};
+              item.stackgroup="power_areastack";
+              delete item["mode"];
+              delete item["type"];
+              break;
+            case 'eo_power_requested_solar','eo_amps_requested_solar':
+              item.fillcolor='lightgreen';
+              item.line={color:'black',width:0.25};
+              item.stackgroup="power_areastack";
+              delete item["mode"];
+              delete item["type"];
+              break;
+            case 'eo_power_requested_site_limit','eo_amps_requested_site_limit':
+              item.fillcolor='#F5E1DA';
+              item.line={color:'black',width:0.25};
+              item.stackgroup="power_areastack";
+              delete item["mode"];
+              delete item["type"];
+              break;
+          }
+
+        });
+
+        console.log(data);
         Plotly.newPlot('chart_Power',chartdata,layout);
         timer_Power=setInterval(chartUpdate_Power,30000);
         myplot=Plotly.newPlot('chart_Power',chartdata,layout);
@@ -38,7 +77,7 @@ fetch('/getchartdata?type=plotly&series=eo_charger_state_id,eo_power_requested:e
 
     function chartUpdate_Power() {
           maxtime=chartdata[0].x[(chartdata[0].x.length)-1];
-          fetch('/getchartdata?type=plotly&series=eo_charger_state_id,eo_power_requested:eo_power_delivered,eo_current_vehicle:eo_current_site:eo_current_solar&since='+maxtime, {method: 'GET'})
+          fetch(url+'&since='+maxtime, {method: 'GET'})
               .then(function(response) { return response.json(); })
               .then(function(data) {
               

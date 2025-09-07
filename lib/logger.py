@@ -67,13 +67,23 @@ class loggerClassPlugin(PluginSuperClass):
         # Create data buffer. The dict in the intitialiser is a lookup of globalState.stateDict{} keys and 
         # friendly names for that metric that will be used in creating the data for any
         # charts requested
-        globalState.stateDict["_dataLog"]=databufferClass(self.pluginConfig,{"eo_power_requested":"Power Requested (kW)",
-                                                       "eo_power_delivered":"Power Delivered (kW)",
-                                                       "eo_charger_state_id":"Charger State",
-                                                       "eo_current_site":"Site Import Current (A)",
-                                                       "eo_current_vehicle":"Vehicle Supply Current (A)",
-                                                       "eo_current_solar":"Solar Generation Current (A)"
-                                                       })
+        globalState.stateDict["_dataLog"]=databufferClass(self.pluginConfig,{
+                                                    "eo_amps_requested_solar":"Solar Current Requested (A)",
+                                                    "eo_amps_requested_grid":"Grid Current Requested (A)",
+                                                    "eo_amps_requested_site_limit":"Current limited by Site Settings (A)",
+                                                    "eo_amps_requested":"Current Requested (A)",
+                                                    "eo_amps_delivered":"Current Delivered (A)",
+                                                    "eo_power_requested_solar":"Solar Power Requested (kW)",
+                                                    "eo_power_requested_grid":"Grid Power Requested (kW)",
+                                                    "eo_power_requested_site_limit":"Power limited by Site Settings (kW)",
+                                                    "eo_power_requested":"Power Requested (kW)",
+                                                    "eo_power_delivered":"Power Delivered (kW)",
+                                                    "eo_charger_state_id":"Charger State",
+                                                    "eo_current_site":"Site Import Current (A)",
+                                                    "eo_current_vehicle":"Vehicle Supply Current (A)",
+                                                    "eo_current_solar":"Solar Generation Current (A)",
+                                                    "eo_live_voltage":"Voltage (V)",
+                                                    })
 
 
 #################################################################################
@@ -117,6 +127,8 @@ class databufferClass:
                             "line": {"shape": 'hv'},
                             "mode": "lines+text",
                             "name": self.seriesDict[key],
+                            "key": key,
+                            "stackgroup": None,
                             "x": myData["time"],
                             "y": value,
                             "textposition":"top center",
@@ -131,6 +143,8 @@ class databufferClass:
                             "type": "line",
                             "mode": "lines",
                             "name": self.seriesDict[key],
+                            "key": key,
+                            "stackgroup": None,
                             "x": myData["time"],
                             "y": value,
                             "legend" : f"legend1" if subplot_index is None else f"legend{subplot_index}",
