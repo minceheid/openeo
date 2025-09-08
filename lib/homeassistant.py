@@ -255,6 +255,36 @@ class homeassistantClassPlugin(PluginSuperClass):
         except Exception as e:
             _LOGGER.error(f"Error handling plugin command '{payload}': {e}")
     
+    def _get_current_limit_setting(self):
+        """Get the configured current limit based on current mode"""
+        current_mode = self._get_current_mode()
+        
+        if current_mode == "manual":
+            # Return the switch plugin's configured amps
+            return max(globalState.MIN_CHARGING_CURRENT, 
+                      globalState.configDB.get("switch", "amps", globalState.MIN_CHARGING_CURRENT))
+        elif current_mode == "schedule":
+            # Get current limit from schedule (if any active)
+            schedule = globalState.configDB.get("scheduler", "schedule", [])
+            if schedule and isinstance(schedule, list) and len(schedule) > 0:
+                return max(globalState.MIN_CHARGING_CURRENT, 
+                          schedule[0].get("amps", globalState.MIN_CHARGING_CURRENT))
+        
+        # Default fallback
+        return globalState.MIN_CHARGING_CURRENT
+    
+    def _get_current_mode(self):
+        """Helper method to determine current operating mode"""
+        switch_enabled = globalState.configDB.get("switch", "enabled", False)
+        scheduler_enabled = globalState.configDB.get("scheduler", "enabled", False)
+        
+        if switch_enabled and not scheduler_enabled:
+            return "manual"
+        elif scheduler_enabled and not switch_enabled:
+            return "schedule"
+        else:
+            return "off"
+    
     def _get_device_info(self):
         """Generate device information for Home Assistant"""
         return {
@@ -422,7 +452,7 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "name": "Current Limit",
                 "state_topic": f"openeo/{device_id}/state",
                 "command_topic": f"openeo/{device_id}/command/current_limit/set",
-                "value_template": "{{ value_json.amps_limit }}",
+                "value_template": "{{ value_json.current_limit_setting }}",
                 "min": globalState.MIN_CHARGING_CURRENT,
                 "max": max_allowed_current,
                 "step": 1,
@@ -488,15 +518,7 @@ class homeassistantClassPlugin(PluginSuperClass):
         charging_active = charger_state_id in [11, 12, 13, 14]
         
         # Determine current operating mode
-        switch_enabled = globalState.configDB.get("switch", "enabled", False)
-        scheduler_enabled = globalState.configDB.get("scheduler", "enabled", False)
-        
-        if switch_enabled and not scheduler_enabled:
-            current_mode = "manual"
-        elif scheduler_enabled and not switch_enabled:
-            current_mode = "schedule"
-        else:
-            current_mode = "off"
+        current_mode = self._get_current_mode()
         
         state_payload = {
             "charger_state": charger_state,
@@ -515,6 +537,7 @@ class homeassistantClassPlugin(PluginSuperClass):
             "mode": current_mode,
             "switch_on": globalState.configDB.get("switch", "on", False),
             "switch_enabled": globalState.configDB.get("switch", "enabled", False),
+            "current_limit_setting": self._get_current_limit_setting(),
             "serial_errors": globalState.stateDict.get("eo_serial_errors", 0),
             "app_version": globalState.stateDict.get("app_version", "unknown"),
             "timestamp": int(time.time())
