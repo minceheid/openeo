@@ -24,7 +24,7 @@ This project has been designed to be compatible with the EO Smart Home Hub/Mini 
 ## Install Instructions
 This software can be installed onto a Raspberry OS Lite install. We recommend that you keep your original EO SD card safe and separate, so that you can revert easily, should things don't work out for you.
 
-1. Obtain a 8GB (or larger) SD card
+1. Obtain a 8GB (or larger) micro SD card
 2. Flash the SD card with the Raspberry PI imager (Device: Raspberry Pi 3 for Home Hub and Raspberry Pi Zero for Mini Pro 2, Operating System: Raspberry PI OS Lite (32 bit))
 
 <p align="center">
