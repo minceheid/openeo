@@ -16,6 +16,7 @@ class openeoConfigClass:
     JSON_FILE = "/home/pi/etc/config.json"
     CONFIG_TABLE = "configuration"
     LOG_TABLE = "log"
+    LOG_PURGE_TTL = 3600 * 12 # 12 hours
 
     def logwrite(self,message):
         """
@@ -35,7 +36,7 @@ class openeoConfigClass:
         with self.lock:
             self.cursor.execute(f'''
                 DELETE FROM log where timestamp<? 
-            ''', (int(time.time()-3600),))
+            ''', (int(time.time()-self.LOG_PURGE_TTL),))
             self.conn.commit()
 
 
@@ -173,8 +174,8 @@ class openeoConfigClass:
 
         # Set changed to True, so that configured modules will load in the main loop
         self.changed=True
-        print(f"Opened Configuration:{self.DB_FILE}")
         print(str(self))
+        self.LOG_PURGE_TTL=self.get("chargeroptions","log_purge_ttl",3600 * 12)
 
     
     def __str__(self):

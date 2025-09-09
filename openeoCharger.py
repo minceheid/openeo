@@ -47,7 +47,7 @@ class openeoChargerClass:
         14: "charge-complete",
         15: "charge-suspended-start",
         16: "charge-suspended",
-        18: "charge-unknown-state"
+        18: "charge-paused"
     }
 
     EO_COMMAND = {
