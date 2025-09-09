@@ -101,6 +101,7 @@ class openeoConfigClass:
                         VALUES (?, ?, ?)
                         ON CONFLICT(module, key) DO UPDATE SET value=excluded.value
                     ''', (module, key, val))
+
             else:
                 # Single insert
                 key = key_or_dict
@@ -111,6 +112,12 @@ class openeoConfigClass:
                 ''', (module, key, value))
 
             self.conn.commit()
+
+        if isinstance(key_or_dict, dict):
+            for key, value in key_or_dict.items():
+                self.logwrite(f"Config update {module}:{key}={value}")
+        else:
+            self.logwrite(f"Config update {module}:{key}={key_or_dict}")
 
 
     def __init__(self,defaultConfig=None):

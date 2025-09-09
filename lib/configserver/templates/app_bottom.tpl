@@ -7,6 +7,8 @@
 		<span class="status-item" id="statusChargeVolt"></span>
 		<span class="status-break"></span>
 		<span class="status-item" id="statusChargePower"></span>
+		<span class="status-break"></span>
+		<span class="status-item" id="statusChargeSession"></span>
 	</div>
 	<div class="version-info">
 		openeo {{ status['app_version'] }}
