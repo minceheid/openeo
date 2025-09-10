@@ -124,7 +124,10 @@ class homeassistantClassPlugin(PluginSuperClass):
             f"openeo/{device_id}/command/switch/set",
             f"openeo/{device_id}/command/current_limit/set",
             f"openeo/{device_id}/command/mode/set",
-            f"openeo/{device_id}/command/enable_plugin/set"
+            f"openeo/{device_id}/command/enable_plugin/set",
+            f"openeo/{device_id}/command/schedule_start/set",
+            f"openeo/{device_id}/command/schedule_end/set",
+            f"openeo/{device_id}/command/schedule_amps/set"
         ]
         
         for topic in command_topics:
@@ -151,6 +154,12 @@ class homeassistantClassPlugin(PluginSuperClass):
                 self._handle_mode_command(payload)
             elif topic == f"openeo/{device_id}/command/enable_plugin/set":
                 self._handle_enable_plugin_command(payload)
+            elif topic == f"openeo/{device_id}/command/schedule_start/set":
+                self._handle_schedule_start_command(payload)
+            elif topic == f"openeo/{device_id}/command/schedule_end/set":
+                self._handle_schedule_end_command(payload)
+            elif topic == f"openeo/{device_id}/command/schedule_amps/set":
+                self._handle_schedule_amps_command(payload)
             else:
                 _LOGGER.warning(f"Unknown command topic: {topic}")
                 
@@ -204,24 +213,22 @@ class homeassistantClassPlugin(PluginSuperClass):
             _LOGGER.error(f"Error handling current limit command '{payload}': {e}")
     
     def _handle_mode_command(self, payload):
-        """Handle mode change commands"""
+        """Handle mode change commands using existing plugin system"""
         try:
             mode = payload.lower()
             
+            # Use existing plugin configuration system
             if mode == "manual":
-                # Enable manual switch control, disable scheduler
                 globalState.configDB.set("switch", "enabled", True)
                 globalState.configDB.set("scheduler", "enabled", False)
                 _LOGGER.info("Switched to manual mode")
                 
             elif mode == "schedule":
-                # Enable scheduler, disable manual switch
                 globalState.configDB.set("scheduler", "enabled", True)
                 globalState.configDB.set("switch", "enabled", False)
                 _LOGGER.info("Switched to schedule mode")
                 
             elif mode == "off":
-                # Disable both scheduler and switch
                 globalState.configDB.set("scheduler", "enabled", False)
                 globalState.configDB.set("switch", "enabled", False)
                 _LOGGER.info("All charging modes disabled")
@@ -255,6 +262,77 @@ class homeassistantClassPlugin(PluginSuperClass):
         except Exception as e:
             _LOGGER.error(f"Error handling plugin command '{payload}': {e}")
     
+    def _handle_schedule_start_command(self, payload):
+        """Handle schedule start time command"""
+        try:
+            start_time = self._normalize_time(payload)
+            if start_time:
+                self._update_schedule_field("start", start_time)
+                _LOGGER.info(f"Schedule start time set to {start_time}")
+        except Exception as e:
+            _LOGGER.error(f"Error handling schedule start command '{payload}': {e}")
+    
+    def _handle_schedule_end_command(self, payload):
+        """Handle schedule end time command"""
+        try:
+            end_time = self._normalize_time(payload)
+            if end_time:
+                self._update_schedule_field("end", end_time)
+                _LOGGER.info(f"Schedule end time set to {end_time}")
+        except Exception as e:
+            _LOGGER.error(f"Error handling schedule end command '{payload}': {e}")
+    
+    def _handle_schedule_amps_command(self, payload):
+        """Handle schedule current limit command"""
+        try:
+            current_limit = int(float(payload))
+            max_allowed = min(globalState.MAX_CHARGING_CURRENT, 
+                            globalState.stateDict.get("eo_overall_limit_current", globalState.MAX_CHARGING_CURRENT))
+            
+            if globalState.MIN_CHARGING_CURRENT <= current_limit <= max_allowed:
+                self._update_schedule_field("amps", current_limit)
+                _LOGGER.info(f"Schedule current limit set to {current_limit}A")
+            else:
+                _LOGGER.error(f"Invalid schedule current limit: {current_limit}. Must be {globalState.MIN_CHARGING_CURRENT}-{max_allowed} amps")
+                
+        except (ValueError, TypeError):
+            _LOGGER.error(f"Invalid schedule current limit value '{payload}'")
+        except Exception as e:
+            _LOGGER.error(f"Error handling schedule amps command '{payload}': {e}")
+    
+    def _normalize_time(self, time_str):
+        """Convert time to HHMM format with basic validation"""
+        time_str = time_str.strip().replace(':', '')
+        
+        if len(time_str) == 4 and time_str.isdigit():
+            hour, minute = int(time_str[:2]), int(time_str[2:])
+            if 0 <= hour <= 23 and 0 <= minute <= 59:
+                return time_str
+        
+        _LOGGER.error(f"Invalid time format '{time_str}'. Expected HH:MM or HHMM")
+        return None
+    
+    def _update_schedule_field(self, field, value):
+        """Update schedule field using existing plugin system"""
+        scheduler_module = globalState.stateDict["_moduleDict"].get("scheduler")
+        if not scheduler_module:
+            _LOGGER.error("Scheduler module not available")
+            return
+        
+        # Get current schedule from plugin (already parsed)
+        current_schedule = scheduler_module.get_config("schedule") or []
+        
+        # Ensure we have at least one schedule entry
+        if not current_schedule:
+            current_schedule = [{"start": "2200", "end": "0600", "amps": globalState.MIN_CHARGING_CURRENT}]
+        
+        # Update the field
+        current_schedule[0][field] = value
+        
+        # Save using config system (will trigger plugin reconfiguration)
+        globalState.configDB.set("scheduler", "schedule", current_schedule)
+        globalState.configDB.set("scheduler", "enabled", True)
+    
     def _get_current_limit_setting(self):
         """Get the configured current limit based on current mode"""
         current_mode = self._get_current_mode()
@@ -275,6 +353,25 @@ class homeassistantClassPlugin(PluginSuperClass):
         
         # Safe fallback
         return globalState.MIN_CHARGING_CURRENT
+    
+    def _get_schedule_field(self, field):
+        """Get schedule field using plugin system"""
+        scheduler_module = globalState.stateDict["_moduleDict"].get("scheduler")
+        if scheduler_module:
+            schedule = scheduler_module.get_config("schedule") or []
+            if schedule:
+                return schedule[0].get(field, self._get_schedule_default(field))
+        
+        return self._get_schedule_default(field)
+    
+    def _get_schedule_default(self, field):
+        """Get default value for schedule field"""
+        defaults = {
+            "start": "2200",
+            "end": "0600", 
+            "amps": globalState.MIN_CHARGING_CURRENT
+        }
+        return defaults.get(field, "")
     
     def _get_current_mode(self):
         """Helper method to determine current operating mode"""
@@ -472,6 +569,38 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "value_template": "{{ 'manual' if value_json.mode == 'manual' else ('schedule' if value_json.mode == 'schedule' else 'off') }}",
                 "options": ["manual", "schedule", "off"],
                 "icon": "mdi:cog"
+            },
+            {
+                "component": "time",
+                "object_id": "schedule_start",
+                "name": "Schedule Start Time",
+                "state_topic": f"openeo/{device_id}/state",
+                "command_topic": f"openeo/{device_id}/command/schedule_start/set",
+                "value_template": "{{ value_json.schedule_start[:2] + ':' + value_json.schedule_start[2:] if value_json.schedule_start and value_json.schedule_start|length == 4 else '22:00' }}",
+                "icon": "mdi:clock-start"
+            },
+            {
+                "component": "time",
+                "object_id": "schedule_end",
+                "name": "Schedule End Time",
+                "state_topic": f"openeo/{device_id}/state",
+                "command_topic": f"openeo/{device_id}/command/schedule_end/set",
+                "value_template": "{{ value_json.schedule_end[:2] + ':' + value_json.schedule_end[2:] if value_json.schedule_end and value_json.schedule_end|length == 4 else '06:00' }}",
+                "icon": "mdi:clock-end"
+            },
+            {
+                "component": "number",
+                "object_id": "schedule_amps",
+                "name": "Schedule Current Limit",
+                "state_topic": f"openeo/{device_id}/state",
+                "command_topic": f"openeo/{device_id}/command/schedule_amps/set",
+                "value_template": "{{ value_json.schedule_amps }}",
+                "min": globalState.MIN_CHARGING_CURRENT,
+                "max": max_allowed_current,
+                "step": 1,
+                "unit_of_measurement": "A",
+                "device_class": "current",
+                "icon": "mdi:current-ac"
             }
         ]
         
@@ -541,6 +670,9 @@ class homeassistantClassPlugin(PluginSuperClass):
             "switch_on": globalState.configDB.get("switch", "on", False),
             "switch_enabled": globalState.configDB.get("switch", "enabled", False),
             "current_limit_setting": self._get_current_limit_setting(),
+            "schedule_start": self._get_schedule_field("start"),
+            "schedule_end": self._get_schedule_field("end"),
+            "schedule_amps": self._get_schedule_field("amps"),
             "serial_errors": globalState.stateDict.get("eo_serial_errors", 0),
             "app_version": globalState.stateDict.get("app_version", "unknown"),
             "timestamp": int(time.time())
