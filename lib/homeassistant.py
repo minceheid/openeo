@@ -257,42 +257,24 @@ class homeassistantClassPlugin(PluginSuperClass):
     
     def _get_current_limit_setting(self):
         """Get the configured current limit based on current mode"""
-        try:
-            current_mode = self._get_current_mode()
-            
-            if current_mode == "manual":
-                # Return the switch plugin's configured amps (convert to int)
-                amps_value = globalState.configDB.get("switch", "amps", globalState.MIN_CHARGING_CURRENT)
-                amps_int = int(float(amps_value)) if amps_value is not None else globalState.MIN_CHARGING_CURRENT
-                return max(globalState.MIN_CHARGING_CURRENT, amps_int)
+        current_mode = self._get_current_mode()
+        
+        if current_mode == "manual":
+            # Use switch plugin's configured amps - already type-converted by plugin system
+            switch_module = globalState.stateDict["_moduleDict"].get("switch")
+            if switch_module:
+                return max(globalState.MIN_CHARGING_CURRENT, switch_module.get_config("amps"))
                 
-            elif current_mode == "schedule":
-                # Get current limit from schedule (if any active)
-                schedule_raw = globalState.configDB.get("scheduler", "schedule", [])
-                
-                # Handle both string JSON and list formats
-                if isinstance(schedule_raw, str):
-                    import json
-                    try:
-                        schedule = json.loads(schedule_raw)
-                    except json.JSONDecodeError:
-                        schedule = []
-                elif isinstance(schedule_raw, list):
-                    schedule = schedule_raw
-                else:
-                    schedule = []
-                
+        elif current_mode == "schedule":
+            # Use scheduler plugin's configured amps - already type-converted by plugin system  
+            scheduler_module = globalState.stateDict["_moduleDict"].get("scheduler")
+            if scheduler_module:
+                schedule = scheduler_module.get_config("schedule")
                 if schedule and len(schedule) > 0:
-                    amps_value = schedule[0].get("amps", globalState.MIN_CHARGING_CURRENT)
-                    amps_int = int(float(amps_value)) if amps_value is not None else globalState.MIN_CHARGING_CURRENT
-                    return max(globalState.MIN_CHARGING_CURRENT, amps_int)
-            
-            # Default fallback
-            return globalState.MIN_CHARGING_CURRENT
-            
-        except (ValueError, TypeError, KeyError, AttributeError) as e:
-            _LOGGER.error(f"Error getting current limit setting: {e}")
-            return globalState.MIN_CHARGING_CURRENT
+                    return max(globalState.MIN_CHARGING_CURRENT, schedule[0].get("amps", globalState.MIN_CHARGING_CURRENT))
+        
+        # Safe fallback
+        return globalState.MIN_CHARGING_CURRENT
     
     def _get_current_mode(self):
         """Helper method to determine current operating mode"""
