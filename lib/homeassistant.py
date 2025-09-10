@@ -257,21 +257,42 @@ class homeassistantClassPlugin(PluginSuperClass):
     
     def _get_current_limit_setting(self):
         """Get the configured current limit based on current mode"""
-        current_mode = self._get_current_mode()
-        
-        if current_mode == "manual":
-            # Return the switch plugin's configured amps
-            return max(globalState.MIN_CHARGING_CURRENT, 
-                      globalState.configDB.get("switch", "amps", globalState.MIN_CHARGING_CURRENT))
-        elif current_mode == "schedule":
-            # Get current limit from schedule (if any active)
-            schedule = globalState.configDB.get("scheduler", "schedule", [])
-            if schedule and isinstance(schedule, list) and len(schedule) > 0:
-                return max(globalState.MIN_CHARGING_CURRENT, 
-                          schedule[0].get("amps", globalState.MIN_CHARGING_CURRENT))
-        
-        # Default fallback
-        return globalState.MIN_CHARGING_CURRENT
+        try:
+            current_mode = self._get_current_mode()
+            
+            if current_mode == "manual":
+                # Return the switch plugin's configured amps (convert to int)
+                amps_value = globalState.configDB.get("switch", "amps", globalState.MIN_CHARGING_CURRENT)
+                amps_int = int(float(amps_value)) if amps_value is not None else globalState.MIN_CHARGING_CURRENT
+                return max(globalState.MIN_CHARGING_CURRENT, amps_int)
+                
+            elif current_mode == "schedule":
+                # Get current limit from schedule (if any active)
+                schedule_raw = globalState.configDB.get("scheduler", "schedule", [])
+                
+                # Handle both string JSON and list formats
+                if isinstance(schedule_raw, str):
+                    import json
+                    try:
+                        schedule = json.loads(schedule_raw)
+                    except json.JSONDecodeError:
+                        schedule = []
+                elif isinstance(schedule_raw, list):
+                    schedule = schedule_raw
+                else:
+                    schedule = []
+                
+                if schedule and len(schedule) > 0:
+                    amps_value = schedule[0].get("amps", globalState.MIN_CHARGING_CURRENT)
+                    amps_int = int(float(amps_value)) if amps_value is not None else globalState.MIN_CHARGING_CURRENT
+                    return max(globalState.MIN_CHARGING_CURRENT, amps_int)
+            
+            # Default fallback
+            return globalState.MIN_CHARGING_CURRENT
+            
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            _LOGGER.error(f"Error getting current limit setting: {e}")
+            return globalState.MIN_CHARGING_CURRENT
     
     def _get_current_mode(self):
         """Helper method to determine current operating mode"""
