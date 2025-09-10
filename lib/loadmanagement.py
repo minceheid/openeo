@@ -6,7 +6,7 @@ A simple module implementing solar and site load management
 """
 #################################################################################
 
-import logging
+import logging,statistics
 from lib.PluginSuperClass import PluginSuperClass
 import util
 import globalState
@@ -31,14 +31,34 @@ class loadmanagementClassPlugin(PluginSuperClass):
             "ct_calibration_solar":  {"type": "float", "default": 1.0},
             "ct_offset_site":   {"type": "float", "default": 0.0},
             "ct_offset_vehicle":{"type": "float", "default": 0.0},
-            "ct_offset_solar":  {"type": "float", "default": 0.0}
+            "ct_offset_solar":  {"type": "float", "default": 0.0},
+            "solar_enable_threshold": {"type": "int", "default":7}
             }
+
+    solar_ct_readings=[0,0,0,0,0,0]
+    solar_active=False
         
     def poll(self):
+        # Add current CT reading to the moving average calculation
+        self.solar_ct_readings.append(globalState.stateDict["eo_current_solar"])
+        del self.solar_ct_readings[0]
+
         if (self.pluginConfig.get("solar_enable",False)):
-            return globalState.stateDict["eo_current_solar"] - self.pluginConfig.get("solar_reservation_current",1)
-        else:
-            return 0
+            solar_current=int(statistics.mean(self.solar_ct_readings) - self.pluginConfig.get("solar_reservation_current",1))
+
+            if self.solar_active:
+                if solar_current>=6:
+                    return solar_current
+                else:
+                    self.solar_active=False
+                    return 0
+            else:
+                if solar_current>=self.pluginConfig.get("solar_enable_threshold",7):
+                    self.solar_active=True
+                    return solar_current
+                else:
+                    return 0
+
 
     def get_user_settings(self):
         settings = []

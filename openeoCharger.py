@@ -7,7 +7,7 @@ the serial number of the EO controller board and setting the maximum charging ra
 
 """
 #################################################################################
-import logging
+import logging,time,math
 import RPi.GPIO as GPIO
 from EO_comms.HomeHub import HomeHub
 from EO_comms.MiniPro2 import MiniPro2
@@ -187,8 +187,13 @@ class openeoChargerClass:
                     self.current_site=simulate_ct_site
 
                 simulate_ct_solar=globalState.stateDict["_moduleDict"]["loadmanagement"].pluginConfig.get("simulate_ct_solar",0)
+
                 if simulate_ct_solar>0:
-                    self.current_solar=simulate_ct_solar
+                    # generate a sine wave simulation, rectified to postive values only
+                    # and with an amplitude equal to the simulate_ct_solar value
+                    seconds=(int(time.time()) % 60)
+                    self.current_solar=int(simulate_ct_solar*abs(math.sin(math.radians(seconds*3))))
+
 
             return True
         

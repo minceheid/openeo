@@ -40,7 +40,7 @@ class loggerClassPlugin(PluginSuperClass):
     pretty_name = "Data Logger"
     CORE_PLUGIN = True # Can't be disabled from the UI 
     pluginParamSpec={"enabled": {"type":"bool","default":True},
-		"hires_interval": {"type":"int","default":30},
+		"hires_interval": {"type":"int","default":5},
 		"hires_maxage": {"type":"int","default":60*60},
 		"lowres_interval": {"type":"int","default":5*60},
 		"lowres_maxage": {"type":"int","default":60*60*48}}

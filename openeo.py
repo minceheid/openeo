@@ -112,6 +112,14 @@ def main():
                     # Get the current from a module, whilst ensuring that it's an integer,
                     # and also between 0>=x>=32
                     module_current = max(min(int(module.poll()),32),0)
+
+                    # This check is entirely aesthetic - it's not required for correct behaviour of the charger
+                    # but including it will ensure that the charts on the statistics page reflect what the charger
+                    # is actually doing.
+                    
+                    if module_current<6:
+                        module_current=0
+
                     globalState.configDB.logwrite(f"module:{module_name} current:{module_current}")
                     if (not isinstance(module_current, numbers.Number)):
                         _LOGGER.error(f"ERROR: Module {module} returned "+str(type(module_current))+"- Ignoring")
