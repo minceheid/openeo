@@ -45,7 +45,6 @@ class loadmanagementClassPlugin(PluginSuperClass):
 
         if (self.pluginConfig.get("solar_enable",False)):
             solar_current=int(statistics.mean(self.solar_ct_readings) - self.pluginConfig.get("solar_reservation_current",1))
-
             if self.solar_active:
                 if solar_current>=6:
                     return solar_current
@@ -58,6 +57,8 @@ class loadmanagementClassPlugin(PluginSuperClass):
                     return solar_current
                 else:
                     return 0
+        else:
+            return 0
 
 
     def get_user_settings(self):
