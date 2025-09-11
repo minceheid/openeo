@@ -257,7 +257,7 @@ class configserverClassPlugin(PluginSuperClass):
                 return
             
             path_components = urllib.parse.urlsplit(self.path)
-            _LOGGER.info("Path components: %s" % repr(path_components))
+            _LOGGER.debug("Path components: %s" % repr(path_components))
             
             # Handle root request
             req_path = path_components.path
