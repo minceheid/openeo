@@ -16,6 +16,7 @@ class openeoConfigClass:
     JSON_FILE = "/home/pi/etc/config.json"
     CONFIG_TABLE = "configuration"
     LOG_TABLE = "log"
+    LOG_PURGE_TTL = 3600 * 12 # 12 hours
 
     def logwrite(self,message):
         """
@@ -35,7 +36,7 @@ class openeoConfigClass:
         with self.lock:
             self.cursor.execute(f'''
                 DELETE FROM log where timestamp<? 
-            ''', (int(time.time()-3600),))
+            ''', (int(time.time()-self.LOG_PURGE_TTL),))
             self.conn.commit()
 
 
@@ -100,6 +101,7 @@ class openeoConfigClass:
                         VALUES (?, ?, ?)
                         ON CONFLICT(module, key) DO UPDATE SET value=excluded.value
                     ''', (module, key, val))
+
             else:
                 # Single insert
                 key = key_or_dict
@@ -110,6 +112,12 @@ class openeoConfigClass:
                 ''', (module, key, value))
 
             self.conn.commit()
+
+        if isinstance(key_or_dict, dict):
+            for key, value in key_or_dict.items():
+                self.logwrite(f"Config update {module}:{key}={value}")
+        else:
+            self.logwrite(f"Config update {module}:{key}={key_or_dict}")
 
 
     def __init__(self,defaultConfig=None):
@@ -173,8 +181,8 @@ class openeoConfigClass:
 
         # Set changed to True, so that configured modules will load in the main loop
         self.changed=True
-        print(f"Opened Configuration:{self.DB_FILE}")
         print(str(self))
+        self.LOG_PURGE_TTL=self.get("chargeroptions","log_purge_ttl",3600 * 12)
 
     
     def __str__(self):

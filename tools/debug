@@ -1,5 +1,9 @@
 #!/usr/bin/bash
 
+release=$(basename $(readlink -f /home/pi/openeo))
+datetime=$(date +"%Y%m%d%H%M%S")
+filename="debug_${release}_${datetime}.txt"
+
 ( echo "= PS"
 echo "================="
 ps -fLu pi
@@ -38,8 +42,26 @@ for (timestamp,message) in rows:
 
 EOF
 
-) | tee debug.out
+) | tee $filename
 
-curl -F "file=@debug.out" https://file.io
+echo
+echo "================="
+echo "= Compressing"
+echo "================="
+zip ${filename}.zip $filename 
 
+echo
+echo "================="
+echo "= Attempting to upload debug report"
+echo "================="
+curl -X POST https://eo.scott.land/upload.cgi --data-binary @${filename}.zip -H "X-Filename: ${filename}.zip" -H "X-Key: ${filename}.zip" --http1.1 >/dev/null
+
+echo
+RC=$?
+if [ $RC -eq 0 ]; then
+    echo "Upload successful - filename $filename"
+else
+    echo "Upload failed (RC=$RC)- filename $filename"
+
+fi
 

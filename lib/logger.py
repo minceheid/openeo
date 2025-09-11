@@ -40,7 +40,7 @@ class loggerClassPlugin(PluginSuperClass):
     pretty_name = "Data Logger"
     CORE_PLUGIN = True # Can't be disabled from the UI 
     pluginParamSpec={"enabled": {"type":"bool","default":True},
-		"hires_interval": {"type":"int","default":30},
+		"hires_interval": {"type":"int","default":5},
 		"hires_maxage": {"type":"int","default":60*60},
 		"lowres_interval": {"type":"int","default":5*60},
 		"lowres_maxage": {"type":"int","default":60*60*48}}
@@ -72,6 +72,7 @@ class loggerClassPlugin(PluginSuperClass):
                                                     "eo_amps_requested_grid":"Grid Current Requested (A)",
                                                     "eo_amps_requested_site_limit":"Current limited by Site Settings (A)",
                                                     "eo_amps_requested":"Current Requested (A)",
+                                                    "eo_amps_requested_moving_average":"Current Requested Avg (A)",
                                                     "eo_amps_delivered":"Current Delivered (A)",
                                                     "eo_power_requested_solar":"Solar Power Requested (kW)",
                                                     "eo_power_requested_grid":"Grid Power Requested (kW)",
