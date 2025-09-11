@@ -35,7 +35,7 @@ class loadmanagementClassPlugin(PluginSuperClass):
             "solar_enable_threshold": {"type": "int", "default":7}
             }
 
-    solar_ct_readings=[0,0,0,0,0,0]
+    solar_ct_readings=[0]*2
     solar_active=False
         
     def poll(self):

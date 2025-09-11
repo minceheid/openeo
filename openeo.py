@@ -130,8 +130,8 @@ def main():
                     else:
                         globalState.stateDict["eo_amps_requested"] = max(globalState.stateDict["eo_amps_requested"], module_current)
 
-                        if module_name=="loadmanagement":
-                            globalState.stateDict["eo_amps_requested_solar"] = max(globalState.stateDict["eo_amps_requested_solar"], module_current)
+                        #if module_name=="loadmanagement":
+                        #    globalState.stateDict["eo_amps_requested_solar"] = max(globalState.stateDict["eo_amps_requested_solar"], module_current)
 
                         _LOGGER.debug("polled %s, amps_requested=%d" % (module_name, module_current))
         
@@ -223,10 +223,11 @@ def main():
             globalState.stateDict["eo_charger_state_id"] = int(charger.charger_state, 16)
             globalState.stateDict["eo_charger_state"] = openeoChargerClass.CHARGER_STATES[globalState.stateDict["eo_charger_state_id"]]
 
+            globalState.stateDict["eo_amps_requested_solar"] = min(globalState.stateDict["eo_current_solar"], globalState.stateDict["eo_amps_requested"])
             globalState.stateDict["eo_amps_requested_grid"] = globalState.stateDict["eo_amps_requested"] - globalState.stateDict["eo_amps_requested_solar"]
-            if globalState.stateDict["eo_amps_requested_grid"] <0:
-                globalState.stateDict["eo_amps_requested_solar"]+=globalState.stateDict["eo_amps_requested_grid"]
-                globalState.stateDict["eo_amps_requested_grid"]=0
+            #if globalState.stateDict["eo_amps_requested_grid"] <0:
+            #    globalState.stateDict["eo_amps_requested_solar"]+=globalState.stateDict["eo_amps_requested_grid"]
+            #    globalState.stateDict["eo_amps_requested_grid"]=0
 
             globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
             globalState.stateDict["eo_power_requested_solar"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested_solar"]) / 1000, 2)    # P=VA
