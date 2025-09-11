@@ -240,6 +240,7 @@ def main():
             # joules have been added to the count
             if globalState.stateDict["eo_charger_state_id"]<9:
                 globalState.stateDict["eo_session_joules"]=0
+                globalState.stateDict["eo_session_kwh"]=0
             else:
                 thisloop=datetime.datetime.now()
                 secondsSinceLastLoop=(thisloop-lastloop).total_seconds()
