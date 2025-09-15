@@ -1,6 +1,5 @@
 <head>
-	<!-- Load plotly.js into the DOM -->
-	<script src='https://cdn.plot.ly/plotly-3.0.1.min.js'></script>
+  <script src="https://cdn.plot.ly/plotly-3.1.0.min.js" charset="utf-8"></script>
 </head>
 
 <body>
@@ -16,6 +15,10 @@ const layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
                   legend2: {y:0.65, yanchor:'top'},                          
                   legend3: {y:0.27, yanchor:'top'}, 
                   showlegend:true,
+                  margin: { t: 30 },
+                  paper_bgcolor: "#282c34",
+                  plot_bgcolor: "#282c34",
+                  font: { color: "#eee"},
                   y1: {rangemode: 'tozero'},              
                   y2: {rangemode: 'tozero'},  
                   y3: {rangemode: 'tozero'},  
@@ -34,7 +37,7 @@ fetch(url, {method: 'GET'})
 
           switch (item.key) {
             case 'eo_power_requested','eo_amps_requested':
-              item.line={color:'blue',dash:'dot',width:4};
+              item.line={color:'orange',dash:'dot',width:4};
               break;
             case 'eo_power_delivered','eo_amps_delivered':
               item.line={color:'red',width:4};
@@ -54,11 +57,20 @@ fetch(url, {method: 'GET'})
               delete item["type"];
               break;
             case 'eo_power_requested_site_limit','eo_amps_requested_site_limit':
-              item.fillcolor='#F5E1DA';
+              item.fillcolor='darkgrey';
               item.line={color:'black',width:0.25};
               item.stackgroup="power_areastack";
               delete item["mode"];
               delete item["type"];
+              break;
+            case 'eo_current_vehicle':
+              item.line={color:'red',width:2};
+              break;
+            case 'eo_current_site':
+              item.line={color:'orange',width:2};
+              break;            
+            case 'eo_current_solar':
+              item.line={color:'lime',width:2};
               break;
           }
 

@@ -17,6 +17,7 @@
 					<li><a href="/home.html">Home</a></li>
 					<li><a href="/settings.html">Settings</a></li>
 					<li><a href="/statistics.html">Statistics</a></li>
+					<li><a href="/ct_tuner.html">CT Calibration</a></li>
 				</ul>
 			</div>
 			<div class="logo" id="logo">
