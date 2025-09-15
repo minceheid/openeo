@@ -69,6 +69,19 @@ Once the Raspberry Pi reboots, it should all be working. You should be able to p
 
 *Note* - at this time, only the **_Schedule_** mode and **_Manual_** mode is available. We will be adding **_Remote_** (OCPP) shortly.
 
+## Home Assistant and Prometheus
+openeo is designed to allow the export of data for visualisation through home automation toolsets such as Home Assistant and Prometheus. The following endpoints are available:
+
+* ```/metrics```: Prometheus exporter
+* ```/api```: Home Assistant exporter
+
+## Statistics
+Full visualisation of the chargers operations is available by selecting the "Statistics" option in the menu.
+
+<p align="center">
+<img alt="newplot (3)" src="https://github.com/user-attachments/assets/fde895b3-f1b9-412e-b4d5-4eb02fb3200a" style="width:50%; height:auto;"/>
+</p>
+
 ## Solar Integration
 Where there is a CT clamp measuring solar generation, openeo can control vehicle charge, based on the solar generation. To enable this feature, select the "Solar Charging Enabled" options in the settings. Additionally, you can optionally set a solar reservation value. As an example, if your CT clamp is reporting 10A of solar generation, and your Solar Reservation is set at 3A, then your vehicle will charge at 7A. This may allow you to reduce grid consumption for power requirements elsewhere in your home. The operation of solar charging **does not** require the manual override or a schedule to be active for it to charge the vehicle. To ensure that you make the most of solar generation, it is permanently active when this setting is enabled.
 
@@ -81,6 +94,12 @@ Current Transformer (CT) meter readings sometimes require additional calibration
 It is recommended that you do this from a larger screen (tablet or laptop), as the larger screen will be useful. This page shows a rolling chart of the last 15 minutes of CT readings from each of the three possible CT meters that can be connected to the charger. Each reading can be calibrated by adjusting an offset and a scaling factor to suit your circumstances:
 * Offset: This figure will be added to the CT reading - configurable values are between -2A and +2A
 * Scaling: This figure will be multiplied to the CT reading - configurable values are between 0.8 and 1.2 (-20% and +20%)
+
+Simply use the sliders at the top of the page, and observe the visual changes in the charts on the screen. When you're happy with the setting, hit "Save" for it to become fixed.
+
+<p align="center">
+<img alt="image" src="https://github.com/user-attachments/assets/82ba7e4e-536d-4c29-9d55-d6973e2bc0b3" style="width:50%; height:auto;"/>
+</p>
 
 ## Updating
 From time to time, we will update the software. When a new release is tagged on GitHub, your openeo installation can be updated by simply repeating the install procedure. This will retrieve the latest release, install and activate it:
