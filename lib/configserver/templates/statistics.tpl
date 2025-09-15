@@ -37,7 +37,7 @@ fetch(url, {method: 'GET'})
 
           switch (item.key) {
             case 'eo_power_requested','eo_amps_requested':
-              item.line={color:'blue',dash:'dot',width:4};
+              item.line={color:'orange',dash:'dot',width:4};
               break;
             case 'eo_power_delivered','eo_amps_delivered':
               item.line={color:'red',width:4};
@@ -57,7 +57,7 @@ fetch(url, {method: 'GET'})
               delete item["type"];
               break;
             case 'eo_power_requested_site_limit','eo_amps_requested_site_limit':
-              item.fillcolor='#F5E1DA';
+              item.fillcolor='darkgrey';
               item.line={color:'black',width:0.25};
               item.stackgroup="power_areastack";
               delete item["mode"];
