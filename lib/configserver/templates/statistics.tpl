@@ -1,6 +1,5 @@
 <head>
-	<!-- Load plotly.js into the DOM -->
-	<script src='https://cdn.plot.ly/plotly-3.0.1.min.js'></script>
+  <script src="https://cdn.plot.ly/plotly-3.1.0.min.js" charset="utf-8"></script>
 </head>
 
 <body>
@@ -16,6 +15,10 @@ const layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
                   legend2: {y:0.65, yanchor:'top'},                          
                   legend3: {y:0.27, yanchor:'top'}, 
                   showlegend:true,
+                  margin: { t: 30 },
+                  paper_bgcolor: "#282c34",
+                  plot_bgcolor: "#282c34",
+                  font: { color: "#eee"},
                   y1: {rangemode: 'tozero'},              
                   y2: {rangemode: 'tozero'},  
                   y3: {rangemode: 'tozero'},  
@@ -59,6 +62,15 @@ fetch(url, {method: 'GET'})
               item.stackgroup="power_areastack";
               delete item["mode"];
               delete item["type"];
+              break;
+            case 'eo_current_vehicle':
+              item.line={color:'red',width:2};
+              break;
+            case 'eo_current_site':
+              item.line={color:'orange',width:2};
+              break;            
+            case 'eo_current_solar':
+              item.line={color:'lime',width:2};
               break;
           }
 

@@ -76,6 +76,12 @@ Where there is a CT clamp measuring solar generation, openeo can control vehicle
 If this charger is used on a looped supply, a small fuse, or shares a supply with another charger, you may wish to consider reviewing the Load Management settings to avoid a failure of the main incoming fuse, which would result in a total power outage to the home, and would require your electricity supplier to visit and correct the failure. The load balancing feature is included for testing purposes but for now, *DO NOT* use this software if you **depend** upon that feature.
 The Load Balancing feature requires the use of a CT clamp on your inbound electricity supply, usually located at your meter. The settings page allows to set a site maximum current draw (the default is 60A). Vehicle charging will be limited to prevent openeo from exceeding this limit. As an example, if your site limit is set to 80A, and your site CT is reading 74A, then the maximum that openeo will allow you to charge your vehicle at is 6A.
 
+## CT Calibration
+Current Transformer (CT) meter readings sometimes require additional calibration to compensate for minor inaccuracies. This may have been a procedure that your EO installation engineer carried out when your charger was installed. If necessary, you can also set the CT calibration on openeo by visiting the "CT calibration" menu item. 
+It is recommended that you do this from a larger screen (tablet or laptop), as the larger screen will be useful. This page shows a rolling chart of the last 15 minutes of CT readings from each of the three possible CT meters that can be connected to the charger. Each reading can be calibrated by adjusting an offset and a scaling factor to suit your circumstances:
+* Offset: This figure will be added to the CT reading - configurable values are between -2A and +2A
+* Scaling: This figure will be multiplied to the CT reading - configurable values are between 0.8 and 1.2 (-20% and +20%)
+
 ## Updating
 From time to time, we will update the software. When a new release is tagged on GitHub, your openeo installation can be updated by simply repeating the install procedure. This will retrieve the latest release, install and activate it:
 ~~~~
