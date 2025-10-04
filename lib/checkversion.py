@@ -10,7 +10,6 @@ GitHub.
 import logging,time
 import globalState
 import json
-from urllib.error import URLError, HTTPError
 from urllib.request import urlopen
 
 from lib.PluginSuperClass import PluginSuperClass
@@ -26,7 +25,8 @@ class checkversionClassPlugin(PluginSuperClass):
     GITHUB_REPO = "minceheid/openeo"
 
     CORE_PLUGIN = True  
-    pollfrequency = 1000  # Check version every 1000 iterations of the main loop
+    pollfrequency = 12 * 60 * 24 * 7  # Check version once a week 
+                                      # (assumes a 5 second main loop, so in reality will be slightly more than a week)
 
     def poll(self):
         latest_release=self.get_releases()[0]
