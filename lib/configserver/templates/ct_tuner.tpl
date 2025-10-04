@@ -6,28 +6,38 @@
   <style>
 
 
+h3 { text-align: center; }
+
+.displaycolumn {
+	width: 90%;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	font-size: 14pt;
+	overflow-x: hidden;
+	overflow-y: auto;
+	pointer-events: all;
+	z-index: 1000;
+	position: relative;
+	top: 6em;
+}
+
+.displayrow {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+    align-items: center;
+    text-align:center;
+    z-index: 1000;
+}
+
+
 #controls {
   display: flex;
   flex-direction: row;
   gap: 20px;
   margin-bottom: 20px;
   z-index: 1000;
-}
-
-#buttons {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-  margin-bottom: 20px;
-  z-index: 1000;
-}
-.buttons {
-	display: flex;
-	flex-direction: row;
-	justify-content: center;
-  align-items: center;
-      text-align:center;
-
 }
 
 .control-group {
@@ -60,9 +70,6 @@ input[type=range] {
   color: white;
 }
 
-.ct_tuner {
-  z-index: 1000;
-}
 
 label {
   display: flex;
@@ -72,14 +79,11 @@ label {
 </style>
 </head>
 <body>
-  <br><br>
-  <h3>CT Sensor Calibration</h3>
-
-  <div class="ct_tuner">
+  <div class="displaycolumn">
     <div id="controls"></div>
     <div id="chart"></div>
-    <br>
-    <div class="buttons">
+    &nbsp;
+    <div class="displayrow">
     <div class="control-group"><button class="eoButton" onclick="doSubmit()">Save Settings</button></div>
     <div class="control-group"><button class="eoButton" onclick="doReset()">Reset Settings</button></div>
     </div>

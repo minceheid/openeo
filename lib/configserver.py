@@ -19,6 +19,9 @@ import copy, time, numbers, urllib.parse, subprocess,sys
 import globalState, util
 from lib.PluginSuperClass import PluginSuperClass
 
+import lib.configserver_updater
+
+
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
 
@@ -245,7 +248,19 @@ class configserverClassPlugin(PluginSuperClass):
                 self.end_headers()
                 self.wfile.write(json.dumps(status).encode("utf-8"))
                 return
-                
+            
+            ###################################################################
+            ## get session data
+            if self.path == "/getsessiondata":
+                sessiondata=[]
+                if "chargersession" in globalState.stateDict["_moduleDict"]:
+                    sessiondata=globalState.stateDict["_moduleDict"]["chargersession"].get_sessions()
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(sessiondata).encode("utf-8"))
+                return
+                             
             #############
             # Revert to serving files from the filesystem
             # @TODO: not yet sure how I can have this CustomHandler class pick up self.myName from the parent
@@ -325,32 +340,28 @@ class configserverClassPlugin(PluginSuperClass):
             self.send_error(404, "Not Found")
             return
         
+
         def do_POST(self):
             #_LOGGER.info("do_POST(%s)" % self.path)
             globalState.configDB.logwrite(f"page POST request:{self.path}")
 
-            """
+            
             if self.path == "/update":
                 ##################################
                 # API for updating the software. This will sensecheck what it's being asked, then return a result
                 # and then leave the thread running with the upgrade process updating the output into the database
                 content_length = int(self.headers['Content-Length'])
                 post_data = json.loads(self.rfile.read(content_length).decode('utf-8'))
+                action=post_data["action"]
 
-                update_start=globalState.configDB.get("chargeroptions","update_start")
-                update_finish=globalState.configDB.get("chargeroptions","update_finish")
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(lib.configserver_updater.OpenEO_updater(action)).encode("utf-8"))
+                return 
 
-                if update_start is within 30 minutes and update_finish=0:
-                    # Update in Progress
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                else
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    time.sleep(60)
-            """
+
+            
             if self.path == "/setconfig":
                 ##################################
                 # API for writing configuration. This allows an arbitrary length dict to be passed via JSON

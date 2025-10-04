@@ -44,6 +44,7 @@ stateDict={
     # This figure is reset to zero when we detect that the car has been disconnected
     "eo_session_joules":0,
     "eo_session_kwh":0,
+    "eo_session_timestamp":0,
 
     # CT Sensor Current (Amps)
     "eo_current_site":0,  #site
@@ -89,7 +90,9 @@ defaultConfig = {
         "scheduler" : { "enabled" : True },
         "switch" : { "enabled" : False },
         "configserver" : { "enabled" : True },
+        "chargersession" : { "enabled" : True },
         "logger" : { "enabled" : True },
+        "checkversion" : { "enabled" : True },
         "chargeroptions" : { "enabled" : True, "mode" : "schedule" },
         "loadmanagement" : { "enabled" : True }}
 

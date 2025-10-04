@@ -24,8 +24,7 @@ const layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
                   y3: {rangemode: 'tozero'},  
                   };
 
-//url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_power_requested:eo_power_requested_solar:eo_power_requested_grid:eo_power_requested_site_limit:eo_power_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
-//url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested:eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
+
 url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_requested:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
 
 fetch(url, {method: 'GET'})
