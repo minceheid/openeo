@@ -59,7 +59,10 @@ const layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
 
 url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_requested:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
 
-fetch(url, {method: 'GET'})
+fetch(url, {
+  method: 'GET',
+  signal: AbortSignal.timeout(5000)
+  })
     .then(function(response) { return response.json(); })
     .then(function(data) {
         chartdata=data;
@@ -105,10 +108,13 @@ fetch(url, {method: 'GET'})
               break;
           }
 
-        });
+        })
 
         chartUpdate()
-    })
+    })        
+    .catch(error => {
+        console.log('Error fetching status: ', error);
+      });
 
 
    <!--------------------------------->
