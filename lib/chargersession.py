@@ -62,8 +62,10 @@ class chargersessionClassPlugin(PluginSuperClass):
             self.conn.commit()
 
     def get_sessions(self):
+        six_months_ago=int(time.time()) - 60*60*24*180
         with self.lock:
-            self.cursor.execute(f"SELECT first_timestamp, last_timestamp, joules FROM {self.SESSION_TABLE}")
+            # Only retrieve entries that are greater than 1kWh to remove any short term connections from plug/unplug
+            self.cursor.execute(f"SELECT first_timestamp, last_timestamp, joules FROM {self.SESSION_TABLE} where joules>3600000 and first_timestamp>{six_months_ago}")
             rows = self.cursor.fetchall()
 
         data=[]
