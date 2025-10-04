@@ -111,7 +111,14 @@ Simply use the sliders at the top of the page, and observe the visual changes in
 </p>
 
 ## Updating
-From time to time, we will update the software. When a new release is tagged on GitHub, your openeo installation can be updated by simply repeating the install procedure. This will retrieve the latest release, install and activate it:
+From time to time, we will update the software. Your openeo software will periodically check for new releases being made available, and when it finds an updated release, it will highlight that fact on the home screen with an "Update Available" message. You can either click on that message, or select "Update Software" from the options menu - either way will take you to a page with three buttons allowing you to update OpenEO, the Raspberry Pi OS, and to reboot the Operating System. Only one action can be taken at a time, and the buttons remain disabled when an update is in progress.
+
+<p align="center">
+<img alt="image" src="https://github.com/user-attachments/assets/f7d578e3-9c31-43fb-97c3-0de77813c532" style="width:50%; height:auto;"/>
+</p>
+
+Alternately, the update process can be carried out on the command line by simply repeating the install procedure. This will retrieve the latest release, install and activate it:
+
 ~~~~
 curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -
 sudo reboot
