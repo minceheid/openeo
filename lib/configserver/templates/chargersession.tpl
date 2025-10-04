@@ -54,7 +54,6 @@ thead tr {
 tbody tr:nth-child(odd) {
 	background-color: #333333;
 }
-
 tbody tr:nth-child(even) {
 	background-color: #393939;
 }
@@ -70,7 +69,7 @@ table td { text-align: center; }
     <button class="eoButton" onclick="downloadCSV()">Download Charging Log</button>
     </div>
 
-    <div id="chart" style="width:100%;"></div>
+    <div id="chart" style="width:auto"></div>
 
 
   <div id="table"><center>
