@@ -75,6 +75,14 @@ openeo is designed to allow the export of data for visualisation through home au
 * ```/metrics```: Prometheus exporter
 * ```/api```: Home Assistant exporter
 
+## Session Logs
+OpenEO can keep track of your charging, and give you full access to your data. By keeping track of when you connect and disconnect your car, we record the power delivery on each charging session (noting, of course, that the start time is when your car was connected, and not when charging began). The bar charts on this page also give you summaries of how many kWh you charged on each of the last seven days, four weeks, and four months. Also on this page, you can hit the button to download the data as a CSV file if you need to do more analysis in a spreadsheet.
+
+<p align="center">
+<img alt="image" src="https://github.com/user-attachments/assets/f9054552-f6f8-43e3-a22c-59cf88f35689" style="width:50%; height:auto;"/>
+</p>
+
+
 ## Statistics
 Full visualisation of the chargers operations is available by selecting the "Statistics" option in the menu.
 
