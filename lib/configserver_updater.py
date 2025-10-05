@@ -63,7 +63,7 @@ def _upgrade_function(action):
 
     match action:
         case "openeo":
-            command=["/home/pi/openeo/openeo_download.py"]
+            command=["/home/pi/openeo/tools/update_openeo.sh"]
             #command=["/home/pi/openeo/tools/update_test.sh"]
 
         case "raspberrypi":
