@@ -232,23 +232,10 @@ def main():
             globalState.stateDict["eo_power_requested_site_limit"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested_site_limit"]) / 1000, 2)    # P=VA
             globalState.stateDict["eo_amps_delivered"] = round(((globalState.stateDict["eo_power_delivered"] * 1000) / globalState.stateDict["eo_live_voltage"]), 2)    # P=VA
 
-
-#            # If charger state indicates that the car might be disconnected, then
-#            # we reset the session kWh count, otherwise we calculate how many additional
-#            # joules have been added to the count
-#            if globalState.stateDict["eo_charger_state_id"]<9:
-#                globalState.stateDict["eo_session_joules"]=0
-#                globalState.stateDict["eo_session_kwh"]=0
-#                globalState.stateDict["eo_session_timestamp"]=datetime.datetime.now()
-#            else:
-#                thisloop=datetime.datetime.now()
-#                secondsSinceLastLoop=(thisloop-lastloop).total_seconds()
-#                # 1J = 1Ws = 1 x V * A * s
-#                globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"] * secondsSinceLastLoop)
-#                globalState.stateDict["eo_session_kwh"]= round(globalState.stateDict["eo_session_joules"] / 3600000,2)
-#                # Reset the time counter for next time.
-#                lastloop=thisloop
-
+            # Record the current time - this can be used to show on the web interface, to allow the user to confirm that the correct time is
+            # visible for scheduling purposes
+            myTime=time.localtime()
+            globalState.stateDict["eo_localtime"] = f"{myTime.tm_hour:02}:{myTime.tm_min:02}"
 
             # After all adjustments have been made, record data for the logger
             if "logger" in globalState.stateDict["_moduleDict"]:

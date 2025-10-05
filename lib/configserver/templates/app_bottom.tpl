@@ -9,6 +9,8 @@
 		<span class="status-item" id="statusChargePower"></span>
 		<span class="status-break"></span>
 		<span class="status-item" id="statusChargeSession"></span>
+		<span class="status-break"></span>
+		<span class="status-item" id="statusLocaltime"></span>
 	</div>
 	<div id="version-info" class="version-info">
 		openeo {{ status['app_version'] }}
