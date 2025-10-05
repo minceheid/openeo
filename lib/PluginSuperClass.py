@@ -18,6 +18,13 @@ import re, numbers
 _LOGGER = logging.getLogger(__name__)
 
 class PluginSuperClass:
+    
+    # Class variable to indicate how often the poll() method should be called. A value of 1 will
+    # cause poll() to be called every iteration of the main loop, a value of 100 will indicate that
+    # we expect poll() to be called every 100 iterations. A value of 0 indicated that poll() will never be 
+    # called.
+    
+    pollfrequency = 1
 
     def _convertType(self,attribute,value,typeClass,default=None):
         """

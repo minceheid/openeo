@@ -6,6 +6,33 @@
   <style>
 
 
+h3 { text-align: center; }
+
+.displaycolumn {
+	width: 90%;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	font-size: 14pt;
+	overflow-x: hidden;
+	overflow-y: auto;
+	pointer-events: all;
+	z-index: 1000;
+	position: relative;
+	top: 6em;
+}
+
+.displayrow {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+    align-items: center;
+    text-align:center;
+    z-index: 1000;
+}
+
+
+#controls {
 #controls {
   display: flex;
   flex-direction: row;
@@ -72,6 +99,11 @@ label {
 </style>
 </head>
 <body>
+  <div class="displaycolumn">
+    <div id="controls"></div>
+    <div id="chart"></div>
+    &nbsp;
+    <div class="displayrow">
   <br><br>
   <h3>CT Sensor Calibration</h3>
 

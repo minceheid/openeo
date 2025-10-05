@@ -1,15 +1,47 @@
+{% include 'app_top.tpl' %}
+
+
 <head>
   <script src="https://cdn.plot.ly/plotly-3.1.0.min.js" charset="utf-8"></script>
 </head>
 
+ <style>
+
+.displaycolumn {
+	width: 90%;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	font-size: 14pt;
+	overflow-x: hidden;
+	overflow-y: auto;
+	pointer-events: all;
+	z-index: 1000;
+	position: relative;
+	top: 6em;
+  height: 80vh;
+}
+
+.displayrow {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+    align-items: center;
+    text-align:center;
+    z-index: 1000;
+}
+</style>
+
 <body>
-	<div id='chart_Power'><!-- Plotly chart will be drawn inside this DIV --></div>
-	<div id='chart_Current'><!-- Plotly chart will be drawn inside this DIV --></div>
+  <div class="displaycolumn">
+    <div id='chartDiv' style="height:80vh;width:auto"></div>
+  </div>
 </body>
 
 <script>
 
 var chartdata = [];
+var timer = null;
 const layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
                   legend1: {y:0.9, yanchor:'top'},
                   legend2: {y:0.65, yanchor:'top'},                          
@@ -24,11 +56,13 @@ const layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
                   y3: {rangemode: 'tozero'},  
                   };
 
-//url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_power_requested:eo_power_requested_solar:eo_power_requested_grid:eo_power_requested_site_limit:eo_power_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
-//url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested:eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
+
 url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_requested:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
 
-fetch(url, {method: 'GET'})
+fetch(url, {
+  method: 'GET',
+  signal: AbortSignal.timeout(5000)
+  })
     .then(function(response) { return response.json(); })
     .then(function(data) {
         chartdata=data;
@@ -74,20 +108,25 @@ fetch(url, {method: 'GET'})
               break;
           }
 
-        });
+        })
 
-        console.log(data);
-        Plotly.newPlot('chart_Power',chartdata,layout);
-        timer_Power=setInterval(chartUpdate_Power,30000);
-        myplot=Plotly.newPlot('chart_Power',chartdata,layout);
-
-    })
+        chartUpdate()
+    })        
+    .catch(error => {
+        console.log('Error fetching status: ', error);
+      });
 
 
    <!--------------------------------->
     // Then continue to repeat every 30 seconds
 
-    function chartUpdate_Power() {
+    function chartUpdate() {
+
+          if (timer==null) {
+            // Set Timer Inverval
+            timer=setInterval(chartUpdate,30000);
+          }
+
           maxtime=chartdata[0].x[(chartdata[0].x.length)-1];
           fetch(url+'&since='+maxtime, {method: 'GET'})
               .then(function(response) { return response.json(); })
@@ -99,7 +138,7 @@ fetch(url, {method: 'GET'})
                 });
           
                 newmaxtime=chartdata[0].x[(chartdata[0].x.length)-1];
-                Plotly.newPlot('chart_Power',chartdata,layout);
+                Plotly.newPlot('chartDiv',chartdata,layout,{responsive:true});
               });
     }
 

@@ -2,7 +2,7 @@
 """
 MIT License
 
-Copyright (c)2025 mike@scott.land and contriutors
+Copyright (c)2025 mike@scott.land and contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -100,7 +100,6 @@ def main():
                     _LOGGER.info("Unloading %s",modulename)
                     del globalState.stateDict["_moduleDict"][modulename]
 
-        #print("configserver alive:",globalState.stateDict["_moduleDict"]["configserver"].serverthread.is_alive())
         # Take any action necessary - the module poll() function should return a numeric value
         # the maximum value returned by any module will be the max amp setting for the charger
         # If all modules return 0, then the charger will be set to "off"
@@ -112,28 +111,29 @@ def main():
 
         for module_name, module in globalState.stateDict["_moduleDict"].items():
             if module.get_config().get("enabled", True):
-                if callable(getattr(module,"poll",None)):
-                    # Get the current from a module, whilst ensuring that it's an integer,
-                    # and also between 0>=x>=32
-                    module_current = max(min(int(module.poll()),32),0)
+                if module.pollfrequency>0 and (loop % module.pollfrequency) == 0:
+                    if callable(getattr(module,"poll",None)):
+                        # Get the current from a module, whilst ensuring that it's an integer,
+                        # and also between 0>=x>=32
+                        module_current = max(min(int(module.poll()),32),0)
 
-                    # This check is entirely aesthetic - it's not required for correct behaviour of the charger
-                    # but including it will ensure that the charts on the statistics page reflect what the charger
-                    # is actually doing.
-                    
-                    if module_current<6:
-                        module_current=0
+                        # This check is entirely aesthetic - it's not required for correct behaviour of the charger
+                        # but including it will ensure that the charts on the statistics page reflect what the charger
+                        # is actually doing.
+                        
+                        if module_current<6:
+                            module_current=0
 
-                    globalState.configDB.logwrite(f"module:{module_name} current:{module_current}")
-                    if (not isinstance(module_current, numbers.Number)):
-                        _LOGGER.error(f"ERROR: Module {module} returned "+str(type(module_current))+"- Ignoring")
-                    else:
-                        globalState.stateDict["eo_amps_requested"] = max(globalState.stateDict["eo_amps_requested"], module_current)
+                        globalState.configDB.logwrite(f"module:{module_name} current:{module_current}")
+                        if (not isinstance(module_current, numbers.Number)):
+                            _LOGGER.error(f"ERROR: Module {module} returned "+str(type(module_current))+"- Ignoring")
+                        else:
+                            globalState.stateDict["eo_amps_requested"] = max(globalState.stateDict["eo_amps_requested"], module_current)
 
-                        #if module_name=="loadmanagement":
-                        #    globalState.stateDict["eo_amps_requested_solar"] = max(globalState.stateDict["eo_amps_requested_solar"], module_current)
+                            #if module_name=="loadmanagement":
+                            #    globalState.stateDict["eo_amps_requested_solar"] = max(globalState.stateDict["eo_amps_requested_solar"], module_current)
 
-                        _LOGGER.debug("polled %s, amps_requested=%d" % (module_name, module_current))
+                            _LOGGER.debug("polled %s, amps_requested=%d" % (module_name, module_current))
         
         if globalState.stateDict["eo_always_supply_current"]:
             globalState.stateDict["eo_amps_requested"] = 32
@@ -225,9 +225,6 @@ def main():
 
             globalState.stateDict["eo_amps_requested_solar"] = min(globalState.stateDict["eo_current_solar"], globalState.stateDict["eo_amps_requested"])
             globalState.stateDict["eo_amps_requested_grid"] = globalState.stateDict["eo_amps_requested"] - globalState.stateDict["eo_amps_requested_solar"]
-            #if globalState.stateDict["eo_amps_requested_grid"] <0:
-            #    globalState.stateDict["eo_amps_requested_solar"]+=globalState.stateDict["eo_amps_requested_grid"]
-            #    globalState.stateDict["eo_amps_requested_grid"]=0
 
             globalState.stateDict["eo_power_requested"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested"]) / 1000, 2)    # P=VA
             globalState.stateDict["eo_power_requested_solar"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested_solar"]) / 1000, 2)    # P=VA
@@ -235,22 +232,10 @@ def main():
             globalState.stateDict["eo_power_requested_site_limit"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_amps_requested_site_limit"]) / 1000, 2)    # P=VA
             globalState.stateDict["eo_amps_delivered"] = round(((globalState.stateDict["eo_power_delivered"] * 1000) / globalState.stateDict["eo_live_voltage"]), 2)    # P=VA
 
-
-            # If charger state indicates that the car might not be disconnected, then
-            # we reset the session kWh count, otherwise we calculate how many additional
-            # joules have been added to the count
-            if globalState.stateDict["eo_charger_state_id"]<9:
-                globalState.stateDict["eo_session_joules"]=0
-                globalState.stateDict["eo_session_kwh"]=0
-            else:
-                thisloop=datetime.datetime.now()
-                secondsSinceLastLoop=(thisloop-lastloop).total_seconds()
-                # 1J = 1Ws = 1 x V * A * s
-                globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"] * secondsSinceLastLoop)
-                globalState.stateDict["eo_session_kwh"]= round(globalState.stateDict["eo_session_joules"] / 3600000,2)
-                # Reset the time counter for next time.
-                lastloop=thisloop
-
+            # Record the current time - this can be used to show on the web interface, to allow the user to confirm that the correct time is
+            # visible for scheduling purposes
+            myTime=time.localtime()
+            globalState.stateDict["eo_localtime"] = f"{myTime.tm_hour:02}:{myTime.tm_min:02}"
 
             # After all adjustments have been made, record data for the logger
             if "logger" in globalState.stateDict["_moduleDict"]:

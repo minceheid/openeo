@@ -57,6 +57,7 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 </figure>
 </p>
 </td></tr></table>
+
 7. Close the EO enclosure, and apply power to it. The Raspberry Pi should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take about five minutes to fully boot before it is seen on the network.
 8. Log onto your account on the RPi via SSH (e.g. using <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">PuTTY</a>) over the WiFi network, and run the following commands. This will download the software from GitHub and run the installation process, then reboots your RPi to allow the software to finish configuring and start up.
 
@@ -74,6 +75,14 @@ openeo is designed to allow the export of data for visualisation through home au
 
 * ```/metrics```: Prometheus exporter
 * ```/api```: Home Assistant exporter
+
+## Session Logs
+OpenEO can keep track of your charging, and give you full access to your data. By keeping track of when you connect and disconnect your car, we record the power delivery on each charging session (noting, of course, that the start time is when your car was connected, and not when charging began). The bar charts on this page also give you summaries of how many kWh you charged on each of the last seven days, four weeks, and four months. Also on this page, you can hit the button to download the data as a CSV file if you need to do more analysis in a spreadsheet.
+
+<p align="center">
+<img alt="image" src="https://github.com/user-attachments/assets/f9054552-f6f8-43e3-a22c-59cf88f35689" style="width:50%; height:auto;"/>
+</p>
+
 
 ## Statistics
 Full visualisation of the chargers operations is available by selecting the "Statistics" option in the menu.
@@ -102,7 +111,14 @@ Simply use the sliders at the top of the page, and observe the visual changes in
 </p>
 
 ## Updating
-From time to time, we will update the software. When a new release is tagged on GitHub, your openeo installation can be updated by simply repeating the install procedure. This will retrieve the latest release, install and activate it:
+From time to time, we will update the software. Your openeo software will periodically check for new releases being made available, and when it finds an updated release, it will highlight that fact on the home screen with an "Update Available" message. You can either click on that message, or select "Update Software" from the options menu - either way will take you to a page with three buttons allowing you to update OpenEO, the Raspberry Pi OS, and to reboot the Operating System. Only one action can be taken at a time, and the buttons remain disabled when an update is in progress.
+
+<p align="center">
+<img alt="image" src="https://github.com/user-attachments/assets/f7d578e3-9c31-43fb-97c3-0de77813c532" style="width:50%; height:auto;"/>
+</p>
+
+Alternately, the update process can be carried out on the command line by simply repeating the install procedure. This will retrieve the latest release, install and activate it:
+
 ~~~~
 curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -
 sudo reboot
