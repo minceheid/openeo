@@ -15,6 +15,7 @@ Date: 2025-08-20
 import argparse
 import json
 import os
+import getpass
 import subprocess
 import sys
 import time
@@ -121,7 +122,7 @@ def verify_required_file(sha: str, filename: str = "openeo_download.py"):
 
 def ensure_environment():
     """Verify script is running under correct conditions."""
-    if os.getlogin() != "pi":
+    if getpass.getuser() != "pi":
         raise DeploymentError("This script must be run as the 'pi' user.")
 
     # Run sudo check silently (no stdout/stderr leakage)
