@@ -33,11 +33,28 @@ h3 { text-align: center; }
 
 
 #controls {
+#controls {
   display: flex;
   flex-direction: row;
   gap: 20px;
   margin-bottom: 20px;
   z-index: 1000;
+}
+
+#buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  margin-bottom: 20px;
+  z-index: 1000;
+}
+.buttons {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+  align-items: center;
+      text-align:center;
+
 }
 
 .control-group {
@@ -70,6 +87,9 @@ input[type=range] {
   color: white;
 }
 
+.ct_tuner {
+  z-index: 1000;
+}
 
 label {
   display: flex;
@@ -84,6 +104,14 @@ label {
     <div id="chart"></div>
     &nbsp;
     <div class="displayrow">
+  <br><br>
+  <h3>CT Sensor Calibration</h3>
+
+  <div class="ct_tuner">
+    <div id="controls"></div>
+    <div id="chart"></div>
+    <br>
+    <div class="buttons">
     <div class="control-group"><button class="eoButton" onclick="doSubmit()">Save Settings</button></div>
     <div class="control-group"><button class="eoButton" onclick="doReset()">Reset Settings</button></div>
     </div>
