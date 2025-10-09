@@ -100,20 +100,23 @@ label {
 </head>
 <body>
   <div class="displaycolumn">
-    <div id="controls"></div>
+    
+    <div id="controls" class="displayrow"></div>
     <div id="chart"></div>
     &nbsp;
     <div class="displayrow">
   <br><br>
-  <h3>CT Sensor Calibration</h3>
 
   <div class="ct_tuner">
     <div id="controls"></div>
     <div id="chart"></div>
     <br>
-    <div class="buttons">
-    <div class="control-group"><button class="eoButton" onclick="doSubmit()">Save Settings</button></div>
-    <div class="control-group"><button class="eoButton" onclick="doReset()">Reset Settings</button></div>
+    <div class="displayrow">
+      <div class="control-group">
+        <button class="eoButton" onclick="doSubmit()">Save Settings</button>
+        &nbsp;
+        <button class="eoButton" onclick="doReset()">Reset Settings</button>
+      </div>
     </div>
   </div>
 
