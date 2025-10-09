@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.9](https://github.com/minceheid/openeo/compare/v0.5.8...v0.5.9) (2025-10-09)
+
+
+### Bug Fixes
+
+* ct tuner class flex fix ([0167be4](https://github.com/minceheid/openeo/commit/0167be451479b70086aede0ee237f05d7a6c46de))
+
 ## [0.2.3](https://github.com/minceheid/openeo/compare/v0.2.2...v0.2.3) (2025-07-24)
 
 
