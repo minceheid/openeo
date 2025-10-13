@@ -25,13 +25,14 @@ class chargersessionClassPlugin(PluginSuperClass):
 
     SESSION_DB_FILE="/home/pi/etc/session.db"
     SESSION_TABLE="session"
+    SESSION_TABLE2="session2"
         
     def poll(self):
         # If charger state indicates that the car might be disconnected, then
         # we reset the session kWh count, otherwise we calculate how many additional
         # joules have been added to the count
 
-        #if ((datetime.datetime.now()).hour/2) % 2 == 0:
+        #if (((datetime.datetime.now()).hour/2)-1) % 2 == 0: ## TEST
         if globalState.stateDict["eo_charger_state_id"]<9:
             globalState.stateDict["eo_session_joules"]=0
             globalState.stateDict["eo_session_kwh"]=0
@@ -41,7 +42,7 @@ class chargersessionClassPlugin(PluginSuperClass):
             secondsSinceLastLoop=(thisloop-self.lastloop).total_seconds()
             # 1J = 1Ws = 1 x V * A * s
             globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"] * secondsSinceLastLoop)
-            #globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * 32 * secondsSinceLastLoop)
+            #globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * 32 * secondsSinceLastLoop) ## TEST
             globalState.stateDict["eo_session_kwh"]= round(globalState.stateDict["eo_session_joules"] / 3600000,2)
 
             # Once a minute, we should write down the current session information to the persistent log
@@ -53,26 +54,33 @@ class chargersessionClassPlugin(PluginSuperClass):
 
         return 0
 
+    def local_day_start_epoch(self,now=datetime.datetime.now().astimezone()):
+        # now = datetime.datetime.now().astimezone()  # current local time, timezone-aware
+        start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        return int(start_of_day.timestamp())
+
     def writesessionlog(self,timestamp,joules):
         with self.lock:
             self.cursor.execute(f'''
-                REPLACE INTO {self.SESSION_TABLE} (first_timestamp, last_timestamp, joules) 
-                VALUES (?, ?, ?)
-            ''', (int(timestamp), int(time.time()), joules))
+                REPLACE INTO {self.SESSION_TABLE2} (first_timestamp, last_timestamp, day_timestamp, joules) 
+                VALUES (?, ?, ?, ?)
+            ''', (int(timestamp), int(time.time()), self.local_day_start_epoch(), joules))
             self.conn.commit()
 
     def get_sessions(self):
         six_months_ago=int(time.time()) - 60*60*24*180
         with self.lock:
             # Only retrieve entries that are greater than 1kWh to remove any short term connections from plug/unplug
-            self.cursor.execute(f"SELECT first_timestamp, last_timestamp, joules FROM {self.SESSION_TABLE} where joules>3600000 and first_timestamp>{six_months_ago}")
+            self.cursor.execute(f"SELECT first_timestamp, last_timestamp, day_timestamp, joules FROM {self.SESSION_TABLE2} where joules>3600000 and first_timestamp>{six_months_ago}")
             rows = self.cursor.fetchall()
 
         data=[]
         for x in rows:
             data.append({"first_timestamp":x[0],
                "last_timestamp":x[1],
-               "joules":x[2]})
+               "day_timestamp":x[2],
+               "joules":x[3]}
+               )
         
         return data
 
@@ -92,9 +100,34 @@ class chargersessionClassPlugin(PluginSuperClass):
 
         self.cursor = self.conn.cursor()
         self.cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS {self.SESSION_TABLE} (
-                first_timestamp INTEGER NOT NULL PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS {self.SESSION_TABLE2} (
+                first_timestamp INTEGER NOT NULL,
+                day_timestamp INTEGER NOT NULL,
                 last_timestamp INTEGER,
-                joules INTEGER NOT NULL
+                joules INTEGER NOT NULL,
+                PRIMARY KEY (first_timestamp, day_timestamp)
             )
         ''')
+
+        # v5.8 had a different format session table, so if it exists, then
+        # we migrate the data across to the new table and drop the old table
+        with self.lock:
+            try:
+                sql=f"SELECT first_timestamp, last_timestamp, joules FROM {self.SESSION_TABLE} where joules>3600000"
+                self.cursor.execute(sql)
+                rows = self.cursor.fetchall()
+                for x in rows:
+                    now=datetime.datetime.fromtimestamp(x[0]).astimezone()
+                    sql=f"REPLACE INTO {self.SESSION_TABLE2} (first_timestamp, last_timestamp, day_timestamp, joules) VALUES ({x[0]}, {x[1]}, {self.local_day_start_epoch(now)}, {x[2]})"
+                    self.cursor.execute(sql)
+                    print(sql)
+
+                self.cursor.execute(f"drop table {self.SESSION_TABLE}")
+                self.conn.commit()
+            except Exception as err:
+                if str(err)=="no such table: session":
+                    # This is normal - there is no old format session table to migrate
+                    pass
+                else:
+                    print("Error migrating old session data: ",err)
+

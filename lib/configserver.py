@@ -255,6 +255,7 @@ class configserverClassPlugin(PluginSuperClass):
                 sessiondata=[]
                 if "chargersession" in globalState.stateDict["_moduleDict"]:
                     sessiondata=globalState.stateDict["_moduleDict"]["chargersession"].get_sessions()
+                    
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
