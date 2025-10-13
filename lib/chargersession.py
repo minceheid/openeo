@@ -32,8 +32,8 @@ class chargersessionClassPlugin(PluginSuperClass):
         # we reset the session kWh count, otherwise we calculate how many additional
         # joules have been added to the count
 
-        if (((datetime.datetime.now()).hour/2)-1) % 2 == 0: ## TEST
-        #if globalState.stateDict["eo_charger_state_id"]<9:
+        #if (((datetime.datetime.now()).hour/2)-1) % 2 == 0: ## TEST
+        if globalState.stateDict["eo_charger_state_id"]<9:
             globalState.stateDict["eo_session_joules"]=0
             globalState.stateDict["eo_session_kwh"]=0
             globalState.stateDict["eo_session_timestamp"]=int(time.time())
@@ -42,7 +42,7 @@ class chargersessionClassPlugin(PluginSuperClass):
             secondsSinceLastLoop=(thisloop-self.lastloop).total_seconds()
             # 1J = 1Ws = 1 x V * A * s
             globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"] * secondsSinceLastLoop)
-            globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * 32 * secondsSinceLastLoop) ## TEST
+            #globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * 32 * secondsSinceLastLoop) ## TEST
             globalState.stateDict["eo_session_kwh"]= round(globalState.stateDict["eo_session_joules"] / 3600000,2)
 
             # Once a minute, we should write down the current session information to the persistent log
@@ -54,8 +54,8 @@ class chargersessionClassPlugin(PluginSuperClass):
 
         return 0
 
-    def local_day_start_epoch(self):
-        now = datetime.datetime.now().astimezone()  # current local time, timezone-aware
+    def local_day_start_epoch(self,now=datetime.datetime.now().astimezone()):
+        # now = datetime.datetime.now().astimezone()  # current local time, timezone-aware
         start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
         return int(start_of_day.timestamp())
 
@@ -108,3 +108,26 @@ class chargersessionClassPlugin(PluginSuperClass):
                 PRIMARY KEY (first_timestamp, day_timestamp)
             )
         ''')
+
+        # v5.8 had a different format session table, so if it exists, then
+        # we migrate the data across to the new table and drop the old table
+        with self.lock:
+            try:
+                sql=f"SELECT first_timestamp, last_timestamp, joules FROM {self.SESSION_TABLE} where joules>3600000"
+                self.cursor.execute(sql)
+                rows = self.cursor.fetchall()
+                for x in rows:
+                    now=datetime.datetime.fromtimestamp(x[0]).astimezone()
+                    sql=f"REPLACE INTO {self.SESSION_TABLE2} (first_timestamp, last_timestamp, day_timestamp, joules) VALUES ({x[0]}, {x[1]}, {self.local_day_start_epoch(now)}, {x[2]})"
+                    self.cursor.execute(sql)
+                    print(sql)
+
+                self.cursor.execute(f"drop table {self.SESSION_TABLE}")
+                self.conn.commit()
+            except Exception as err:
+                if str(err)=="no such table: session":
+                    # This is normal - there is no old format session table to migrate
+                    pass
+                else:
+                    print("Error migrating old session data: ",err)
+
