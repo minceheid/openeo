@@ -15,6 +15,7 @@ Configuration example:
 import logging, datetime
 from lib.PluginSuperClass import PluginSuperClass
 import traceback
+import util
 
 
 # logging for use in this module
@@ -25,7 +26,8 @@ class schedulerClassPlugin(PluginSuperClass):
     PRETTY_NAME = "Scheduler"
     CORE_PLUGIN = True  
     pluginParamSpec={ "enabled":      {"type": "bool","default": True},
-			"schedule": {"type": "json","default":'[{"start": "2200", "end": "0400", "amps": 32}]'}}
+			"schedule": {"type": "json","default":'[{"start": "2200", "end": "0400", "amps": 32}]'},
+            "scheduler_granularity": {"type": "int","default": 5}}
     parsedSchedule = []
 
 
@@ -53,3 +55,9 @@ class schedulerClassPlugin(PluginSuperClass):
                 amps = max(amps, schedule_amps)
 
         return amps
+
+    def get_user_settings(self):
+        settings = []
+        util.add_simple_setting(self.pluginConfig, settings, 'slider', "scheduler", ("scheduler_granularity",), 'Schedule Clockface Step Size', \
+            note="This allows the granularity of the clock timer to be set", range=(5,15), step=5, default=5, value_unit="min")
+        return settings
