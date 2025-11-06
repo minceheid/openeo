@@ -24,7 +24,7 @@
 			</div>
 			<div class="logo" id="logo">
 				<div class="logo-inner">
-					<a href="https://github.com/joshbarbs/openeo">
+					<a href="https://github.com/minceheid/openeo">
 						<span class="logo-text">openeo</span>
 						<img src="static/openeo_vector_glyph_lightmono.svg" width="50" height="50"/>
 					</a>

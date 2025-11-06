@@ -62,7 +62,7 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 8. Log onto your account on the RPi via SSH (e.g. using <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">PuTTY</a>) over the WiFi network, and run the following commands. This will download the software from GitHub and run the installation process, then reboots your RPi to allow the software to finish configuring and start up.
 
 ~~~~
-curl -sSL https://github.com/joshbarbs/openeo/raw/refs/heads/main/openeo_download.py | python3 -
+curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -
 sudo reboot
 ~~~~
 
@@ -122,7 +122,7 @@ From time to time, we will update the software. Your openeo software will period
 Alternately, the update process can be carried out on the command line by simply repeating the install procedure. This will retrieve the latest release, install and activate it:
 
 ~~~~
-curl -sSL https://github.com/joshbarbs/openeo/raw/refs/heads/main/openeo_download.py | python3 -
+curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -
 sudo reboot
 ~~~~
 
