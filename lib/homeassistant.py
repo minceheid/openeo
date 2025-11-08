@@ -24,6 +24,7 @@ import time
 import threading
 from lib.PluginSuperClass import PluginSuperClass
 import globalState
+import util
 
 try:
     import paho.mqtt.client as mqtt
@@ -710,17 +711,22 @@ class homeassistantClassPlugin(PluginSuperClass):
     
     def get_user_settings(self):
         """Return configuration options for web interface"""
-        return [
-            {"key": "enabled", "type": "bool", "title": "Enable Home Assistant MQTT"},
-            {"key": "mqtt_host", "type": "str", "title": "MQTT Broker Host"},
-            {"key": "mqtt_port", "type": "int", "title": "MQTT Broker Port"},
-            {"key": "mqtt_username", "type": "str", "title": "MQTT Username (optional)"},
-            {"key": "mqtt_password", "type": "str", "title": "MQTT Password (optional)"},
-            {"key": "mqtt_discovery_prefix", "type": "str", "title": "HA Discovery Prefix"},
-            {"key": "device_name", "type": "str", "title": "Device Name in HA"},
-            {"key": "device_id", "type": "str", "title": "Device ID"},
-            {"key": "publish_interval", "type": "int", "title": "Publish Interval (seconds)"}
-        ]
+        settings = []
+
+        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_host",), 'MQTT Broker Host', note='MQTT Broker Host.')
+        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_port",), 'MQTT Broker Port', note='MQTT Broker Port.')
+
+        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_username",), 'MQTT Username (optional)', note='MQTT Username (optional)')
+        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_password",), 'MQTT Password (optional)', note='MQTT Password (optional)')
+        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_discovery_prefix",), 'HA Discovery Prefix', note='HA Discovery Prefix')
+        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("device_name",), 'Device Name in HA', note='Device Name in HA')
+        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("device_id",), 'Device ID', note='Device ID')
+        util.add_simple_setting(self.pluginConfig, settings, 'slider', "chargeroptions", ("publish_interval",), 'Publish Interval (seconds)', \
+            note="Publish Interval (seconds)", \
+            range=(30,3600), default=300, step=30, value_unit="s")
+        
+        return settings
+
     
     def __del__(self):
         """Cleanup MQTT connection on plugin destruction"""
