@@ -45,6 +45,7 @@ stateDict={
     "eo_session_joules":0,
     "eo_session_kwh":0,
     "eo_session_timestamp":0,
+    "eo_session_seconds_charged":0,
 
     # CT Sensor Current (Amps)
     "eo_current_site":0,  #site

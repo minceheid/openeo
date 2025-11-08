@@ -64,26 +64,18 @@ table td { text-align: center; }
 
 <body>
 
- <div class="displaycolumn">
+  <div class="displaycolumn">
     <div class="displayrow">
-    <button class="eoButton" onclick="downloadCSV()">Download Charging Log</button>
+      <button class="eoButton" onclick="downloadCSV()">Download Charging Log</button>
     </div>
-
-    <div id="chart" style="width:auto"></div>
-
-
-  <div id="table"><center>
-  &nbsp;
-  <table>
-  <thead>
-    <tr class="session-heading"><th>Date</th><th>Connected Duration<br>(Minutes)</th><th>Power Delivered</th></tr>
-  </thead>
-  <tbody id=tableBody></tbody>
-  </table>
-  </center>
-   </div>
-   </div>
-
+    <div class="displayrow">
+      <div id="chart" style="height:40vh;width:90%;"></div>
+    </div>
+    <div class="displayrow">
+      <table id=sessiontable style="font-size:80%; border-spacing: 3px"></table>
+      </center>
+    </div>
+  </div>
   </body>
 
 <script type="text/javascript" src="static/chargersession.js"></script>
