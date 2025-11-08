@@ -46,7 +46,7 @@ class chargeroptionsClassPlugin(PluginSuperClass):
             note="Puts the charge point into 'dumb' mode.  All smart functions are disabled, and only the Overall Current Limit will apply.", default=False)
         util.add_simple_setting(self.pluginConfig, settings, 'slider', "chargeroptions", ("overall_limit_current",), 'Overall Current Limit', \
             note="Does not override the PCB current limit setting.  This will prevent higher current limits from being used from e.g. the home screen and remote plugins.", \
-            range=(6,32), default=32, value_unit="A")
+            range=(globalState.MIN_CHARGING_CURRENT, globalState.MAX_CHARGING_CURRENT), default=globalState.MAX_CHARGING_CURRENT, value_unit="A")
         #util.add_simple_setting(self.pluginConfig, settings, 'slider', "chargeroptions", ("overall_property_limit_current",), 'Maximum property consumption', \
         #    note="When a current sensor is installed on the property electrical feed, setting this value may restrict charger output if electricity consumption measured at the sensor is high.", \
         #    range=(16,100), default=60, value_unit="A")

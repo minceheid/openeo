@@ -75,7 +75,14 @@ def main():
                 # Modue should be enabled
                 if modulename in globalState.stateDict["_moduleDict"]:
                     # Module already loaded, so just configure it
-                    _LOGGER.info("Configuring %s with %s",modulename,pluginConfig)
+                    # Sanitize sensitive config for logging
+                    safe_config = pluginConfig.copy()
+                    if modulename == "homeassistant" and isinstance(safe_config, dict):
+                        if "mqtt_password" in safe_config:
+                            safe_config["mqtt_password"] = "***"
+                        if "mqtt_username" in safe_config:
+                            safe_config["mqtt_username"] = "***"
+                    _LOGGER.info("Configuring %s with %s", modulename, safe_config)
                     globalState.stateDict["_moduleDict"][modulename].configure(pluginConfig)
                 else:
                     _LOGGER.info("openeo initialising %s",modulename)
