@@ -46,8 +46,16 @@ class checkversionClassPlugin(PluginSuperClass):
         """Return a list of valid release tags from the GitHub repository."""
         releases = []
 
-        # Fetch releases 
-        for release in self.fetch_json(f"https://api.github.com/repos/{self.GITHUB_REPO}/releases"):
-            releases.append(release["name"])
+        # Fetch releases from github
+        try:
+            URL=f"https://api.github.com/repos/{self.GITHUB_REPO}/releases"
+            github_releases=self.fetch_json(URL)
+            
+            for release in github_releases:
+                releases.append(release["name"])
+
+        except:
+            print(f"Github API call to {URL} failed.. ignoring version check")
+            releases.append("Unknown")
 
         return releases
