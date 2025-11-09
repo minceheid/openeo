@@ -94,7 +94,6 @@ class configserverClassPlugin(PluginSuperClass):
             self.config={}
             for modulename,module in globalState.stateDict["_moduleDict"].items():
                     self.config[modulename]=module.pluginConfig
-
             return True
             
 
@@ -524,14 +523,13 @@ class configserverClassPlugin(PluginSuperClass):
                 "settings" : [],
                 "title" : self.selected_page
             } 
-            
             # If a module supports exposing settings, add each.
             if "_moduleDict" in globalState.stateDict:
                 for modulename, module in globalState.stateDict["_moduleDict"].items():
                     try:
                         mod_settings = []
                         if not module.CORE_PLUGIN:
-                            util.add_simple_setting(self.config, mod_settings, 'boolean', module.myName, (module.myName, "enabled",), 'Enable Module') 
+                            util.add_simple_setting(self.config[modulename], mod_settings, 'boolean', module.myName, ("enabled",), 'Enable Module')
                         if hasattr(module, "get_user_settings"):
                             sets = module.get_user_settings()
                             if isinstance(sets, list) and len(sets) > 0:  # Might return None or some other garbage value.
@@ -540,5 +538,6 @@ class configserverClassPlugin(PluginSuperClass):
                         if len(mod_settings) > 0:
                             util.add_header_setting(self._context["settings"], module.PRETTY_NAME)
                             self._context["settings"] += mod_settings
+                            #print(self._context["settings"])
                     except Exception as e:
                         _LOGGER.error("Exception generating settings for %r: %r" % (module, e))

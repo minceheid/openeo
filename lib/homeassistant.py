@@ -721,9 +721,9 @@ class homeassistantClassPlugin(PluginSuperClass):
         util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_discovery_prefix",), 'HA Discovery Prefix', note='HA Discovery Prefix')
         util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("device_name",), 'Device Name in HA', note='Device Name in HA')
         util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("device_id",), 'Device ID', note='Device ID')
-        util.add_simple_setting(self.pluginConfig, settings, 'slider', "chargeroptions", ("publish_interval",), 'Publish Interval (seconds)', \
+        util.add_simple_setting(self.pluginConfig, settings, 'slider', "homeassistant", ("publish_interval",), 'Publish Interval (seconds)', \
             note="Publish Interval (seconds)", \
-            range=(30,3600), default=300, step=30, value_unit="s")
+            range=(5,3600), default=300, step=5, value_unit="s")
         
         return settings
 

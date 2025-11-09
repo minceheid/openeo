@@ -117,7 +117,7 @@ class openeoConfigClass:
             for key, value in key_or_dict.items():
                 self.logwrite(f"Config update {module}:{key}={value}")
         else:
-            self.logwrite(f"Config update {module}:{key}={key_or_dict}")
+            self.logwrite(f"Config update {module}:{key}={value}")
 
 
     def __init__(self,defaultConfig=None):
