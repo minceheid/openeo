@@ -26,6 +26,7 @@ import logging,numbers,copy,statistics
 import logging.handlers
 import time, math, datetime
 import importlib
+import psutil
 
 import globalState, util
 from openeoCharger import openeoChargerClass
@@ -258,6 +259,12 @@ def main():
         if (loop % 12) == 0:
             # Once a minute, purge the log table
             globalState.configDB.logpurge()
+        #########
+        # System Metrics
+        globalState.stateDict["sys_available_memory"]=psutil.virtual_memory().available/1024/1024
+        globalState.stateDict["sys_free_memory"]=psutil.virtual_memory().free/1024/1024
+        globalState.stateDict["sys_1m_load_average"]=psutil.getloadavg()[1]
+
 
         # Measure Pi CPU temperature. This is returned via OCPP and might be exposed in other interfaces later.
         # I'm not sure how useful this is, but presumably on a hot day under high CPU load whilst charging, 
@@ -272,10 +279,10 @@ def main():
             try:
                 with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
                     temp_val = float(f.read().strip()) / 1000.0
-                globalState.stateDict["cpu_temperature"] = temp_val
+                globalState.stateDict["sys_cpu_temperature"] = temp_val
             except Exception as e:
                 _LOGGER.warning("Couldn't measure Pi temperature: %r" % e)
-                globalState.stateDict["cpu_temperature"] = -999
+                globalState.stateDict["sys_cpu_temperature"] = -999
         
         globalState.stateDict["eo_connected_to_controller"] = charger.connected
         

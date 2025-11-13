@@ -84,6 +84,11 @@ class loggerClassPlugin(PluginSuperClass):
                                                     "eo_current_vehicle":"Vehicle Supply Current (A)",
                                                     "eo_current_solar":"Solar Generation Current (A)",
                                                     "eo_live_voltage":"Voltage (V)",
+                                                    "sys_cpu_temperature":"CPU Temperature (C)",
+                                                    "sys_1m_load_average":"System Load Average",
+                                                    "sys_free_memory":"Free Memory (MB)",
+                                                    "sys_available_memory":"Available Memory (MB)",
+                                                    "eo_serial_errors":"Serial Errors",
                                                     })
 
 
@@ -95,14 +100,24 @@ class databufferClass:
         return json.dumps(self.databuffer,default=str)
     
     def get_plotly(self,since=None,seriesList=None,subplot_index=None):
+        # Returns data in a format compatile with the Plotly Javascript library for
+        # rendering a chart. If multiple charts are required, then it can automatically
+        # generate subplots, but an implementation limitation is that at least one
+        # of the subplots must have a colon separator.. even if there is only one series
+        # in the subplot..
+        # spec format example
+        #  url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_requested:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
+        # Subplots are separated by colons, and the series within a subplot by commas.
+        
         myData=self.get_data(since,seriesList)
 
-
         using_subplots=False
+
+        # Check to see if we are using any subplots anywhere
         if seriesList is not None:
             for index,series in enumerate(seriesList):
                 if re.search(":",series):
-                    seriesList[index]=series.split(":")
+                    #seriesList[index]=series.split(":")
                     using_subplots=True
 
         series=[]
@@ -155,7 +170,8 @@ class databufferClass:
                         
         else:
             for index,subplot in enumerate(seriesList):
-                series.extend(self.get_plotly(since,subplot,index+1))
+                mylist=subplot.split(":")
+                series.extend(self.get_plotly(since,mylist,index+1))
 
 
         return series

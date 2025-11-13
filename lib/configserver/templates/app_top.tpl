@@ -16,7 +16,8 @@
 				<ul class="burger-list" id="burgerMenu">
 					<li><a href="/home.html">Home</a></li>
 					<li><a href="/settings.html">Settings</a></li>
-					<li><a href="/statistics.html">Statistics</a></li>
+					<li><a href="/statistics.html">Charging Statistics</a></li>
+					<li><a href="/statistics_os.html">Charger Statistics</a></li>
 					<li><a href="/chargersession.html">Charging Log</a></li>
 					<li><a href="/update.html">Update Software</a></li>
 					<li><a href="/ct_tuner.html">CT Calibration</a></li>

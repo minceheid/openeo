@@ -80,14 +80,21 @@ stateDict={
     "charger_name" : "openeo Charger",
     "charger_id" : "openeo_1",
 
-    # Counter of the number of serial overruns
-    "eo_serial_errors": 0,
     
     # Application (openeo) version
     "app_version" : appVer,
     
     # This confirms the commit id of the branch or version that is running
-    "app_deploy_directory" : os.path.basename(os.path.realpath(os.getcwd()))
+    "app_deploy_directory" : os.path.basename(os.path.realpath(os.getcwd())),
+
+    # System metrics
+    "sys_cpu_temperature" : 0,
+    "sys_1m_load_average" : 0,
+    "sys_available_memory" : 0,
+    "sys_free_memory" : 0,
+    # Counter of the number of serial overruns
+    "eo_serial_errors": 0,
+
 }
 
 
