@@ -23,23 +23,30 @@ systemctl status openeo
 cat <<EOF | /usr/bin/python3 -
 import sqlite3
 from datetime import datetime
+import re
 
 # Initialize SQLite DB and table
 conn = sqlite3.connect("/home/pi/etc/config.db")
 cursor = conn.cursor()
 
-cursor.execute(f"SELECT module, key, value FROM configuration")
-rows = cursor.fetchall()
-print("\n= SQLITE CONFIG\n=================")
-for row in rows:
-    print(row)
+sql = "SELECT name FROM sqlite_master WHERE type='table' and name like 'configuration%';"
+cursor.execute(sql)
+tables = cursor.fetchall()
+print(tables)
+print(type(tables))
+
+for table in tables:
+    print(f"\n= SQLITE CONFIG: {table[0]}\n=================")
+    cursor.execute(f"SELECT * FROM {table[0]}")
+    rows = cursor.fetchall()
+    for row in rows:
+        print(row)
 
 cursor.execute(f"SELECT timestamp, message FROM log")
 rows = cursor.fetchall()
 print("\n= SQLITE LOG\n=================")
 for (timestamp,message) in rows:
     print(datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S'),message)
-
 EOF
 
 ) | tee $filename
