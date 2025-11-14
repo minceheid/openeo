@@ -89,6 +89,7 @@ class loggerClassPlugin(PluginSuperClass):
                                                     "sys_free_memory":"Free Memory (MB)",
                                                     "sys_available_memory":"Available Memory (MB)",
                                                     "eo_serial_errors":"Serial Errors",
+                                                    "sys_wifi_strength":"WiFi Strength (%)",
                                                     })
 
 

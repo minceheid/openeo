@@ -52,14 +52,14 @@ const layout = { grid: {rows: 4,columns: 1, pattern: 'independent'},
                   paper_bgcolor: "#282c34",
                   plot_bgcolor: "#282c34",
                   font: { color: "#eee"},
-                  y1: {rangemode: 'tozero'},              
-                  y2: {rangemode: 'tozero'},  
-                  y3: {rangemode: 'tozero'},  
-                  y4: {rangemode: 'tozero'},  
+                  yaxis: {rangemode: 'tozero'},              
+                  yaxis2: {rangemode: 'tozero'},  
+                  yaxis3: {rangemode: 'tozero'},  
+                  yaxis4: {rangemode: 'tozero'},  
                   };
 
 
-url='/getchartdata?type=plotly&series=sys_cpu_temperature,sys_1m_load_average,sys_free_memory:sys_available_memory,eo_serial_errors';
+url='/getchartdata?type=plotly&series=sys_cpu_temperature:sys_wifi_strength,sys_1m_load_average,sys_free_memory:sys_available_memory,eo_serial_errors';
 
 
 fetch(url, {

@@ -92,6 +92,7 @@ stateDict={
     "sys_1m_load_average" : 0,
     "sys_available_memory" : 0,
     "sys_free_memory" : 0,
+    "sys_wifi_strength" : 0,
     # Counter of the number of serial overruns
     "eo_serial_errors": 0,
 
@@ -107,6 +108,7 @@ defaultConfig = {
         "checkversion" : { "enabled" : True },
         "chargeroptions" : { "enabled" : True, "mode" : "schedule" },
         "loadmanagement" : { "enabled" : True },
+        "os_metrics" : { "enabled" : True },
         "homeassistant" : { "enabled" : False }}
 
 configDB = openeoConfigClass(defaultConfig)

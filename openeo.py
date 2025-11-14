@@ -264,25 +264,6 @@ def main():
         globalState.stateDict["sys_available_memory"]=psutil.virtual_memory().available/1024/1024
         globalState.stateDict["sys_free_memory"]=psutil.virtual_memory().free/1024/1024
         globalState.stateDict["sys_1m_load_average"]=psutil.getloadavg()[1]
-
-
-        # Measure Pi CPU temperature. This is returned via OCPP and might be exposed in other interfaces later.
-        # I'm not sure how useful this is, but presumably on a hot day under high CPU load whilst charging, 
-        # the CPU temperature could be something to be concerned about.
-        #
-        # Pi Zero is max 85C and I found at room temperature it runs at 51C already, so max ambient (inside EO Pro 
-        # case, which is a nice black body) may be only 55C.  That feels achieveable in the summer sun, even in 
-        # good old England, so something to watch out for. 
-        #
-        # We only measure temperature every 5 loops.
-        if (loop % 5) == 0:
-            try:
-                with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
-                    temp_val = float(f.read().strip()) / 1000.0
-                globalState.stateDict["sys_cpu_temperature"] = temp_val
-            except Exception as e:
-                _LOGGER.warning("Couldn't measure Pi temperature: %r" % e)
-                globalState.stateDict["sys_cpu_temperature"] = -999
         
         globalState.stateDict["eo_connected_to_controller"] = charger.connected
         
