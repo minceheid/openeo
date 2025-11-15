@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0](https://github.com/minceheid/openeo/compare/v0.5.11...v0.6.0) (2025-11-15)
+
+
+### Features
+
+* Introduction of OS statistics ([62d09f3](https://github.com/minceheid/openeo/commit/62d09f3a6f830cc833785c223f095d183e1b8438))
+* OS Metrics charts ([ceaa775](https://github.com/minceheid/openeo/commit/ceaa775b3531d3e3e859b6f49c355423011ca7c7))
+
+
+### Bug Fixes
+
+* Average Power not being calculated correctly ([2361cb2](https://github.com/minceheid/openeo/commit/2361cb23c6938f59202f85c6b03338994a61a1f9))
+* debug tool did not respect changing table names in sqlite ([99a47bb](https://github.com/minceheid/openeo/commit/99a47bba4c68e34de2ba6cfd83df7e60bf299ed2))
+
 ## [0.2.3](https://github.com/minceheid/openeo/compare/v0.2.2...v0.2.3) (2025-07-24)
 
 
