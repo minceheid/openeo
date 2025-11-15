@@ -42,10 +42,7 @@
 
 var chartdata = [];
 var timer = null;
-const layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
-                  legend1: {y:0.9, yanchor:'top'},
-                  legend2: {y:0.65, yanchor:'top'},                          
-                  legend3: {y:0.27, yanchor:'top'}, 
+var layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
                   showlegend:true,
                   margin: { t: 30 },
                   paper_bgcolor: "#282c34",
@@ -56,6 +53,11 @@ const layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
                   y3: {rangemode: 'tozero'},  
                   };
 
+// Calculate Legend positions
+const legends=["legend","legend2","legend3"]
+legends.forEach((x,i) => {
+  layout[x]={y:(legends.length-i) * (1/legends.length) -0.03, yanchor:'top'}
+})
 
 url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_requested:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
 

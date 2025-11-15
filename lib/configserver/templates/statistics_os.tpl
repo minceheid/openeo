@@ -42,11 +42,7 @@
 
 var chartdata = [];
 var timer = null;
-const layout = { grid: {rows: 4,columns: 1, pattern: 'independent'},
-                  legend: {y:(4-0) * 0.25 -0.03, yanchor:'top'},
-                  legend2: {y:(4-1) * 0.25 -0.03, yanchor:'top'},                          
-                  legend3: {y:(4-2) * 0.25 -0.03, yanchor:'top'}, 
-                  legend4: {y:(4-3) * 0.25 -0.03, yanchor:'top'}, 
+var layout = { grid: {rows: 4,columns: 1, pattern: 'independent'},
                   showlegend:true,
                   margin: { t: 30 },
                   paper_bgcolor: "#282c34",
@@ -57,7 +53,11 @@ const layout = { grid: {rows: 4,columns: 1, pattern: 'independent'},
                   yaxis3: {rangemode: 'tozero'},  
                   yaxis4: {rangemode: 'tozero'},  
                   };
-
+// Calculate Legend positions
+const legends=["legend","legend2","legend3","legend4"]
+legends.forEach((x,i) => {
+  layout[x]={y:(legends.length-i) * (1/legends.length) -0.03, yanchor:'top'}
+})
 
 url='/getchartdata?type=plotly&series=sys_cpu_temperature:sys_wifi_strength,sys_1m_load_average,sys_free_memory:sys_available_memory,eo_serial_errors';
 
