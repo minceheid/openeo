@@ -361,45 +361,6 @@ class configserverClassPlugin(PluginSuperClass):
                 return 
 
 
-            
-            if self.path == "/setconfig":
-                ##################################
-                # API for writing configuration. This allows an arbitrary length dict to be passed via JSON
-                # and it will overwrite the running configuration, by merging any elements in the list into
-                # the running configuration. Remember garbage in-garbage out! - also be aware that this is
-                # not protected in any way, so anyone with access to the network could do damage to configuration
-                # this isn't ideal, and we might need to put some guardrails in here
-                content_length = int(self.headers['Content-Length'])
-                post_data = json.loads(self.rfile.read(content_length).decode('utf-8'))
-
-                # write configuration update to sqlite
-                #globalState.configDB.setDict(post_data,False)
-                for module, entries in post_data.items():
-                    if not isinstance(entries, dict):
-                        raise ValueError(f"Module '{module}' must map to a dict of key/value pairs")
-                    for key, value in entries.items():
-                        value_str = json.dumps(value) if value is not None else ""
-                        print(f"Writing config module:{module} key:{key} value:\"{value_str}\"")
-                        globalState.configDB.set(module,key,value_str)
-
-                # Now instruct all modules to reconfigure themselves. Probably overkill
-                newconfig={}
-                for modulename,module in globalState.stateDict["_moduleDict"].copy().items():
-                    module.configure(globalState.configDB.get(modulename))
-                    newconfig[modulename]=module.pluginConfig
-
-                # reload local config from modules
-                # note there is a chance/probability that the modules may not have seen the configuration
-                # update yet, as configure() will only be run on the next main loop iteration after the 
-                # setDict() has completed, so we probably don't want to *depend* on that.
-                #self.load_config()
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"status": "success", "config": newconfig}).encode("utf-8"))
-                _LOGGER.info('Config saved')
-                return
-
             elif self.path == "/setsettings":
                 ##################################
                 # API for syncing settings via POST variables.
@@ -413,12 +374,8 @@ class configserverClassPlugin(PluginSuperClass):
                 # It is legal for POST keys to be duplicated; that shouldn't happen when saving settings, but #
                 # even if it does, we'll just take the last value we see.
 
-                modulelist=[]
                 for modulekey, value in post_vars:
                     module,key=modulekey.split(':',1)
-                    # keep a list of modules that we're touching
-                    if module not in modulelist:
-                        modulelist.append(module)
                     _LOGGER.debug("%r : %r : %r" % (module, key, value))
                     globalState.configDB.set(module,key,value)
                 
@@ -430,9 +387,13 @@ class configserverClassPlugin(PluginSuperClass):
 
                 self.set_context()
                
-                self.send_response(303) # 303 See Other, used after POST request to indicate resubmission should not occur
-                self.send_header('Location', '/settings.html?toast2success=1')
+                self.send_response(200)
+                #MS: removing this redirect allows this API call to be used elsewhere
+                #self.send_response(303) # 303 See Other, used after POST request to indicate resubmission should not occur
+                #self.send_header('Location', '/settings.html?toast2success=1')
                 self.end_headers()
+                self.wfile.write(json.dumps({"status": "success", "config": newconfig}).encode("utf-8"))
+
             elif self.path == "/setmode":
                 ##################################
                 # API for changing the mode.  Depending upon the selected mode, one or more modules 

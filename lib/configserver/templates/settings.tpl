@@ -6,7 +6,7 @@
 
 <div class="settings-outer">
 	<div class="settings-inner">
-		<form method="POST" autocomplete="off" action="/setsettings">
+		<form id=settingsform method="POST" autocomplete="off" action="/setsettings">
 			{% for setting in settings %}
 				<div class="setting-row {{ 'setting-cat-end' if (setting['type'] == 'catend') else '' }}">
 					{% if setting['type'] == 'heading' %}
@@ -56,7 +56,7 @@
 			{% endfor %}
 			
 			<div class="setting-buttons">
-				<input type="submit" value="Save Settings">
+				<input type="button" value="Save Settings" onclick="submitSettings()">
 				<input type="button" value="Restart openeo" class="setting-button-restart" onclick="requestRestart();">
 			</div>
 		</form>
