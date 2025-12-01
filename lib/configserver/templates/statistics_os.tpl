@@ -59,7 +59,7 @@ legends.forEach((x,i) => {
   layout[x]={y:(legends.length-i) * (1/legends.length) -0.03, yanchor:'top'}
 })
 
-url='/getchartdata?type=plotly&series=sys_cpu_temperature:sys_wifi_strength,sys_1m_load_average,sys_free_memory:sys_available_memory,eo_serial_errors';
+url='getchartdata?type=plotly&series=sys_cpu_temperature:sys_wifi_strength,sys_1m_load_average,sys_free_memory:sys_available_memory,eo_serial_errors';
 
 
 fetch(url, {
@@ -80,13 +80,14 @@ fetch(url, {
     // Then continue to repeat every 30 seconds
 
     function chartUpdate() {
-
+console.log("chartUpdate()");
           if (timer==null) {
             // Set Timer Inverval
             timer=setInterval(chartUpdate,30000);
           }
 
           maxtime=chartdata[0].x[(chartdata[0].x.length)-1];
+
           fetch(url+'&since='+maxtime, {method: 'GET'})
               .then(function(response) { return response.json(); })
               .then(function(data) {

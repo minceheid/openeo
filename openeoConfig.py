@@ -4,7 +4,7 @@ OpenEO Class for handling configuration get/set
 """
 #################################################################################
 
-import sqlite3,logging,json,os,time
+import sqlite3,logging,json,os,time,re,numbers
 from threading import Lock
 
 # logging for use in this module
@@ -14,7 +14,10 @@ class openeoConfigClass:
 
     DB_FILE = "/home/pi/etc/config.db"
     JSON_FILE = "/home/pi/etc/config.json"
-    CONFIG_TABLE = "configuration"
+    CONFIG_TABLE_1 = "configuration"
+    CONFIG_TABLE_2 = "configuration_v2"
+    CONFIG_TABLE=CONFIG_TABLE_2
+
     LOG_TABLE = "log"
     LOG_PURGE_TTL = 3600 * 12 # 12 hours
 
@@ -97,18 +100,16 @@ class openeoConfigClass:
                 # Bulk insert
                 for key, val in key_or_dict.items():
                     self.cursor.execute(f'''
-                        INSERT INTO {self.CONFIG_TABLE} (module, key, value) 
-                        VALUES (?, ?, ?)
-                        ON CONFLICT(module, key) DO UPDATE SET value=excluded.value
+                        REPLACE INTO {self.CONFIG_TABLE} (module, key, value, update_ts) 
+                        VALUES (?, ?, ?, unixepoch())
                     ''', (module, key, val))
 
             else:
                 # Single insert
                 key = key_or_dict
                 self.cursor.execute(f'''
-                    INSERT INTO {self.CONFIG_TABLE} (module, key, value) 
-                    VALUES (?, ?, ?)
-                    ON CONFLICT(module, key) DO UPDATE SET value=excluded.value
+                    REPLACE INTO {self.CONFIG_TABLE} (module, key, value, update_ts) 
+                    VALUES (?, ?, ?, unixepoch())
                 ''', (module, key, value))
 
             self.conn.commit()
@@ -136,10 +137,11 @@ class openeoConfigClass:
 
         self.cursor = self.conn.cursor()
         self.cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS {self.CONFIG_TABLE} (
+            CREATE TABLE IF NOT EXISTS {self.CONFIG_TABLE_2} (
                 module TEXT NOT NULL,
                 key TEXT NOT NULL,
                 value,
+                update_ts INTEGER,
                 PRIMARY KEY (module, key)
             )
         ''')
@@ -151,6 +153,30 @@ class openeoConfigClass:
             )
         ''')
         self.conn.commit()
+
+        # schema v2 introduces a requirement for update timestamps to record config changes
+        with self.lock:
+            try:
+                sql=f"SELECT module,key,value FROM {self.CONFIG_TABLE_1}"
+                self.cursor.execute(sql)
+                rows = self.cursor.fetchall()
+                print("Migrating v2 config log data")
+                for x in rows:
+                    if isinstance(x[2],numbers.Number):
+                        sql=f"REPLACE INTO {self.CONFIG_TABLE_2} (module,key,value,update_ts) VALUES ('{x[0]}', '{x[1]}', {x[2]}, unixepoch())"
+                    else:
+                        sql=f"REPLACE INTO {self.CONFIG_TABLE_2} (module,key,value,update_ts) VALUES ('{x[0]}', '{x[1]}', '{x[2]}', unixepoch())"
+                    #print(sql)
+                    self.cursor.execute(sql)
+
+                self.cursor.execute(f"drop table {self.CONFIG_TABLE_1}")
+                self.conn.commit()
+            except Exception as err:
+                if re.search("^no such table:",str(err)):
+                    # This is normal - there is no old format session table to migrate
+                    pass
+                else:
+                    print("Error migrating old data: ",err)
 
         #################
         # Set default config, where appropriate
@@ -181,7 +207,7 @@ class openeoConfigClass:
 
         # Set changed to True, so that configured modules will load in the main loop
         self.changed=True
-        print(str(self))
+        #print(str(self))
         self.LOG_PURGE_TTL=self.get("chargeroptions","log_purge_ttl",3600 * 12)
 
     

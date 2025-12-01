@@ -9,7 +9,7 @@ OpenEO Module: Charger Session
 from lib.PluginSuperClass import PluginSuperClass
 import globalState
 import datetime,time
-import sqlite3,logging
+import sqlite3,logging,re
 from threading import Lock
 
 
@@ -105,7 +105,7 @@ class chargersessionClassPlugin(PluginSuperClass):
             sql=f'''REPLACE INTO {self.SESSION_TABLE_3} (first_timestamp, last_timestamp, day_timestamp, joules,seconds_charged) \
 VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds_charged})
 -- {self.timestamp_text(timestamp)} {self.timestamp_text(now)} {self.timestamp_text(self.timestamp_start_of_today())}'''
-            print(sql)
+            #print(sql)
             self.cursor.execute(sql)
             self.conn.commit()
         globalState.configDB.logwrite(f"Sessionlog update {sql}")
@@ -173,12 +173,12 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
                     now=datetime.datetime.fromtimestamp(x[0]).astimezone()
                     sql=f"REPLACE INTO {self.SESSION_TABLE_3} (first_timestamp, last_timestamp, day_timestamp, joules,seconds_charged) VALUES ({x[0]}, {x[1]}, {x[2]}, {x[3]},0)"
                     self.cursor.execute(sql)
-                    print(sql)
+                    #print(sql)
 
                 self.cursor.execute(f"drop table {self.SESSION_TABLE_2}")
                 self.conn.commit()
             except Exception as err:
-                if str(err)=="no such table: session":
+                if re.search("^no such table:",str(err)):
                     # This is normal - there is no old format session table to migrate
                     pass
                 else:

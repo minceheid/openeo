@@ -59,7 +59,7 @@ legends.forEach((x,i) => {
   layout[x]={y:(legends.length-i) * (1/legends.length) -0.03, yanchor:'top'}
 })
 
-url='/getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_requested:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
+url='getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_requested:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
 
 fetch(url, {
   method: 'GET',
