@@ -33,7 +33,6 @@ h3 { text-align: center; }
 
 
 #controls {
-#controls {
   display: flex;
   flex-direction: row;
   gap: 20px;
