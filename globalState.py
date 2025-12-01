@@ -26,6 +26,10 @@ except:
     appVer = "0.0"
     
 stateDict={
+    # eo_serial_number: This is the serial number of the smart board in the charger that
+    # the pi communicates with 
+    "eo_serial_number":"",
+
     # amps_requested: This is the number of Amps that will are requested by the polling
     # of the plugin modules (e.g. time scheduler)
     # amps_limit: This is the final amps limit after it has been moderated by the charger
@@ -109,6 +113,7 @@ defaultConfig = {
         "chargeroptions" : { "enabled" : True, "mode" : "schedule" },
         "loadmanagement" : { "enabled" : True },
         "os_metrics" : { "enabled" : True },
-        "homeassistant" : { "enabled" : False }}
+        "homeassistant" : { "enabled" : False },
+        }
 
 configDB = openeoConfigClass(defaultConfig)
