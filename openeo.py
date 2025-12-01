@@ -39,18 +39,7 @@ _LOGGER = logging.getLogger(__name__)
 def main():    
     charger = openeoChargerClass()
         
-    # Set logging level from config file.  Use the common dict to look up log levels to 
-    # avoid a possible eval exploit from crafted config json. Note that we're reading this directly
-    # from the sqlite database out of necessity because the chargeroptions module is not yet
-    # initialised. Once the modules are initialised, most config access should be done through
-    # the module.
-    logLevel = str(globalState.configDB.get("chargeroptions","log_level","info")).upper()
-
-    if logLevel in logging._nameToLevel:
-        _LOGGER.setLevel(logging._nameToLevel[logLevel])
-    else:
-        _LOGGER.error("Invalid log level "+logLevel+"in config - ignoring")
-
+    _LOGGER.setLevel(logging.WARNING)
 
     globalState.configDB.logwrite(f"+++++ startup:{globalState.stateDict['app_version']} directory:{globalState.stateDict['app_deploy_directory']}")
 

@@ -14,7 +14,7 @@ netstat -4l
 echo
 echo "= JOURNALCTL"
 echo "================="
-journalctl |tail -250
+journalctl
 echo
 echo "= SYSTEMCTL"
 echo "================="
