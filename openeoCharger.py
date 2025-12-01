@@ -228,7 +228,8 @@ class openeoChargerClass:
         
         self.my_address = self.sendSerialCommand("+"+ self.EO_COMMAND["DISCOVER"] +"5C")
         _LOGGER.debug("my_address set to '%s'" % str(self.my_address))
-        
+        globalState.stateDict["eo_serial_number"]=self.my_address
+
         if self.my_address == None or len(self.my_address) == 0:
             _LOGGER.error("couldn't communicate with controller board")
             self.connected = False

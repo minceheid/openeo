@@ -65,9 +65,6 @@ sudo usermod -a -G spi,gpio,video $(whoami)
 sudo chmod 666 /dev/vcio
 
 sudo cp $MYDIR/etc/openeo.service /etc/systemd/system/
-######
-# Remove old crontab, if it exists (we previously used crontab in earlier releases)
-crontab -r
 
 #############
 # Setup Portal
