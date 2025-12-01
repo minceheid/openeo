@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.13](https://github.com/minceheid/openeo/compare/v0.5.12...v0.5.13) (2025-12-01)
+
+
+### Bug Fixes
+
+* CSS error in ct_tuner template ([e787096](https://github.com/minceheid/openeo/commit/e78709627c7a1b76b964afb2a9495805a323af6d))
+* tuning debug tool, and setting log level to WARNING, rathter than INFO ([f093eba](https://github.com/minceheid/openeo/commit/f093eba734c0e47c17505c19b87c39caf5d4e001))
+
 ## [0.2.3](https://github.com/minceheid/openeo/compare/v0.2.2...v0.2.3) (2025-07-24)
 
 
