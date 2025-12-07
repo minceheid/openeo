@@ -6,6 +6,7 @@
 	<title>openeo {{ title }} &middot; {{ status['charger_name'] }}</title>
 	<link rel="stylesheet" href="static/base_style.css">
 	<link rel="apple-touch-icon" href="static/openeo_icon_apple.png">
+	<script src="static/common.js"></script>
 </head>
 <body>
 	<noscript>Warning: openeo requires Javascript to be enabled</noscript>
