@@ -6,6 +6,10 @@ EO Charging announced in July 2025 that their EO Smart Home app is being discont
 <img src="https://github.com/user-attachments/assets/1e6d8d2f-df0d-4b3b-8647-fd621d5297e4" style="width:25%; height:auto;"  />
 </p>
 
+## NEW: OpenEO Cloud
+For those that might want to access their charger from anywhere, we have developed OpenEO Cloud. This provides a secure interface for connecting to your OpenEO charger over the internet. It works by running the latest version of OpenEO on your charger, which can securely connect to https://openeo.uk, where you can log in with your Google Account and access the familiar OpenEO interface.
+More info, and configuration details below.
+
 ## Compatibility
 This project has been designed to be compatible with the EO Smart Home Hub/Mini and EO "Mini Pro 2" devices. It does **not** support "Mini Pro 3"
 
@@ -125,6 +129,29 @@ Alternately, the update process can be carried out on the command line by simply
 curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -
 sudo reboot
 ~~~~
+
+## Configuring OpenEO Cloud
+OpenEO cloud is a secure web based service for accessing your OpenEO charger. It works by allowing your charger to open an encrypted connection out to the webservice, and when you sign into the webservice, you can access your charger through that encrypted link. In order to set it up, you need to sign into the webservice (https://openeo.uk) and associate your charger with your google credentials, and then set an authorisation code on your charger to ensure that only you can access your charger.
+1. Ensure that your OpenEO charger is installed with the latest version.
+2. Your OpenEO charger identification number can be found in the "OpenEO Cloud" section of the settings page of OpenEO that is running on your home charger.
+3. Sign into https://openeo.uk using your Google Account details. When you do this for the first time, a control panel will be shown.
+4. Paste your charger identification text into the "Charger ID" box of the control panel, and click on the "Save" button.
+5. This will generate an authorisation token that you should now copy and paste into your OpenEO Cloud settings on your charger.
+6. Set "Enable Module" in the OpenEO Cloud section to "Yes"
+If all is well, then the "Connection" indicator on the control panel on https://openeo.uk should turn green when the charger connects. You receive 14 days free usage on first login. Once expired, a button will appear allowing you to subscribe.
+
+### OpenEO Settings Page
+<p align="center">
+<img  alt="image" src="https://github.com/user-attachments/assets/c840e866-c1f3-4299-94b8-5d183af61c09" style="width:50%; height:auto;"/>
+</p>
+
+### OpenEO Cloud Control Panel
+<p align="center">
+<img  alt="image" src="https://github.com/user-attachments/assets/dc4edc98-d51a-482d-9fd4-5ab8ee83ecf6" style="width:50%; height:auto;"/>
+</p>
+
+### Note:
+The OpenEO cloud service works by allowing you to access your charger over the internet. This means that all requests must be transmitted over the internet to our webservice, then on to your charger, and all the way back to your browser. This means that the interface will be slower, and from time to time, you may see timeouts and failures - particularly if you have a marginal WiFi connection on your charger. 
 
 ## Configuration
 On first start, the default configuration will be loaded into the configuration database (stored in /home/pi/etc/config.db) - any settings changes (schedule timing, mode change, etc) are retained by updating this configuration database. To revert entirely to defaults, the /home/pi/etc/config.db file can be deleted, and the software restarted.
