@@ -65,20 +65,22 @@ sudo usermod -a -G spi,gpio,video $(whoami)
 sudo chmod 666 /dev/vcio
 
 sudo cp $MYDIR/etc/openeo.service /etc/systemd/system/
+sudo cp $MYDIR/etc/rc.local /etc/rc.local
 
 #############
 # Setup Portal
-echo ">> Deploying Portal Config"
-sudo cp -r $MYDIR/portal/config/* /
-sudo rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/openeo_portal.conf
-sudo ln -s /etc/nginx/sites-available/openeo_portal.conf  /etc/nginx/sites-enabled/openeo_portal.conf
+#echo ">> Deploying Portal Config"
+#sudo cp -r $MYDIR/portal/config/* /
+#sudo rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/openeo_portal.conf
+#sudo ln -s /etc/nginx/sites-available/openeo_portal.conf  /etc/nginx/sites-enabled/openeo_portal.conf
 
 echo ">> Enabling services..."
 sudo systemctl daemon-reload
-sudo systemctl disable nginx
-sudo systemctl disable dnsmasq
+sudo systemctl start rc-local.service
+#sudo systemctl disable nginx
+#sudo systemctl disable dnsmasq
 sudo systemctl enable openeo
 sudo systemctl restart openeo
 ##########
 ## Portal disabled for now - we have some sort of race condition error
-sudo systemctl disable openeo_portal
+#sudo systemctl disable openeo_portal

@@ -215,6 +215,9 @@ def main():
             globalState.stateDict["eo_current_site"] = charger.current_site
             globalState.stateDict["eo_current_vehicle"] = charger.current_vehicle
             globalState.stateDict["eo_current_solar"] = charger.current_solar
+            globalState.stateDict["eo_current_raw_site"] = charger.current_raw_site
+            globalState.stateDict["eo_current_raw_vehicle"] = charger.current_raw_vehicle
+            globalState.stateDict["eo_current_raw_solar"] = charger.current_raw_solar
             globalState.stateDict["eo_power_delivered"] = round((globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"]) / 1000, 2)        # P=VA
             globalState.stateDict["eo_mains_frequency"] = int(charger.mains_frequency, 16)
             globalState.stateDict["eo_charger_state_id"] = int(charger.charger_state, 16)

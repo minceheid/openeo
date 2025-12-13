@@ -55,10 +55,16 @@ stateDict={
     "eo_session_timestamp":0,
     "eo_session_seconds_charged":0,
 
-    # CT Sensor Current (Amps)
+    # CT Sensor Current (Amps) - Adjusted figures with CT tuner modifiers applied
     "eo_current_site":0,  #site
     "eo_current_vehicle":0,  #vehicle
     "eo_current_solar":0,  #solar
+
+    
+    # Raw CT Sensor Current (Amps) - unadjusted figures
+    "eo_current_raw_site":0,  #site
+    "eo_current_raw_vehicle":0,  #vehicle
+    "eo_current_raw_solar":0,  #solar
     
     # Power Delivered and requested (kW). Calculated from current and voltage
     "eo_power_delivered":0,
@@ -114,6 +120,7 @@ defaultConfig = {
         "loadmanagement" : { "enabled" : True },
         "os_metrics" : { "enabled" : True },
         "homeassistant" : { "enabled" : False },
+        "cloud" : {"enabled": True},
         }
 
 configDB = openeoConfigClass(defaultConfig)

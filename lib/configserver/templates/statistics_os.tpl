@@ -64,7 +64,7 @@ url='getchartdata?type=plotly&series=sys_cpu_temperature:sys_wifi_strength,sys_1
 
 fetch(url, {
   method: 'GET',
-  signal: AbortSignal.timeout(5000)
+  signal: AbortSignal.timeout(10000)
   })
     .then(function(response) { return response.json(); })
     .then(function(data) {

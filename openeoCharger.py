@@ -171,6 +171,11 @@ class openeoChargerClass:
                 ct_offset_vehicle=lm_config.get("ct_offset_vehicle",0)
                 ct_offset_solar=lm_config.get("ct_offset_solar",0)
 
+                self.current_raw_site=self.current_site
+                self.current_raw_vehicle=self.current_vehicle
+                self.current_raw_solar=self.current_solar
+
+
                 self.current_site*=ct_calibration_site
                 self.current_vehicle*=ct_calibration_vehicle
                 self.current_solar*=ct_calibration_solar

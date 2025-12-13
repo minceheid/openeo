@@ -24,7 +24,7 @@ Configuration example:
 
 import logging
 from datetime import datetime, timedelta
-import json
+import json,hashlib
 import globalState
 import re
 from lib.PluginSuperClass import PluginSuperClass
@@ -46,6 +46,7 @@ class loggerClassPlugin(PluginSuperClass):
 		"lowres_maxage": {"type":"int","default":60*60*48}}
 
     nextDatapoint=None
+    nextWrite=None
 
     # The logger is a special case. We want the data to be recorded after all adjustments
     # have been made, and after all other modules have had a turn to speak, so we don't
@@ -57,12 +58,20 @@ class loggerClassPlugin(PluginSuperClass):
             globalState.stateDict["_dataLog"].push(globalState.stateDict)
             self.nextDatapoint=self.nextDatapoint+timedelta(seconds=self.pluginConfig["hires_interval"])
 
+
+        if datetime.now()>self.nextWrite:
+            # Time to record - once every sixty seconds
+            globalState.stateDict["_dataLog"].write()
+            self.nextWrite=self.nextWrite+timedelta(seconds=60)
+
+
         return 0
 
     def __init__(self,configParam):
         super().__init__(configParam)
 
         self.nextDatapoint=datetime.now()
+        self.nextWrite=datetime.now()
 
         # Create data buffer. The dict in the intitialiser is a lookup of globalState.stateDict{} keys and 
         # friendly names for that metric that will be used in creating the data for any
@@ -83,6 +92,9 @@ class loggerClassPlugin(PluginSuperClass):
                                                     "eo_current_site":"Site Import Current (A)",
                                                     "eo_current_vehicle":"Vehicle Supply Current (A)",
                                                     "eo_current_solar":"Solar Generation Current (A)",
+                                                    "eo_current_raw_site":"Site Import Current (A)",
+                                                    "eo_current_raw_vehicle":"Vehicle Supply Current (A)",
+                                                    "eo_current_raw_solar":"Solar Generation Current (A)",
                                                     "eo_live_voltage":"Voltage (V)",
                                                     "sys_cpu_temperature":"CPU Temperature (C)",
                                                     "sys_1m_load_average":"System Load Average",
@@ -255,18 +267,45 @@ class databufferClass:
                 del self.databuffer[key][deletion_index]
         self.count=self.count+1
 
+    def write(self):
+        # Writes databuffer to the config database
+        globalState.configDB.set("logger","loggerFingerpint",self.fingerprint)
+        globalState.configDB.set("logger","loggerData",json.dumps(self.databuffer,default=str))
+
     def __init__(self,config,seriesDict):
         self.config=config
         self.seriesDict=seriesDict
+
+
+        # We use the fingerprint to determine whether the current set of fields being logged
+        # matches those that are stored persistently. If it does, then we can load the persistent
+        # record into the dict, if it does not, then we need to start from an empty databuffer.
+        separator=":"
+        string=separator.join(seriesDict) 
+
+        self.fingerprint=hashlib.md5(string.encode()).hexdigest()
+        lastfingerprint=globalState.configDB.get("logger","loggerFingerpint","")
+
         # calculate the number of datapoints
         datapoints=round(config["hires_maxage"]/config["hires_interval"]) + \
             round((config["lowres_maxage"]-config["hires_maxage"])/config["lowres_interval"])
-
-        # Construct the datastore
-        self.databuffer["time"]=[None] * datapoints
-        for series in seriesDict:
-            self.databuffer[series]=[None] * datapoints
-
+        
+        if (self.fingerprint==lastfingerprint):
+            # Load data from config
+            try:
+                self.databuffer=json.loads(globalState.configDB.get("logger","loggerData",""))
+                # re-encode time data as time objects, because we serialise them as strings when we save it
+                for i,timeValue in enumerate(self.databuffer["time"]):
+                    if isinstance(self.databuffer["time"][i],str):
+                        self.databuffer["time"][i]=datetime.fromisoformat(timeValue)
+            except:
+                pass
+        
+        if len(self.databuffer)==0:
+            # Construct the databuffer
+            self.databuffer["time"]=[None] * datapoints
+            for series in seriesDict:
+                self.databuffer[series]=[None] * datapoints
         
         # find ratio of hires/lowres
         self.ratio=self.config["lowres_interval"]/self.config["hires_interval"]

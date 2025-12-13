@@ -63,7 +63,7 @@ url='getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested_solar
 
 fetch(url, {
   method: 'GET',
-  signal: AbortSignal.timeout(5000)
+  signal: AbortSignal.timeout(10000)
   })
     .then(function(response) { return response.json(); })
     .then(function(data) {
