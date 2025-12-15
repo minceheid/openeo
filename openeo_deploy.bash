@@ -33,7 +33,7 @@ fi
 
 # Install prereq packages
 sudo apt-get update
-sudo apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil python3-paho-mqtt dnsmasq nginx fcgiwrap spawn-fcgi iptables at
+sudo apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil python3-paho-mqtt
 
 if [ $? -ne 0 ] ; then
 	echo >&2 "ERROR: Package Install failed - Deploy Aborted"
@@ -67,20 +67,21 @@ sudo chmod 666 /dev/vcio
 sudo cp $MYDIR/etc/openeo.service /etc/systemd/system/
 sudo cp $MYDIR/etc/rc.local /etc/rc.local
 
-#############
-# Setup Portal
-#echo ">> Deploying Portal Config"
-#sudo cp -r $MYDIR/portal/config/* /
-#sudo rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/openeo_portal.conf
-#sudo ln -s /etc/nginx/sites-available/openeo_portal.conf  /etc/nginx/sites-enabled/openeo_portal.conf
+# If Nginx is installed (it was included in previous deploy scripts), then ensure that it is removed
+systemctl status nginx >/dev/null 2>/dev/null
+if [ $? -ne 4 ]; then
+    echo ">> Removing unused nginx service..."
+    sudo apt-get --purge autoremove -y nginx
+fi
+# If dnsmasq is installed (it was included in previous deploy scripts), then ensure that it is removed
+systemctl status dnsmasq >/dev/null 2>/dev/null
+if [ $? -ne 4 ]; then
+    echo ">> Removing unused dnsmasq service..."
+    sudo apt-get --purge autoremove -y dnsmasq
+fi
 
 echo ">> Enabling services..."
 sudo systemctl daemon-reload
 sudo systemctl start rc-local.service
-#sudo systemctl disable nginx
-#sudo systemctl disable dnsmasq
 sudo systemctl enable openeo
 sudo systemctl restart openeo
-##########
-## Portal disabled for now - we have some sort of race condition error
-#sudo systemctl disable openeo_portal
