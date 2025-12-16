@@ -66,7 +66,6 @@ class cloudClassPlugin(PluginSuperClass):
     def configure(self,configParam):
         # Run a poll(), just in case we have been switched on or off
         super().configure(configParam)
-        _LOGGER.warning(f"OpenEO Cloud - configure")
         self.failurecount=0
         self.poll()
 
