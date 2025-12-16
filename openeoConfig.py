@@ -86,15 +86,16 @@ class openeoConfigClass:
                 rows = self.cursor.fetchall()
             return {key: value for key, value in rows} if rows else None
         
-    def set(self, module, key_or_dict, value=None):
+    def set(self, module, key_or_dict, value=None, triggerModuleReonfigure=True):
         """
         Either:
         1. Set an individual configuration value, given the module and key; or
         2. Bulk set configuration for a module, given a dict containing key/value pairs
         """
-        # Flag that something may have changed, which will trigger all plugin modules to reload config
-        self.changed=True
-        
+        if triggerModuleReonfigure:
+            # Flag that something may have changed, which will trigger all plugin modules to reload config
+            self.changed=True
+
         with self.lock:
             if isinstance(key_or_dict, dict):
                 # Bulk insert

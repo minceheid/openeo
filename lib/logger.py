@@ -269,8 +269,8 @@ class databufferClass:
 
     def write(self):
         # Writes databuffer to the config database
-        globalState.configDB.set("logger","loggerFingerpint",self.fingerprint)
-        globalState.configDB.set("logger","loggerData",json.dumps(self.databuffer,default=str))
+        globalState.configDB.set("logger","loggerFingerpint",self.fingerprint,triggerModuleReonfigure=False)
+        globalState.configDB.set("logger","loggerData",json.dumps(self.databuffer,default=str),triggerModuleReonfigure=False)
 
     def __init__(self,config,seriesDict):
         self.config=config

@@ -8,6 +8,7 @@ OpenEO Module: Cloud Proxy Server
 import logging, threading, socket,ssl,pprint
 import urllib,re,json
 import globalState,util
+import traceback
 from lib.PluginSuperClass import PluginSuperClass
 
 # logging for use in this module
@@ -27,6 +28,7 @@ class cloudClassPlugin(PluginSuperClass):
 
     proxythread=None
     failurecount=0
+    maxfailurecount=20
     failuretime=None
     killflag=False
 
@@ -34,37 +36,47 @@ class cloudClassPlugin(PluginSuperClass):
         self.killflag=False
 
         # Have we had too many failures? - if so, we should probably autodisable
-        if self.failurecount>20:
+        if self.failurecount>self.maxfailurecount:
             globalState.configDB.set("cloud","enabled",False)
-            pass
+            self.failurecount=0
+            _LOGGER.error(f"OpenEO Cloud - Given up connecting to server. Module disabled")
         else:
             # Check to see if we are running a thread, and if we are supposed to be
             if self.pluginConfig["enabled"] and (self.proxythread is None or not self.proxythread.is_alive()):
-                # Enabled, ut not running, so best we try starting
+                # Enabled, but not running, so best we try starting
                 self._thread_start()
-                pass
-            elif not self.pluginConfig["enabled"] and (self.proxythread is not None and self.proxythread.is_alive()):
+                return(0)
+
+            if not self.pluginConfig["enabled"] and (self.proxythread is not None and self.proxythread.is_alive()):
                 # Not Enabled, but running, we should kill the thread
                 self._thread_stop()
-                pass
-            else:
-                # We are operating as expected, so should probably reset the failurecount
-                self.failurecount=0
+                return(0)
+            
+            # We are operating as expected, so should probably reset the failurecount
+            # Using the following expression to try and work around a race condition. If a connection attempt
+            # takes >5 seconds, we can come around for the next poll(), and think the session is established, and reset
+            # the failurecount to 0. Instead, let's just decrement the failurecount if we think there is a sucessful 
+            # connection.
+            if (self.failurecount>0):
+                self.failurecount-=1
+                _LOGGER.warning(f"OpenEO Cloud - FailureCount decrement")
+
         return(0)
 
     def configure(self,configParam):
         # Run a poll(), just in case we have been switched on or off
         super().configure(configParam)
+        _LOGGER.warning(f"OpenEO Cloud - configure")
         self.failurecount=0
         self.poll()
 
     def _thread_start(self):
-        print(f"Starting proxy thread")
+        _LOGGER.info(f"Starting OpenEO Cload thread")
         self.proxythread = threading.Thread(target=self._proxythread, name='_proxythread', daemon=True)
         self.proxythread.start()
 
     def _thread_stop(self):
-        print(f"Stopping proxy thread")
+        _LOGGER.info(f"Stopping OpenEO Cload thread")
         self.killflag=True
 
 
@@ -73,11 +85,17 @@ class cloudClassPlugin(PluginSuperClass):
         client_id=globalState.stateDict["eo_serial_number"]
 
         if client_id=="" or client_id is None:
-            print(f"waiting for EO comms to be established {client_id}")
+            _LOGGER.warning(f"OpenEO Cloud - waiting for EO serial comms to be established for {client_id} before Cloud Connection can begin")
+            return(0)
+        
+        if self.pluginConfig['authtoken']=="" or self.pluginConfig['authtoken'] is None:
+            _LOGGER.warning(f"OpenEO Cloud module enabled, but authorisation token not defined in module settings. Not Connecting.")
+            self.failurecount+=1
             return(0)
 
         try:
-            print(f"Connecting to {self.pluginConfig['server']}:{self.pluginConfig['port']}...")
+            _LOGGER.warning(f"OpenEO Cloud - Connecting to {self.pluginConfig['server']}:{self.pluginConfig['port']}. Attempt {self.failurecount}/{self.maxfailurecount}")
+
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 30)
@@ -98,12 +116,14 @@ class cloudClassPlugin(PluginSuperClass):
             # Wait for OK
             response=f.readline().rstrip('\n')
             if response != "OK":
-                print(f"Client unauthorised. Cannot connect.")
+                _LOGGER.warning(f"OpenEO Cloud Connection unauthorised. Cannot connect.")
                 ssl_sock.close()
+                self.failurecount+=1
                 # We need to back off, otherwise the server will ban us
                 return(0)
 
-            print("Authenticated with server.")
+            _LOGGER.warning(f"OpenEO Cloud Connection - Sucessfully Authorised.")
+
 
             # Command loop
             while True:
@@ -128,7 +148,7 @@ class cloudClassPlugin(PluginSuperClass):
 
 
         except Exception as e:
-            print(f"Connection error: {e}")
+            _LOGGER.error(f"OpenEO Cloud Connection error: {e}")
             self.failurecount+=1
 
         finally:
@@ -146,11 +166,12 @@ class cloudClassPlugin(PluginSuperClass):
         returnval["body"]=""
         returnval["bodylen"]=0
 
-        print(f"command string=\"{command}\"")
+        #print(f"command string=\"{command}\"")
         m = re.search('^(GET|POST) ([^ ]+) ?(.*)$', command)
 
         if not m:
-            print(f"Malformed cloud command")
+            _LOGGER.error(f"OpenEO Cloud error: Malformed command {command}")
+
             return(returnval)
 
         method=m.group(1)
@@ -162,9 +183,7 @@ class cloudClassPlugin(PluginSuperClass):
                 returnval["headers"]=response.getheaders()
                 returnval["body"] = response.read()
             case "POST":
-                print(f"POST processing")
                 data=m.group(3)
-                print(f"POST processing values={data}")
 
                 data = data.encode('ascii') # data should be bytes
                 response = urllib.request.urlopen(URL,data)
@@ -177,6 +196,5 @@ class cloudClassPlugin(PluginSuperClass):
 
     def get_user_settings(self):
         settings = []
-        print("adding cloud settings")
         util.add_simple_setting(self.pluginConfig, settings, 'textinput', "cloud", ("authtoken",), f'Authorisation Code (Charger ID: {globalState.stateDict["eo_serial_number"]})',pattern='([A-Za-z0-9]{5})')
         return settings
