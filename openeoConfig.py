@@ -85,7 +85,19 @@ class openeoConfigClass:
                 self.cursor.execute(f"SELECT key, value FROM {self.CONFIG_TABLE} WHERE module=?", (module,))
                 rows = self.cursor.fetchall()
             return {key: value for key, value in rows} if rows else None
+
+
+    def delete(self, module, key):
+        """
+        Given a module name, and a key, delete all matching configuration
+        Be careful with this! :-)
+        """
+        with self.lock:
+            self.cursor.execute(f"DELETE FROM {self.CONFIG_TABLE} WHERE module=? AND key=?", (module, key))
+        return
+
         
+
     def set(self, module, key_or_dict, value=None, triggerModuleReonfigure=True):
         """
         Either:

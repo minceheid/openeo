@@ -269,13 +269,19 @@ class databufferClass:
 
     def write(self):
         # Writes databuffer to the config database
-        globalState.configDB.set("logger","loggerFingerpint",self.fingerprint,triggerModuleReonfigure=False)
-        globalState.configDB.set("logger","loggerData",json.dumps(self.databuffer,default=str),triggerModuleReonfigure=False)
+        globalState.configDB.set("logger","_loggerFingerpint",self.fingerprint,triggerModuleReonfigure=False)
+        globalState.configDB.set("logger","_loggerData",json.dumps(self.databuffer,default=str),triggerModuleReonfigure=False)
 
     def __init__(self,config,seriesDict):
         self.config=config
         self.seriesDict=seriesDict
 
+        # We were previously storing data in these, but moved them to underscore prefix so that they weren't transmitted on 
+        # every /getconfig, so best that we delete the old data from the database, if it exists. We'll be able to remove 
+        # this in a few versions time.
+        
+        globalState.configDB.delete("logger","loggerFingerpint")
+        globalState.configDB.delete("logger","loggerData")
 
         # We use the fingerprint to determine whether the current set of fields being logged
         # matches those that are stored persistently. If it does, then we can load the persistent
@@ -284,7 +290,7 @@ class databufferClass:
         string=separator.join(seriesDict) 
 
         self.fingerprint=hashlib.md5(string.encode()).hexdigest()
-        lastfingerprint=globalState.configDB.get("logger","loggerFingerpint","")
+        lastfingerprint=globalState.configDB.get("logger","_loggerFingerpint","")
 
         # calculate the number of datapoints
         datapoints=round(config["hires_maxage"]/config["hires_interval"]) + \
@@ -293,7 +299,7 @@ class databufferClass:
         if (self.fingerprint==lastfingerprint):
             # Load data from config
             try:
-                self.databuffer=json.loads(globalState.configDB.get("logger","loggerData",""))
+                self.databuffer=json.loads(globalState.configDB.get("logger","_loggerData",""))
                 # re-encode time data as time objects, because we serialise them as strings when we save it
                 for i,timeValue in enumerate(self.databuffer["time"]):
                     if isinstance(self.databuffer["time"][i],str):

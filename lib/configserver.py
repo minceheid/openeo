@@ -86,8 +86,7 @@ class configserverClassPlugin(PluginSuperClass):
 
         # Load initial configuration
         def load_config(self):
-            ##self.config=globalState.configDB.dict()
-            # We can't load config directly from sqlite, as we need the modules to interpret and typecast
+            # We can't load config directly from sqlite or from the config module, as we need the modules to interpret and typecast
             # the attributes, so instead, we need to recompile the full config from polling the plugin modules
             # There must be a better way...
 
@@ -158,12 +157,22 @@ class configserverClassPlugin(PluginSuperClass):
             ## expose the configuration the running config to the api
             ## we can also use POST/setconfig to write the configuration
             if self.path == "/getconfig":
-                self.load_config()
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
-                self.wfile.write(json.dumps(self.config).encode("utf-8"))
+
+                self.load_config()
+                configCopy = {}
+                for modulename, module in self.config.items():
+                    configCopy[modulename] = {
+                        key: value
+                        for key, value in module.items()
+                        if not key.startswith("_")
+                    }
+
+                self.wfile.write(json.dumps(configCopy).encode("utf-8"))
                 return
+            
             ###################################################################
             ## expose the logger module metrics to the api, if that is available
             ## in cfg
@@ -403,7 +412,6 @@ class configserverClassPlugin(PluginSuperClass):
                 try:
                     post_data = json.loads(self.rfile.read(content_length).decode('utf-8'))
                     new_mode = str(post_data["newmode"]).lower().strip()
-                    #self.load_config()
                     
                     _LOGGER.info("Set mode request: '%s'" % new_mode)
                 
