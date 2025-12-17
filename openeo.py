@@ -46,9 +46,12 @@ def main():
     # Make a snapshot of the stateDict for the configserver module to refer to
     globalState.stateSnapshot=copy.copy(globalState.stateDict)
 
-    # Main loop
-    loop = 0
-    lastloop=datetime.datetime.now()
+    # Main loop. It looks a bit odd setting this to a negative number, but this will
+    # have the effect of delaying the first run of any modules set with a pollfrequency
+    # this is to help reduce startup race conditions that might occur with networking
+    # perhaps not fully started up when openeo begins
+    loop = -10
+    #lastloop=datetime.datetime.now()
     globalState.stateDict["_moduleDict"]={}
 
     # For keeping track of the moving average of requested charging rate
