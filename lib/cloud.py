@@ -101,7 +101,11 @@ class cloudClassPlugin(PluginSuperClass):
             s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
             s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 5)
 
-            ssl_sock = ssl.wrap_socket(s)
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            ssl_sock = context.wrap_socket(s, server_hostname=self.pluginConfig['server'])
+
             ssl_sock.connect((self.pluginConfig['server'], self.pluginConfig['port']))
 
             #print("Connected, keep-alive enabled.")
