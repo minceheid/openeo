@@ -100,7 +100,7 @@ class configserverClassPlugin(PluginSuperClass):
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             # required for development and testing only
-            if globalState.stateDict["app_version"]=="0.0":
+            if globalState.stateDict["app_version"]=="0.0" or globalState.stateDict["app_version"]=="main" :
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.send_header("Access-Control-Allow-Headers","*")
             self.end_headers()
@@ -169,7 +169,7 @@ class configserverClassPlugin(PluginSuperClass):
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 # required for development and testing only
-                if globalState.stateDict["app_version"]=="0.0":
+                if globalState.stateDict["app_version"]=="0.0" or globalState.stateDict["app_version"]=="main" :
                     self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
 
@@ -267,7 +267,7 @@ class configserverClassPlugin(PluginSuperClass):
                 self.send_header("Content-type", "application/json")
 
                 # required for development and testing only
-                if globalState.stateDict["app_version"]=="0.0":
+                if globalState.stateDict["app_version"]=="0.0" or globalState.stateDict["app_version"]=="main" :
                     self.send_header("Access-Control-Allow-Origin", "*")
 
                 self.end_headers()
@@ -428,7 +428,7 @@ class configserverClassPlugin(PluginSuperClass):
                 self.set_context()
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
-                if globalState.stateDict["app_version"]=="0.0":
+                if globalState.stateDict["app_version"]=="0.0" or globalState.stateDict["app_version"]=="main" :
                     self.send_header("Access-Control-Allow-Origin", "*")
 
                 self.end_headers()

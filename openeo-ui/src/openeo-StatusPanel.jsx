@@ -57,10 +57,13 @@ export default function StatusPanel() {
 
   useEffect(() => {
     let cancelled = false;
-
+    const isVite = !!import.meta.env;
+    let URL="getstatus";
+    // This is just for dev/test
+    if (isVite) { URL="http://192.168.123.28/"+URL }
     const fetchStatus = async () => {
       try {
-        const res = await fetch("http://192.168.123.28/getstatus"); // your URL
+        const res = await fetch(URL); // your URL
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 

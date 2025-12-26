@@ -78,10 +78,13 @@ export default function ScheduleCarousel() {
   
   useEffect(() => {
     let cancelled = false;
-
+    const isVite = !!import.meta.env;
+    let URL="getconfig";
+    // This is just for dev/test
+    if (isVite) { URL="http://192.168.123.28/"+URL }
     const fetchConfig = async () => {
       try {
-        const res = await fetch("http://192.168.123.28/getconfig"); // your URL
+        const res = await fetch(URL); // your URL
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
@@ -150,7 +153,12 @@ function debounce(func, delay) {
     obj["scheduler:schedule"]=JSON.stringify(schedulelist);
 
   try {
-    const res = await fetch("http://192.168.123.28/setsettings", {
+    const isVite = !!import.meta.env;
+    let URL="setsettings";
+    // This is just for dev/test
+    if (isVite) { URL="http://192.168.123.28/"+URL }
+
+    const res = await fetch(URL, {
       method: "POST",
 		  headers: {'Content-Type': 'application/json'},
       body: new URLSearchParams(obj),
