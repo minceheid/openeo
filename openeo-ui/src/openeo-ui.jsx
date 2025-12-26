@@ -93,9 +93,10 @@ export default function ScheduleCarousel() {
           setError(null);
           let schedules=data.scheduler.schedule
 
-          let mySchedule=[{id:"manual", type: "manual", amps: data.switch.amps, enabled:data.switch.on}]
+          let mySchedule=[{id:"switch", type: "switch", amps: data.switch.amps, enabled:data.switch.on}]
           schedules.forEach((x,i) => {
             let obj={ 
+              type:"scheduler",
               id:uuid(), 
               start:TimeStringToMinutes(x.start), 
               end:TimeStringToMinutes(x.end), 
@@ -143,7 +144,7 @@ function debounce(func, delay) {
     let schedulelist=[]
 
     updatedSchedules.forEach((x,i) => {
-      if (x.id=="manual") {
+      if (x.id=="switch") {
         obj["switch:on"]=x.enabled;
         obj["switch:amps"]=x.amps;
       } else {
@@ -193,7 +194,7 @@ const addSchedule = () => {
   setSchedules((prev) => {
     const updated = [
       ...prev,
-      { id: uuid(), start: 8 * 60, end: 17 * 60, amps: 16 },
+      { id: uuid(), start: 8 * 60, end: 17 * 60, amps: 16,type:"scheduler" },
     ];
     setActive(updated.length - 1);
     debouncedPostSchedule(updated);
@@ -224,6 +225,24 @@ const removeActive = () => {
   const hasPrev = active > 0;
   const hasNext = active < schedules.length - 1;
 
+  const renderCard = (status) => {
+  switch (status) {
+    case "loading":
+      return <span className="loading">Loading…</span>;
+    case "success":
+      return <span className="success">Operation successful!</span>;
+    case "error":
+      return <span className="error">Something went wrong!</span>;
+    default:
+      return <span>Unknown status</span>;
+  }
+};
+
+function StatusMessage({ status }) {
+  return <div>{renderStatus(status)}</div>;
+}
+
+
   return (
     <div className="min-h-screen w-full bg-[#1e242b] text-white flex items-center justify-center p-6">
       <div className="w-full max-w-5xl">
@@ -237,20 +256,25 @@ const removeActive = () => {
             <div key={sch.id} 
                 className={`shrink-0 w-[340px] sm:w-[380px] min-h-[462px] rounded-3xl bg-[#2b3139] ring-1 ring-white/10 p-5 backdrop-blur shadow-lg transition-all duration-500 ${i === active ? "scale-100 opacity-100" : "scale-95 opacity-60"}`}
             >
-                {sch.type === "manual" ? (
+                {sch.type === "switch" ? (
                 <ManualControl
                     schedule={sch}
                     onChange={(next) => updateSchedule(i, next)}
                     onCommit={() => debouncedPostSchedule(schedules)} // only POST on commit
 
                 />
-                ) : (
+                ) : sch.type === "scheduler" ? (
                 <ClockFace
                     schedule={sch}
                     onChange={(next) => updateSchedule(i, next)}
                     onCommit={() => debouncedPostSchedule(schedules)} // only POST on commit
                     snapStep={config.scheduler.scheduler_granularity}
                 />
+                ) : sch.type === "cloud" ? (
+                  <Cloud
+                  />
+                ) : (
+                  <h1>Invalid Type</h1>
                 )}
               </div>
             ))}
@@ -278,27 +302,27 @@ const removeActive = () => {
         </div>
 
         {/* Dots */}
-        <div className="mt-6 flex justify-center gap-2">
+        <div className="mt-3 flex justify-center gap-2">
           {schedules.map((_, i) => (
             <button key={i} onClick={() => setActive(i)} className={`h-2.5 w-2.5 rounded-full ${i === active ? 'bg-white' : 'bg-white/30 hover:bg-white/50'}`} />
           ))}
         </div>
 
         {/* Add / Delete buttons */}
-        <div className="mt-6 flex items-center justify-center gap-4">
+        <div className="mt-3 flex items-center justify-center gap-2">
           <button
             onClick={addSchedule}
             className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-fuchsia-500 text-white font-semibold shadow-lg hover:opacity-95 active:scale-98"
           >
             + New Schedule
           </button>
-{ schedules[active]?.type !== "manual" && (
+{ schedules[active]?.type !== "switch" && (
 
             <button
             onClick={removeActive}
             className="px-5 py-3 rounded-2xl bg-white/10 text-white font-semibold shadow-lg hover:bg-white/20 disabled:opacity-40"
             disabled={
-                schedules[active]?.type === "manual" || schedules.length === 0
+                schedules[active]?.type === "switch" || schedules.length === 0
             }
             >
             Delete

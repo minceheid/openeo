@@ -12,7 +12,7 @@ body {
 
 html, body {
   touch-action: pan-y;
-  overflow-x: hidden;
+  /*overflow-x: hidden;*/
 }
 
 
@@ -254,7 +254,7 @@ a {
 	left: 0;
 	bottom: 0;
 	width: 100%;
-	height: 30%;
+	height: 15%;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -319,14 +319,6 @@ a {
 	font-weight: bold;
 }
 
-/* Desktop / large screen tweaks */
-@media (min-width: 850px) and (min-height: 850px) {
-
-	.bottom-objects-flex {
-		height: 15%;
-	}
-
-}
 
 /* Landscape phone tweaks */
 @media (orientation: landscape) and (max-height: 500px) {

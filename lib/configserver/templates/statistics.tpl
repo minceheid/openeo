@@ -34,7 +34,7 @@
 
 <body>
   <div class="displaycolumn">
-    <div id='chartDiv' style="height:80vh;width:auto"></div>
+    <div id='chartDiv' style="height:90vh;width:auto"></div>
   </div>
 </body>
 

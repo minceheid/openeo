@@ -1,11 +1,8 @@
 {% include 'app_top.tpl' %}
 
+<script src="https://cdn.plot.ly/plotly-3.1.0.min.js" charset="utf-8"></script>
 
-<head>
-  <script src="https://cdn.plot.ly/plotly-3.1.0.min.js" charset="utf-8"></script>
-</head>
-
- <style>
+<style>
 
 .displaycolumn {
 	width: 90%;
@@ -34,7 +31,7 @@
 
 <body>
   <div class="displaycolumn">
-    <div id='chartDiv' style="height:80vh;width:auto"></div>
+    <div id='chartDiv' style="height:90vh;width:auto"></div>
   </div>
 </body>
 
