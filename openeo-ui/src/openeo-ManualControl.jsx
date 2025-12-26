@@ -14,8 +14,10 @@ export default function ManualControl({ schedule, onChange, onCommit }) {
   <Toggle
     enabled={schedule.enabled}
     onChange={(v) => {
+      schedule.enabled=v;
       onChange({ ...schedule, enabled: v });
       onCommit();
+      console.log("toggle",schedule.enabled,v);
     }}
   />
 

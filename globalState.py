@@ -111,7 +111,7 @@ stateDict={
 
 defaultConfig = {
         "scheduler" : { "enabled" : True },
-        "switch" : { "enabled" : False },
+        "switch" : { "enabled" : True },
         "configserver" : { "enabled" : True },
         "chargersession" : { "enabled" : True },
         "logger" : { "enabled" : True },

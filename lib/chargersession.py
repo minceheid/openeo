@@ -63,6 +63,10 @@ class chargersessionClassPlugin(PluginSuperClass):
         else:
             secondsSinceLastLoop=(thisloop-self.lastloop).total_seconds()
 
+            #print(f"secondsSinceLastLoop={secondsSinceLastLoop} thisloop={thisloop} lastloop={self.lastloop}")
+            #print(f"eo_session_seconds_charged={globalState.stateDict['eo_session_seconds_charged']}")
+            #print(f"eo_current_vehicle={globalState.stateDict['eo_current_vehicle']}")
+
             if (TEST==True):
                 ## Test Routine
                 globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * 32 * secondsSinceLastLoop) ## TEST
@@ -74,9 +78,11 @@ class chargersessionClassPlugin(PluginSuperClass):
                 ## Production Routine
                 # 1J = 1Ws = 1 x V * A * s
                 globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"] * secondsSinceLastLoop) ## LIVE
-                # If eo_amps_requested is >=2, then the last cycle is counted against the number of seconds that this session has been actively trying to charge
-                if globalState.stateDict["eo_amps_requested"]>=2:
+                # If eo_current_vehicle is >=2, then the last cycle is counted against the number of seconds that this session has been actively trying to charge
+                if globalState.stateDict["eo_current_vehicle"]>=2:
                     globalState.stateDict["eo_session_seconds_charged"]+=secondsSinceLastLoop
+                    #print(f"eo_session_seconds_charged2={globalState.stateDict['eo_session_seconds_charged']}")
+
             
             globalState.stateDict["eo_session_kwh"]= round(globalState.stateDict["eo_session_joules"] / 3600000,2)
 

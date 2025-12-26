@@ -57,6 +57,12 @@ def main():
     # For keeping track of the moving average of requested charging rate
     smooth_requested_amps=[0]*9
 
+    # Force the switch and scheduler to be enabled. Previous versions would 
+    # Switch between enabled and disabled, so we force ourselves to a known
+    # state.
+    globalState.configDB.set("scheduler","enabled",True)
+    globalState.configDB.set("switch","enabled",True)
+
     while True:
         _LOGGER.debug("-- START LOOP --")
 
@@ -294,11 +300,7 @@ if __name__ == "__main__":
         )
     )
 
-    # Defaults to INFO level, but can be overridden in config.json
-    #logging.basicConfig(level=logging.INFO, handlers=[syslog_handler, console_handler])
-    # MMS: disabling console_handler as the journal is getting pretty noisy when running under
-    # systemd
-    logging.basicConfig(level=logging.INFO, handlers=[syslog_handler])
+    logging.basicConfig(level=logging.DEBUG, handlers=[syslog_handler])
 
     # logging for use in this module
     _LOGGER = logging.getLogger(__name__)

@@ -84,7 +84,7 @@ class cloudClassPlugin(PluginSuperClass):
         client_id=globalState.stateDict["eo_serial_number"]
 
         if client_id=="" or client_id is None:
-            _LOGGER.warning(f"OpenEO Cloud - waiting for EO serial comms to be established for {client_id} before Cloud Connection can begin")
+            _LOGGER.warning(f"OpenEO Cloud - waiting for EO serial comms to be established before Cloud Connection can begin")
             return(0)
         
         if self.pluginConfig['authtoken']=="" or self.pluginConfig['authtoken'] is None:

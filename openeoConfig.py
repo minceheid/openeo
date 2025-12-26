@@ -19,7 +19,7 @@ class openeoConfigClass:
     CONFIG_TABLE=CONFIG_TABLE_2
 
     LOG_TABLE = "log"
-    LOG_PURGE_TTL = 3600 * 12 # 12 hours
+    #LOG_PURGE_TTL = 3600 * 12 # 12 hours
 
     def logwrite(self,message):
         """
@@ -221,7 +221,7 @@ class openeoConfigClass:
         # Set changed to True, so that configured modules will load in the main loop
         self.changed=True
         #print(str(self))
-        self.LOG_PURGE_TTL=self.get("chargeroptions","log_purge_ttl",3600 * 12)
+        self.LOG_PURGE_TTL=self.get("chargeroptions","log_purge_ttl",3600 * 24)
 
     
     def __str__(self):

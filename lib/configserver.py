@@ -434,62 +434,6 @@ class configserverClassPlugin(PluginSuperClass):
                 self.end_headers()
                 self.wfile.write(json.dumps({"status": "success", "config": newconfig}).encode("utf-8"))
 
-            elif self.path == "/setmode":
-                ##################################
-                # API for changing the mode.  Depending upon the selected mode, one or more modules 
-                # may be enabled or disabled at once.
-                content_length = int(self.headers['Content-Length'])
-                
-                try:
-                    post_data = json.loads(self.rfile.read(content_length).decode('utf-8'))
-                    new_mode = str(post_data["newmode"]).lower().strip()
-                    
-                    _LOGGER.info("Set mode request: '%s'" % new_mode)
-                
-                    if new_mode == "schedule":
-                        # Disable all modules except the reserved ones
-                        #self.switch_modules(0)
-                        # Enable the scheduler
-                        globalState.configDB.set("scheduler","enabled",True)
-                        globalState.configDB.set("switch","enabled",False)
-
-                    elif new_mode == "manual":
-                        # Disable all modules except the reserved ones
-                        #self.switch_modules(0)
-                        # Enable the switch module
-                        globalState.configDB.set("scheduler","enabled",False)
-                        globalState.configDB.set("switch","enabled",True)
-
-                    elif new_mode == "remote":
-                        # Disable the switch & schedule module
-                        globalState.configDB.set("scheduler","enabled",False)
-                        globalState.configDB.set("switch","enabled",False)
-
-                        # Enable all modules, don't touch the reserved ones.
-                        #self.switch_modules(1)
-                    else:
-                        raise RuntimeError("unsupported mode %s" % new_mode)
-                        
-                    
-                    # Sync to disk.  This is required to keep the scheduler up to date,
-                    # which is probably a limitation that should be fixed eventually.
-                    # write configuration update to sqlite
-                    globalState.configDB.set("chargeroptions","mode",new_mode)
-                    
-                    # Now instruct all modules to reconfigure themselves. Probably overkill
-                    newconfig={}
-                    for modulename,module in globalState.stateDict["_moduleDict"].copy().items():
-                        module.configure(globalState.configDB.get(modulename))
-                        newconfig[modulename]=module.pluginConfig
-
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"status": "success", "config": newconfig}).encode("utf-8"))
-                    return
-                except Exception as e:
-                    _LOGGER.error("Error passing mode request: %s" % repr(e))
-                    self.send_error(500, "Error passing mode request: %s" % repr(e))
             else:
                 _LOGGER.error("Unknown endpoint '%s'" % self.path)
                 self.send_error(404, "Not Found")

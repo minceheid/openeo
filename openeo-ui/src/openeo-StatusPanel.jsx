@@ -102,7 +102,7 @@ export default function StatusPanel() {
             <span className="status-item" id="statusWhatDoing">Waiting..</span>
            ) : (
             <span
-              className={`status-item ${FriendlyState(status) === "charging" ? "status-charging" : "status-other"}`}
+              className={`status-item ${FriendlyState(status) === "Charging" ? "status-charging" : "status-other"}`}
               id="statusWhatDoing"
             >         
             {FriendlyState(status)}</span>
