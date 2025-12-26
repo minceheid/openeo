@@ -3,3 +3,5 @@ config.json
 config.db
 openeo.log
 tools/remote_id.txt
+openeo-ui/node_modules
+openeo-ui/dist

@@ -4,8 +4,8 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>openeo {{ title }} &middot; {{ status['charger_name'] }}</title>
-	<link rel="stylesheet" href="static/base_style.css">
 	<link rel="apple-touch-icon" href="static/openeo_icon_apple.png">
+	<link rel="stylesheet" href="static/base_style.css">
 	<script src="static/common.js"></script>
 </head>
 <body>
@@ -39,7 +39,6 @@
 				<p><span id="modeName" class="mode-name"></span></p>
 			</div>
 		</div>
-		{% include 'mode_switch.tpl' %}
 	</div>
 	<div class="toast-msg-container" id="toastMsgContainer">
 		<div class="toast-msg" id="toastMsg"></div>

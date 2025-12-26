@@ -20,6 +20,7 @@ import globalState, util
 from lib.PluginSuperClass import PluginSuperClass
 
 import lib.configserver_updater
+import os.path
 
 
 # logging for use in this module
@@ -95,6 +96,14 @@ class configserverClassPlugin(PluginSuperClass):
                     self.config[modulename]=module.pluginConfig
             return True
             
+        def do_OPTIONS(self):
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            # required for development and testing only
+            if globalState.stateDict["app_version"]=="0.0":
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Access-Control-Allow-Headers","*")
+            self.end_headers()
 
         def do_GET(self):
             globalState.configDB.logwrite(f"page GET request:{self.path}")
@@ -159,6 +168,9 @@ class configserverClassPlugin(PluginSuperClass):
             if self.path == "/getconfig":
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
+                # required for development and testing only
+                if globalState.stateDict["app_version"]=="0.0":
+                    self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
 
                 self.load_config()
@@ -253,6 +265,11 @@ class configserverClassPlugin(PluginSuperClass):
 
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
+
+                # required for development and testing only
+                if globalState.stateDict["app_version"]=="0.0":
+                    self.send_header("Access-Control-Allow-Origin", "*")
+
                 self.end_headers()
                 self.wfile.write(json.dumps(status).encode("utf-8"))
                 return
@@ -298,23 +315,36 @@ class configserverClassPlugin(PluginSuperClass):
             
             # HTML files are handled as templated objects.
             if ext.lower() == "html":
-                # Setup the context according to the config (only for templated files)
-                if base in template_to_name:
-                    self.selected_page = template_to_name[base]
-                self.load_config()
-                self.set_context()
-                
-                try:
-                    template = env.get_template(base + ".tpl")
+
+                if os.path.isfile(file_path):
                     self.send_response(200)
                     self.send_header("Content-type", "text/html")
                     self.end_headers()
-                    self.wfile.write(template.render(self._context).encode("utf-8"))
+                    #print(f"<h1{file_path}</h1>")
+                    #self.wfile.write(str(f"<h1>{file_path}</h1>").encode("utf-8"))
+                    with open(file_path, mode='rb') as read_file:
+                        while rBytes := read_file.read(1024):
+                            self.wfile.write(rBytes)
                     return
-                except TemplateNotFound as e:
-                    _LOGGER.error("Failed to load template '%s': %r" % (base, e))
-                    self.send_error(404, "Template Not Found")
-                    return
+
+                else:
+                    # Setup the context according to the config (only for templated files)
+                    if base in template_to_name:
+                        self.selected_page = template_to_name[base]
+                    self.load_config()
+                    self.set_context()
+                    
+                    try:
+                        template = env.get_template(base + ".tpl")
+                        self.send_response(200)
+                        self.send_header("Content-type", "text/html")
+                        self.end_headers()
+                        self.wfile.write(template.render(self._context).encode("utf-8"))
+                        return
+                    except TemplateNotFound as e:
+                        _LOGGER.error("Failed to load template '%s': %r" % (base, e))
+                        self.send_error(404, "Template Not Found")
+                        return
             
             extension_to_mime_enc = {
                 'ico' : ('image/icon', None),
@@ -351,7 +381,7 @@ class configserverClassPlugin(PluginSuperClass):
         
 
         def do_POST(self):
-            #_LOGGER.info("do_POST(%s)" % self.path)
+            _LOGGER.info("do_POST(%s)" % self.path)
             globalState.configDB.logwrite(f"page POST request:{self.path}")
 
             
@@ -380,6 +410,7 @@ class configserverClassPlugin(PluginSuperClass):
                 post_data = self.rfile.read(content_length).decode('utf-8')
                 post_vars = urllib.parse.parse_qsl(post_data)
                 
+                #print(f"setsettings called")
                 # It is legal for POST keys to be duplicated; that shouldn't happen when saving settings, but #
                 # even if it does, we'll just take the last value we see.
 
@@ -395,11 +426,11 @@ class configserverClassPlugin(PluginSuperClass):
                     newconfig[modulename]=module.pluginConfig
 
                 self.set_context()
-               
                 self.send_response(200)
-                #MS: removing this redirect allows this API call to be used elsewhere
-                #self.send_response(303) # 303 See Other, used after POST request to indicate resubmission should not occur
-                #self.send_header('Location', '/settings.html?toast2success=1')
+                self.send_header("Content-type", "application/json")
+                if globalState.stateDict["app_version"]=="0.0":
+                    self.send_header("Access-Control-Allow-Origin", "*")
+
                 self.end_headers()
                 self.wfile.write(json.dumps({"status": "success", "config": newconfig}).encode("utf-8"))
 

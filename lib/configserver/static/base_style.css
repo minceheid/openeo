@@ -1,5 +1,5 @@
 body {
-	display: flex;
+	/*display: flex;*/
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
@@ -10,12 +10,11 @@ body {
 	overflow-y: hidden;
 }
 
-canvas.clock {
-	background: radial-gradient(circle, #3a3d46, #1e2026);
-	border-radius: 51%;
-	box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
-	visibility: hidden;
+html, body {
+  touch-action: pan-y;
+  overflow-x: hidden;
 }
+
 
 button {
 	margin-top: 10px;
@@ -34,7 +33,7 @@ a {
 	left: 0;
 	top: 0;
 	width: 100%;
-	height: 100%;
+/*	height: 100%;*/
 	display: flex;
 	flex-direction: column;
 }
@@ -62,10 +61,16 @@ a {
 	margin-left: auto;
 	margin-right: 1em;
 	float: right;
+	  white-space: nowrap;        /* prevents line breaks */
+	    display: inline-flex;       /* keeps children on same line */
+
+
 }
 
 .logo-inner a {
 	font-weight: normal;
+		  white-space: nowrap;        /* prevents line breaks */
+	    display: inline-flex;       /* keeps children on same line */
 }
 
 .logo img {
@@ -85,6 +90,7 @@ a {
 	width: 10%;
 	pointer-events: all;
 	z-index: 2000;
+	box-sizing: content-box;
 }
 
 .burger-list {
@@ -95,6 +101,8 @@ a {
 	padding: 0;
 	margin: 0;
 	display: none;
+	box-sizing: content-box;
+
 }
 
 .burger-list li {
@@ -102,7 +110,9 @@ a {
 	background-color: #333333;
 	display: flex;
 	justify-content: left;
-	align-items: center;     
+	align-items: center;    
+		box-sizing: content-box;
+ 
 }
 
 .burger-list li a {
@@ -110,6 +120,8 @@ a {
 	margin: 0;
 	height: 1em;
 	width: 12em;
+			box-sizing: content-box;
+
 }
 
 .burger-list li:hover {
@@ -197,82 +209,6 @@ a {
 	font-size: 5pt;
 }
 
-.canvas-area {
-	display: block;
-	margin: 0 auto;
-	width: 100%;
-}
-
-.canvas-container {
-	margin: auto;
-	position: absolute;
-	top: 0;
-	left: 0;
-	justify-content: center;
-	align-items: center;
-	width: 100%;
-	height: 100%;
-}
-
-.canvas-area canvas {
-    padding-left: 0;
-    padding-right: 0;
-    margin-left: auto;
-    margin-right: auto;
-    display: block;
-	pointer-events: all;
-}
-
-.canvas-area .canvas-inner-widget {
-	position: absolute;
-	top: 0;
-	left: 0;
-	margin: auto;
-	width: 100%;
-	height: 100%;
-	text-align: center;
-	vertical-align: center;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	flex-direction: column;
-	pointer-events: none;
-}
-
-.time-display-container {
-	visibility: hidden;
-	height: 8%;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-}
-
-.inner-display-container {
-	visibility: hidden;
-	height: 5%;
-}
-
-.time-display-container p, .inner-display-container p  {
-	font-size: 12pt;
-	margin: 0em;
-	padding: 0em;
-}
-
-.current-display-container {
-	padding-top: 2em;
-	margin: 0em;
-	font-size: 12pt;
-}
-
-.canvas-container {
-	margin: auto;
-	height: 100%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	flex-direction: row;
-	pointer-events: none;
-}
 
 /* Notification messages that appear above everything else */
 .toast-msg-container {
@@ -282,6 +218,10 @@ a {
 	position: absolute;
 	bottom: 5em;
 	visibility: hidden;
+	justify-content: center;
+	position: absolute;
+	transform: translate(-50%, 0%);
+ 	left: 50%;
 }
 
 .toast-msg {
@@ -333,10 +273,6 @@ a {
 	color: #444444;
 }
 
-.status-info {
-	visibility: hidden;
-}
-
 .status-break::after {
 	content: "•";
 }
@@ -385,25 +321,11 @@ a {
 
 /* Desktop / large screen tweaks */
 @media (min-width: 850px) and (min-height: 850px) {
-	.canvas-area .canvas-inner-widget {
-		gap: 15px;
-	}
-	
-	.time-display-container p, .on-display-container p {
-		font-size: 18pt;
-	}
 
-	.canvas-area .canvas-inner-widget .current-display-container {
-		font-size: 18pt;
-	}
-	
-	.status-info {
-		width: 50%;
-	}
-	
 	.bottom-objects-flex {
 		height: 15%;
 	}
+
 }
 
 /* Landscape phone tweaks */
@@ -430,21 +352,6 @@ a {
 	.mode-switch .mode-inner {
 		margin: auto;
 		width: 3.5em;
-	}
-	
-	.canvas-area {
-		display: flex;
-		width: 100%;
-		margin: auto;
-	}
-	
-	.canvas-container {
-		margin: auto;
-		height: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-direction: row;
 	}
 	
 	.toast-msg-container {
@@ -475,9 +382,11 @@ a {
 	}
 	
 	.status-info {
-		width: 30%;
+		/* width: 30%; */
 		margin-left: auto;
 		margin-right: auto;
+		padding-top: 4px;
+		padding-bottom: 4px;
 	}
 
 	.status-break::after {
@@ -488,6 +397,22 @@ a {
 	.status-item {
 		line-height: 1.5;
 	}
+
+	.version-info { visibility: hidden; }
+	.top-status { visibility: hidden; }
+	.bottom-objects-flex {
+		height: 7%;
+	}
+	.bottom-objects-flex .status-info {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	margin-left:0vh;
+	margin-right:0vh;
+	margin-bottom:0vh;
+	}
+
 }
 
 /* Portrait phone tweaks */
@@ -495,6 +420,8 @@ a {
 	.toast-msg-container {
 		width: 100%;
 		margin-top: 100%;
+
+
 	}
 	
 	/* Make the logo text smaller on a small screen. */
@@ -508,6 +435,26 @@ a {
 	.top-status {
 		margin-top: 1em;
 	}
+
+	.version-info { visibility: hidden; }
+	.top-status { visibility: hidden; }
+
+	.bottom-objects-flex {
+		height: 7%;
+	}
+
+	.bottom-objects-flex .status-info {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	margin-left:0vh;
+	margin-right:0vh;
+	margin-bottom:0vh;
+		padding-top: 4px;
+		padding-bottom: 4px;
+	}
+
 }
 
 
