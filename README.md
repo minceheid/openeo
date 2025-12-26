@@ -2,12 +2,16 @@
 EO Charging announced in July 2025 that their EO Smart Home app is being discontinued on November 30th 2025. This disables the ability for owners to set automated timed schedules and to directly manage their device, which will then operate purely as a "plug & play" charger. This project aims to provide an alternate, open source software that can be directly installed on these devices to allow control from the local WiFi network without the use of the EO Cloud. 
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/e4592063-7f7b-485f-af75-c6b6009f6c96" style="width:25%; height:auto;"  />
-<img src="https://github.com/user-attachments/assets/1e6d8d2f-df0d-4b3b-8647-fd621d5297e4" style="width:25%; height:auto;"  />
+  <img  alt="image" src="https://github.com/user-attachments/assets/abc459b9-6c2e-4f34-894d-b5c3af552438" style="width:25%; height:auto;" />
 </p>
 
+## NEW: Multiple Schedules
+New for the current release - multiple timed schedules can be defined. In order to do this, we had to redesign the UI. In previous versions there was two distinct modes of operation: "Manual" and "Schedule" - the timed schedule would not run if the charger was in "Manual" mode, and vice versa. This has now changed. 
+You can scroll through the schedules on the home page, as well as create and delete schedules. Each schedule appears as a separate clockface, where you set the start, end and Amps, and the first page of the carousel of options is always the "Manual Override", allowing you to switch on the charger without having to wait for the schedule.
+
+
 ## NEW: OpenEO Cloud
-For those that might want to access their charger from anywhere, we have developed OpenEO Cloud. This provides a secure interface for connecting to your OpenEO charger over the internet. It works by running the latest version of OpenEO on your charger, which can securely connect to https://openeo.uk, where you can log in with your Google Account and access the familiar OpenEO interface.
+It sounds a bit odd to have a cloud service for a cloudless EV Charger, doesn't it?. However -for those that might want to access their charger from anywhere, we have developed OpenEO Cloud. This provides a secure interface for connecting to your OpenEO charger over the internet. It works by running the latest version of OpenEO on your charger, which can securely connect to https://openeo.uk, where you can log in with your Google Account and access the familiar OpenEO interface. Importantly, OpenEO does not require your charger to be connected to the cloud service. If you don't enable it - your charger will continue to work as-is.
 More info, and configuration details below.
 
 ## Compatibility
