@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.7.0](https://github.com/minceheid/openeo/compare/v0.6.0...v0.7.0) (2025-12-27)
+
+
+### Features
+
+* disable scheduler module ([0d0fee5](https://github.com/minceheid/openeo/commit/0d0fee553a87c19e181b1a0e62fe2fcff3b856d9))
+* new UI ([62d7026](https://github.com/minceheid/openeo/commit/62d7026a75a2ba796a9ba0bf424ffcf22cccc6e4))
+
+
+### Bug Fixes
+
+* aesthetic fix for schedule disable ([5441496](https://github.com/minceheid/openeo/commit/54414969b61b9db5083186f19a2fccc849ffa355))
+* aesthetic fix on schedule disable ([3f880a8](https://github.com/minceheid/openeo/commit/3f880a83196ce3e516fc937330ba1458195ed1e3))
+* aesthetic fixes ([5fac8a5](https://github.com/minceheid/openeo/commit/5fac8a59b115374c22fc7476f64458e0da44f960))
+* chargersession bug where charging time was not being correctly recorded in all cases ([a96fd54](https://github.com/minceheid/openeo/commit/a96fd54d7fb337819699315600e8956cf215648e))
+* cloud module bugfix ([f668a47](https://github.com/minceheid/openeo/commit/f668a471cc845c909eeb84419babb5409701ebb1))
+* cloud.py ssl breaks for later versions of Python ([febf905](https://github.com/minceheid/openeo/commit/febf9056a7f835c165e9270f86d28dc0b105e530))
+* delay checkversion module to ensure that networking is fully up and running when it runs for the first time ([3a98f9d](https://github.com/minceheid/openeo/commit/3a98f9d2ddf27c3e5516b50fb8658f3bbd73d95d))
+* openeo.py ([6644561](https://github.com/minceheid/openeo/commit/6644561532acdb3f75ea4f3366f35e1e26d34c7e))
+* remove debug message ([a9dad01](https://github.com/minceheid/openeo/commit/a9dad010217eb7fe860299d4d97a326ed2c45587))
+* remove loggerData from /getstatus api call to reduce message size ([2c9b367](https://github.com/minceheid/openeo/commit/2c9b36780f23d945670b3d9212545647f736d4fa))
+* removed ip address from jsx components ([49d779d](https://github.com/minceheid/openeo/commit/49d779dd796022ac5c6e7b3f2305959a485a1cc4))
+* scheduler granularity ([e4b9a65](https://github.com/minceheid/openeo/commit/e4b9a657874cc10ea669b0f369f2816dfc2ffd15))
+
 ## [0.2.3](https://github.com/minceheid/openeo/compare/v0.2.2...v0.2.3) (2025-07-24)
 
 
