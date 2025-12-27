@@ -327,13 +327,15 @@ const visibleSchedules = schedules.filter(
         {/* Add / Delete buttons */}
 
         <div className="mt-3 flex items-center justify-center gap-2">
-{ timersActive && (
+{ timersActive ? (
           <button
             onClick={addSchedule}
             className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-fuchsia-500 text-white font-semibold shadow-lg hover:opacity-95 active:scale-98"
           >
             + New Schedule
           </button>
+) : (
+  <div className="h-[58px] m-0 p-0"></div>
 )}
 
 { schedules[active]?.type !== "switch" && (
