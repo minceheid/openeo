@@ -291,6 +291,8 @@ const visibleSchedules = schedules.filter(
 
           {/* Prev/Next controls */}
           <div className="absolute inset-y-0 -left-3 flex items-center">
+{ timersActive && (
+
             <button
               onClick={() => go(-1)}
               className={`h-12 w-12 rounded-full grid place-items-center bg-white/10 hover:bg-white/20 transition ${hasPrev ? '' : 'opacity-40 pointer-events-none'}`}
@@ -298,8 +300,12 @@ const visibleSchedules = schedules.filter(
             >
               ‹
             </button>
+)}
+
           </div>
           <div className="absolute inset-y-0 -right-3 flex items-center">
+{ timersActive && (
+
             <button
               onClick={() => go(1)}
               className={`h-12 w-12 rounded-full grid place-items-center bg-white/10 hover:bg-white/20 transition ${hasNext ? '' : 'opacity-40 pointer-events-none'}`}
@@ -307,24 +313,29 @@ const visibleSchedules = schedules.filter(
             >
               ›
             </button>
+)}
           </div>
         </div>
 
         {/* Dots */}
         <div className="mt-3 flex justify-center gap-2">
-          {schedules.map((_, i) => (
+          {timersActive && visibleSchedules.map((_, i) => (
             <button key={i} onClick={() => setActive(i)} className={`h-2.5 w-2.5 rounded-full ${i === active ? 'bg-white' : 'bg-white/30 hover:bg-white/50'}`} />
           ))}
         </div>
 
         {/* Add / Delete buttons */}
+
         <div className="mt-3 flex items-center justify-center gap-2">
+{ timersActive && (
           <button
             onClick={addSchedule}
             className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-fuchsia-500 text-white font-semibold shadow-lg hover:opacity-95 active:scale-98"
           >
             + New Schedule
           </button>
+)}
+
 { schedules[active]?.type !== "switch" && (
 
             <button
