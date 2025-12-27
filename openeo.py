@@ -51,16 +51,14 @@ def main():
     # this is to help reduce startup race conditions that might occur with networking
     # perhaps not fully started up when openeo begins
     loop = -10
-    #lastloop=datetime.datetime.now()
     globalState.stateDict["_moduleDict"]={}
 
     # For keeping track of the moving average of requested charging rate
     smooth_requested_amps=[0]*9
 
-    # Force the switch and scheduler to be enabled. Previous versions would 
+    # Force the switch module to be enabled. Previous versions would 
     # Switch between enabled and disabled, so we force ourselves to a known
-    # state.
-    globalState.configDB.set("scheduler","enabled",True)
+    # state. There's no reason now for it to be disabled.
     globalState.configDB.set("switch","enabled",True)
 
     while True:
@@ -300,7 +298,7 @@ if __name__ == "__main__":
         )
     )
 
-    logging.basicConfig(level=logging.DEBUG, handlers=[syslog_handler])
+    logging.basicConfig(level=logging.INFO, handlers=[syslog_handler])
 
     # logging for use in this module
     _LOGGER = logging.getLogger(__name__)
