@@ -43,6 +43,7 @@ export default function ScheduleCarousel() {
   const [config, setConfig] = useState(null);
   const [active, setActive] = useState(0);
   const [timersActive, setTimersActive] = useState(0);
+  const [snapStep, setSnapStep] = useState(0);
 
 
 
@@ -109,6 +110,7 @@ export default function ScheduleCarousel() {
         
           setSchedules(mySchedule); // update state -> triggers re-render
           setTimersActive(data.scheduler.enabled); // update state -> triggers re-render
+          setSnapStep(data.scheduler.scheduler_granularity);
         }
       } catch (err) {
         if (!cancelled) setError(err.message);
@@ -277,7 +279,7 @@ const visibleSchedules = schedules.filter(
                       schedule={sch}
                       onChange={(next) => updateSchedule(i, next)}
                       onCommit={() => debouncedPostSchedule(schedules)} // only POST on commit
-                      snapStep={config.scheduler.scheduler_granularity}
+                      snapStep={snapStep}
                       timersActive={timersActive}
                   />
                 ) : (
