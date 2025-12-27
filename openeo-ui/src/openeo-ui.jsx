@@ -42,6 +42,8 @@ export default function ScheduleCarousel() {
   const [error, setError] = useState(null);
   const [config, setConfig] = useState(null);
   const [active, setActive] = useState(0);
+  const [timersActive, setTimersActive] = useState(0);
+
 
 
   //
@@ -93,7 +95,8 @@ export default function ScheduleCarousel() {
           setError(null);
           let schedules=data.scheduler.schedule
 
-          let mySchedule=[{id:"switch", type: "switch", amps: data.switch.amps, enabled:data.switch.on}]
+          let mySchedule=[{id:"switch", type: "switch", amps: data.switch.amps, enabled:data.switch.on,scheduler_enabled:data.scheduler.enabled}]
+
           schedules.forEach((x,i) => {
             let obj={ 
               type:"scheduler",
@@ -103,7 +106,9 @@ export default function ScheduleCarousel() {
               amps:x.amps,}
               mySchedule.push(obj)
           });
+        
           setSchedules(mySchedule); // update state -> triggers re-render
+          setTimersActive(data.scheduler.enabled); // update state -> triggers re-render
         }
       } catch (err) {
         if (!cancelled) setError(err.message);
@@ -138,7 +143,7 @@ function debounce(func, delay) {
   // Post changes
   const postSchedule = async (updatedSchedules) => {
 
-    console.log("postSchedule",updatedSchedules);
+    //console.log("postSchedule",updatedSchedules);
 
     let obj={}
     let schedulelist=[]
@@ -147,6 +152,7 @@ function debounce(func, delay) {
       if (x.id=="switch") {
         obj["switch:on"]=x.enabled;
         obj["switch:amps"]=x.amps;
+        obj["scheduler:enabled"]=x.scheduler_enabled;
       } else {
           schedulelist.push({start:MinutesToTimeString(x.start),end:MinutesToTimeString(x.end),amps:x.amps})
       }
@@ -242,6 +248,9 @@ function StatusMessage({ status }) {
   return <div>{renderStatus(status)}</div>;
 }
 
+const visibleSchedules = schedules.filter(
+  sch => !(sch.type === "scheduler" && !timersActive)
+);
 
   return (
     <div className="min-h-screen w-full bg-[#1e242b] text-white flex items-center justify-center p-6">
@@ -252,7 +261,7 @@ function StatusMessage({ status }) {
           {/* Carousel rail */}
           <div className="flex gap-6 items-stretch transition-transform duration-500 ease-out"
                style={{ transform: `translateX(calc(50% - ${(active + 0.5) * 360}px))` }}>
-            {schedules.map((sch, i) => (
+            {visibleSchedules.map((sch, i) => (
             <div key={sch.id} 
                 className={`shrink-0 w-[340px] sm:w-[380px] min-h-[462px] rounded-3xl bg-[#2b3139] ring-1 ring-white/10 p-5 backdrop-blur shadow-lg transition-all duration-500 ${i === active ? "scale-100 opacity-100" : "scale-95 opacity-60"}`}
             >
@@ -261,17 +270,15 @@ function StatusMessage({ status }) {
                     schedule={sch}
                     onChange={(next) => updateSchedule(i, next)}
                     onCommit={() => debouncedPostSchedule(schedules)} // only POST on commit
-
+                    setTimersActive={setTimersActive}
                 />
                 ) : sch.type === "scheduler" ? (
-                <ClockFace
-                    schedule={sch}
-                    onChange={(next) => updateSchedule(i, next)}
-                    onCommit={() => debouncedPostSchedule(schedules)} // only POST on commit
-                    snapStep={config.scheduler.scheduler_granularity}
-                />
-                ) : sch.type === "cloud" ? (
-                  <Cloud
+                  <ClockFace
+                      schedule={sch}
+                      onChange={(next) => updateSchedule(i, next)}
+                      onCommit={() => debouncedPostSchedule(schedules)} // only POST on commit
+                      snapStep={config.scheduler.scheduler_granularity}
+                      timersActive={timersActive}
                   />
                 ) : (
                   <h1>Invalid Type</h1>

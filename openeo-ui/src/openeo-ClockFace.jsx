@@ -86,7 +86,8 @@ export default function ClockFace({
   schedule,
   onChange,
   onCommit,
-  snapStep
+  snapStep,
+  timersActive
 }) {
   const size = 360;
   const cx = size / 2;
@@ -151,7 +152,7 @@ export default function ClockFace({
   return (
 
     <div className="flex flex-col items-center justify-center p-0 gap-4" >
-
+      { !timersActive ? (<h1>INACTIVE</h1>) : (<></>)}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${size} ${size}`}

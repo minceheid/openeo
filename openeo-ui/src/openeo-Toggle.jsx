@@ -3,7 +3,7 @@ import { useRef, useState, useEffect } from "react";
 export default function Toggle({ enabled, onChange }) {
   return (
     <div
-      className="relative w-48 h-24 rounded-full bg-gray-700 transition-colors cursor-pointer select-none"
+      className="relative w-40 h-20 rounded-full bg-gray-700 transition-colors cursor-pointer select-none"
       style={{ touchAction: "manipulation" }}
       onClick={() => onChange(!enabled)}
     >
@@ -16,7 +16,7 @@ export default function Toggle({ enabled, onChange }) {
 
       {/* Thumb */}
       <div
-        className="absolute top-3 w-18 h-18 bg-white rounded-full shadow-md transition-transform"
+        className="absolute top-3 w-15 h-15 bg-white rounded-full shadow-md transition-transform"
         style={{
           transform: enabled ? "translateX(96px)" : "translateX(12px)"
         }}
