@@ -18,8 +18,8 @@
 .status-break::after {
     content: "•";
     white-space: pre;
-    margin-left: 5px;
-    margin-right: 5px;
+    margin-left: 3px;
+    margin-right: 3px;
 }
 
 .version-info {

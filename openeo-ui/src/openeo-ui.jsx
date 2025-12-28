@@ -254,18 +254,28 @@ const visibleSchedules = schedules.filter(
   sch => !(sch.type === "scheduler" && !timersActive)
 );
 
+
+{/* Carousel Calcs */}
+
+const itemWidth = 340; // or 380 for sm
+const gap = 24; // 6 * 4px (Tailwind spacing)
+const offset = active * (itemWidth + gap);
+const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
+
+
+
   return (
     <div className="min-h-screen w-full bg-[#1e242b] text-white flex items-center justify-center p-6">
       <div className="w-full max-w-5xl">
 
-
-        <div className="relative">
           {/* Carousel rail */}
-          <div className="flex gap-6 items-stretch transition-transform duration-500 ease-out"
-               style={{ transform: `translateX(calc(50% - ${(active + 0.5) * 360}px))` }}>
+          <div className="flex items-center gap-6 items-stretch transition-transform duration-500 ease-out" id="carouselRail"
+            style={{ transform: `translateX(${translateX})` }}
+          >
+                
             {visibleSchedules.map((sch, i) => (
             <div key={sch.id} 
-                className={`shrink-0 w-[340px] sm:w-[380px] min-h-[462px] rounded-3xl bg-[#2b3139] ring-1 ring-white/10 p-5 backdrop-blur shadow-lg transition-all duration-500 ${i === active ? "scale-100 opacity-100" : "scale-95 opacity-60"}`}
+                className={`flex items-center justify-center max-width shrink-0 w-[340px] sm:w-[380px] min-h-[462px] rounded-3xl bg-[#2b3139] ring-1 ring-white/10 p-5 backdrop-blur shadow-lg transition-all duration-500 ${i === active ? "scale-100 opacity-100" : "scale-90 brightness-60"}`}
             >
                 {sch.type === "switch" ? (
                 <ManualControl
@@ -273,6 +283,7 @@ const visibleSchedules = schedules.filter(
                     onChange={(next) => updateSchedule(i, next)}
                     onCommit={() => debouncedPostSchedule(schedules)} // only POST on commit
                     setTimersActive={setTimersActive}
+                    active={i === active}
                 />
                 ) : sch.type === "scheduler" ? (
                   <ClockFace
@@ -281,6 +292,8 @@ const visibleSchedules = schedules.filter(
                       onCommit={() => debouncedPostSchedule(schedules)} // only POST on commit
                       snapStep={snapStep}
                       timersActive={timersActive}
+                      active={i === active}
+
                   />
                 ) : (
                   <h1>Invalid Type</h1>
@@ -288,6 +301,8 @@ const visibleSchedules = schedules.filter(
               </div>
             ))}
           </div>
+
+          
 
           {/* Prev/Next controls */}
           <div className="absolute inset-y-0 -left-3 flex items-center">
@@ -314,7 +329,6 @@ const visibleSchedules = schedules.filter(
               ›
             </button>
 )}
-          </div>
         </div>
 
         {/* Dots */}

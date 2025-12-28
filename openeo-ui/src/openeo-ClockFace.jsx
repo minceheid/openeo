@@ -87,7 +87,8 @@ export default function ClockFace({
   onChange,
   onCommit,
   snapStep,
-  timersActive
+  timersActive,
+  active
 }) {
   const size = 360;
   const cx = size / 2;
@@ -151,12 +152,15 @@ export default function ClockFace({
 
   return (
 
-    <div className="flex flex-col items-center justify-center p-0 gap-4" >
+    <div className="flex flex-col items-center p-5 gap-3 w-fit justify-start">
+
       { !timersActive ? (<h1>INACTIVE</h1>) : (<></>)}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${size} ${size}`}
-        className="w-[320px] sm:w-[360px] drop-shadow-xl"
+        className="w-[320px] sm:w-[360px] drop-shadow-xl
+        absolute top-0 left-1/2 -translate-x-1/2 translate-y-1/10
+        "
       >
         <defs>
           <radialGradient id="glow" r="60%">
@@ -176,21 +180,30 @@ export default function ClockFace({
         {gradientArcSegments(cx, cy, radius, schedule.start, schedule.end, 120)}
 
         {/* start handle */}
-        <g
-            className="cursor-pointer"
-            onPointerDown={() => (dragging.current = "start")}
-            onMouseUp={(e) => { onCommit(); }}    
-            onTouchEnd={(e) => { onCommit(); }}  
-        >
+    <g
+  className={`cursor-pointer ${!active ? "cursor-not-allowed" : ""}`}
+  {...(active
+    ? {
+        onPointerDown: () => (dragging.current = "start"),
+        onMouseUp: () => onCommit(),
+        onTouchEnd: () => onCommit(),
+      }
+    : {})}
+>
           <circle cx={startPos.x} cy={startPos.y} r={handleRadius} fill="#4dabf7" />
         </g>
 
         {/* end handle */}
-        <g
-            className="cursor-pointer"
-            onPointerDown={() => (dragging.current = "end")}
-            onPointerUp={(e) => { onCommit(); }}    
-        >
+<g
+  className={`cursor-pointer ${!active ? "cursor-not-allowed" : ""}`}
+  {...(active
+    ? {
+        onPointerDown: () => (dragging.current = "end"),
+        onPointerUp: () => onCommit(),
+        onTouchEnd: () => onCommit(),
+      }
+    : {})}
+>
           <circle cx={endPos.x} cy={endPos.y} r={handleRadius} fill="#f74d4d" />
         </g>
 
@@ -206,13 +219,14 @@ export default function ClockFace({
       </svg>
 
       {/* Amps slider */}
-      <div className="absolute bottom-0 w-[80%]" style={{marginBottom: "20px"}}>
+     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] mb-[15px]">
         <AmpSlider
         value={schedule.amps}
         min={0}
         max={32}
         onChange={(v) => onChange({ ...schedule, amps: v })}
         onCommit={onCommit}
+        active={active}
         />
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 
-export default function AmpSlider({ value, min = 0, max = 32, onChange, onCommit }) {
+export default function AmpSlider({ value, min = 0, max = 32, onChange, onCommit,active }) {
   const trackRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const activePointer = useRef(null); // tracks active touch/mouse
@@ -48,23 +48,24 @@ export default function AmpSlider({ value, min = 0, max = 32, onChange, onCommit
   };
 
   return (
-    <div className="w-full select-none">
+  <div id="AmpSlider" className="w-full select-none">
       {/* Gesture Area */}
-      <div
-        ref={trackRef}
-        className="relative h-10 flex items-center"
-        style={{ touchAction: "none" }}
-        onTouchStart={(e) =>
-          startDrag(e.touches[0].clientX, e.touches[0].clientY, e.touches[0].identifier)
-        }
-        onTouchMove={(e) =>
-          moveDrag(e.touches[0].clientX, e.touches[0].clientY, e.touches[0].identifier)
-        }
-        onTouchEnd={(e) => endDrag(e.changedTouches[0].identifier)}
-        onMouseDown={(e) => startDrag(e.clientX, e.clientY, "mouse")}
-        onMouseMove={(e) => moveDrag(e.clientX, e.clientY, "mouse")}
-        onMouseUp={(e) => endDrag("mouse")}
-      >
+<div
+  ref={trackRef}
+  className={`relative h-10 flex items-center justify-center ${!active ? "cursor-not-allowed" : "cursor-pointer"}`}
+  style={{ touchAction: "none" }}
+  {...(active
+    ? {
+        onTouchStart: (e) => startDrag(e.touches[0].clientX, e.touches[0].clientY, e.touches[0].identifier),
+        onTouchMove: (e) => moveDrag(e.touches[0].clientX, e.touches[0].clientY, e.touches[0].identifier),
+        onTouchEnd: (e) => endDrag(e.changedTouches[0].identifier),
+        onMouseDown: (e) => startDrag(e.clientX, e.clientY, "mouse"),
+        onMouseMove: (e) => moveDrag(e.clientX, e.clientY, "mouse"),
+        onMouseUp: (e) => endDrag("mouse"),
+      }
+    : {})}
+>
+
         {/* Track */}
         <div className="absolute left-0 right-0 h-2 rounded-full bg-white/20" />
 
@@ -85,7 +86,7 @@ export default function AmpSlider({ value, min = 0, max = 32, onChange, onCommit
       </div>
 
       {/* Value display */}
-      <div className="text-center text-white text-3xl font-semibold mt-2">
+      <div className="w-full max-width container text-center text-white text-3xl font-semibold mt-0">
         {value}A
       </div>
     </div>
