@@ -82,10 +82,12 @@ export default function ScheduleCarousel() {
   useEffect(() => {
     let cancelled = false;
     const isVite = !!import.meta.env.DEV;
-    console.log("isVite",isVite);
     let URL="getconfig";
     // This is just for dev/test
-    if (isVite) { URL="http://192.168.123.28/"+URL }
+    if (isVite) { 
+      console.log("UI dev mode enabled",isVite);
+      URL="http://192.168.123.28/"+URL;
+    }
     const fetchConfig = async () => {
       try {
         const res = await fetch(URL); // your URL
