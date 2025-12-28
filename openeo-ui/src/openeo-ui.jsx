@@ -81,7 +81,8 @@ export default function ScheduleCarousel() {
   
   useEffect(() => {
     let cancelled = false;
-    const isVite = !!import.meta.env;
+    const isVite = !!import.meta.env.DEV;
+    console.log("isVite",isVite);
     let URL="getconfig";
     // This is just for dev/test
     if (isVite) { URL="http://192.168.123.28/"+URL }

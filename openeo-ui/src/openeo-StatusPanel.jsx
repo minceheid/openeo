@@ -57,7 +57,7 @@ export default function StatusPanel() {
 
   useEffect(() => {
     let cancelled = false;
-    const isVite = !!import.meta.env;
+    const isVite = !!import.meta.env.DEV;
     let URL="getstatus";
     // This is just for dev/test
     if (isVite) { URL="http://192.168.123.28/"+URL }
