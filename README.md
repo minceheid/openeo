@@ -1,13 +1,19 @@
 # Cloudless software for the EO Smart Home Hub/Mini and Mini Pro 2 EV charger
-EO Charging announced in July 2025 that their EO Smart Home app is being discontinued on November 30th 2025. This disables the ability for owners to set automated timed schedules and to directly manage their device, which will then operate purely as a "plug & play" charger. This project aims to provide an alternate, open source software that can be directly installed on these devices to allow control from the local WiFi network without the use of the EO Cloud. 
+EO Charging announced in July 2025 that their EO Smart Home app is being discontinued on November 30th 2025. This disables the ability for owners to set automated timed schedules and to directly manage their device, which will then operate purely as a "plug & play" charger. This project aims to provide an alternate, open source software that can be directly installed on these devices to allow control from the local WiFi network without relying on the original manufacturer. 
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/e4592063-7f7b-485f-af75-c6b6009f6c96" style="width:25%; height:auto;"  />
-<img src="https://github.com/user-attachments/assets/1e6d8d2f-df0d-4b3b-8647-fd621d5297e4" style="width:25%; height:auto;"  />
+<img src="https://github.com/user-attachments/assets/e8eb317d-e411-4b7b-83f1-c2d1a450f97c" style="width:25%; height:auto;"/>
+<img src="https://github.com/user-attachments/assets/d41a2b3e-8d2e-4806-81a4-dd613ddad66c" style="width:25%; height:auto;"/>
+<img src="https://github.com/user-attachments/assets/72bbf639-530b-4743-a0a7-431bfc92eaa2" />
 </p>
 
+## NEW: Multiple Schedules
+New for the current release - multiple timed schedules can be defined. In order to do this, we had to redesign the UI: in previous versions there was two distinct modes of operation: "Manual" and "Schedule" - the timed schedule would not run if the charger was in "Manual" mode, and vice versa. 
+This has now changed - the new concept is that all defined timer schedules will operate, and they can be overriden by a manual control (either to disable all timers, or to manually switch the charger on).
+You can scroll through the defined timers on the home page, as well as create new timers and delete unwanted ones. Each timer appears as a separate clockface where you set the start, end and Amps.
+
 ## NEW: OpenEO Cloud
-For those that might want to access their charger from anywhere, we have developed OpenEO Cloud. This provides a secure interface for connecting to your OpenEO charger over the internet. It works by running the latest version of OpenEO on your charger, which can securely connect to https://openeo.uk, where you can log in with your Google Account and access the familiar OpenEO interface.
+It sounds a bit odd to have a cloud service for a cloudless EV Charger, doesn't it?. However -for those that might want to access their charger from anywhere, we have developed OpenEO Cloud. This provides a secure interface for connecting to your OpenEO charger over the internet. It works by running the latest version of OpenEO on your charger, which can securely connect to https://openeo.uk, where you can log in with your Google Account and access the familiar OpenEO interface. Importantly, OpenEO does not require your charger to be connected to the cloud service. If you don't enable it - your charger will continue to work as-is.
 More info, and configuration details below.
 
 ## Compatibility
@@ -29,24 +35,34 @@ This project has been designed to be compatible with the EO Smart Home Hub/Mini 
 This software can be installed onto a Raspberry OS Lite install. We recommend that you keep your original EO SD card safe and separate, so that you can revert easily, should things don't work out for you.
 
 1. Obtain a 8GB (or larger) micro SD card
-2. Flash the SD card with the Raspberry PI imager (Device: Raspberry Pi 3 for Home Hub and Raspberry Pi Zero for Mini Pro 2, Operating System: Raspberry PI OS Lite (32 bit))
+2. Flash the SD card with the Raspberry PI imager (Device: Raspberry Pi 3 for Home Hub and Raspberry Pi Zero for Mini Pro 2, Operating System: Raspberry PI OS Lite (32 bit)). Note that as of OpenEO v0.7, all development and testing is done on  Raspberry Pi OS (32 bit) Lite "Trixie", which was released in December 2025.
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/58fc15c4-ed2e-403d-b8f1-7e83a6c8c2b7" style="width:25%; height:auto;" />
-<img src="https://github.com/user-attachments/assets/db492985-58e3-4b18-8bb2-5eb0fb31cb6d" style="width:25%; height:auto;" />
+<img src="https://github.com/user-attachments/assets/a2314a38-dcf3-4218-8e00-7666afc1b67d" style="width:25%; height:auto;" />
+<img src="https://github.com/user-attachments/assets/eaa44933-dc08-4008-9130-ab680867fce5" style="width:25%; height:auto;" />
 </p>
 
-3. In the Raspberry PI imager "General" settings - set your Hostname, Username/Password, Wirelss LAN and Locale settings as appropriate. There are no restrictions on what to set your hostname, but you must create a user of "pi"
+3. In the Raspberry PI imager "Storage" settings, select your SD Card:
 
-<p align="center"><img  alt="image" src="https://github.com/user-attachments/assets/da0e365a-141b-4f70-8be8-5f23a900dfa3" style="width:25%; height:auto;"/></p>
-
-4. In the Raspberry PI imager "Services" settings - ensure that SSH is enabled, and I would recommend that public-key authentication is enabled, and you should add your SSH public key as approprate.  Alternatively, you may use a secure password, but be aware anyone with that password will be able to access the Raspberry Pi device, so choose a unique one and don't put it on a post-it note.
-
-<p align="center"><img alt="Screenshot 2025-07-19 142824" src="https://github.com/user-attachments/assets/d4768f5d-19f3-4355-a44e-6216e492dc30" style="width:25%; height:auto;" />
+<p align="center">
+<img src="https://github.com/user-attachments/assets/785266fa-8ed6-47d4-95dc-be3d14ee0409" style="width:25%; height:auto;" />
 </p>
 
-5. *IMPORTANT* Once the new SD card has been created, remove power to your EO box by disconnecting it or by switching off the relevant breaker in your consumer unit. Please ensure that it is completely isolated from the mains electricity. *If you are unsure that the electricity is fully disconnected, then do not proceed*.
-6. Open the Smart Hub or Mini Pro 2 box by loosening the four captive screws that are visible on the front of the case (you may need to remove the four rubber covers, if they are fitted), and you will see the Raspberry Pi inside (Smart Hub is a Raspberry Pi 3, and the Mini Pro 2 is a smaller Raspberry Pi Zero). You can now switch the SD cards, keeping the original safe. Whilst you are doing this, on the Mini Pro 2, take care to not accidentally dislodge the cables connecting the Raspberry Pi board with the main control board in the lid of the unit.
+4. In the Raspberry PI imager "Customisation" settings - set your Hostname to "openeo" and set the Localisation configuration as appropriate to your part of the world. In Username/Password you must use a username of "pi". Continue to fill in your Wireless LAN settings as appropriate.
+
+5. In the "Remote Access" settings, ensure that SSH is enabled, and I would recommend that public-key authentication is enabled, and you should add your SSH public key as approprate.  Alternatively, you may use a secure password, but be aware anyone with that password will be able to access the Raspberry Pi device, so choose a unique one and keep it safe.
+
+<p align="center"><img alt="Screenshot 2025-07-19 142824" src="https://github.com/user-attachments/assets/d6572124-31e7-4ece-bd16-6090ce675c3a" style="width:25%; height:auto;" />
+</p>
+
+6. You can now write the sd card
+
+<p align="center">
+<img  src="https://github.com/user-attachments/assets/4c7127ab-04e9-423a-8a71-c9a434ee85ac" style="width:25%; height:auto;"/>
+</p>
+  
+7. *IMPORTANT* Once the new SD card has been created, remove power to your EO box by disconnecting it or by switching off the relevant breaker in your consumer unit. Please ensure that it is completely isolated from the mains electricity. *If you are unsure that the electricity is fully disconnected, then do not proceed*.
+8. Open the Smart Hub or Mini Pro 2 box by loosening the four captive screws that are visible on the front of the case (you may need to remove the four rubber covers, if they are fitted), and you will see the Raspberry Pi inside (Smart Hub is a Raspberry Pi 3, and the Mini Pro 2 is a smaller Raspberry Pi Zero). You can now switch the SD cards, keeping the original safe. Whilst you are doing this, on the Mini Pro 2, take care to not accidentally dislodge the cables connecting the Raspberry Pi board with the main control board in the lid of the unit.
 
 <table style="width:80%"><tr><td>
 <p align="center">
@@ -62,7 +78,7 @@ This software can be installed onto a Raspberry OS Lite install. We recommend th
 </p>
 </td></tr></table>
 
-7. Close the EO enclosure, and apply power to it. The Raspberry Pi should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take about five minutes to fully boot before it is seen on the network.
+8. Close the EO enclosure, and apply power to it. The Raspberry Pi should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take about five minutes to fully boot before it is seen on the network.
 8. Log onto your account on the RPi via SSH (e.g. using <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">PuTTY</a>) over the WiFi network, and run the following commands. This will download the software from GitHub and run the installation process, then reboots your RPi to allow the software to finish configuring and start up.
 
 ~~~~
@@ -164,9 +180,9 @@ Example ```~pi/etc/config.json``` file to set the default log level to debug (no
 ```
 
 ## Troubleshooting
-After installation - it is normal to sometimes briefly recieve a "Controller Error" message on startup. This is simply the software establishing communications with the charger. If the red "Controller Error" message persists for more than a minute, then this indicates that the Raspberry Pi has not been able to establish serial communication with the charger contol board. We recommend that you doublecheck the connection within the unit (these instructions assume Mini Pro 2)
+After installation - it is normal to sometimes briefly recieve a "Waiting" message on startup. This is simply the software establishing communications with the charger. If the "Waiting" message persists for more than a minute, then this indicates that the Raspberry Pi has not been able to establish serial communication with the charger contol board. Particularly if this is your first startup of openeo since replacing the sdcard, We recommend that you doublecheck the connection within the unit (these instructions assume Mini Pro 2)
 
-<p align="center"><img src="https://github.com/user-attachments/assets/bcc180dc-f8c1-4e36-a994-a1190989f947" style="width:50%; height:auto;"/></p>
+<p align="center"><img  src="https://github.com/user-attachments/assets/8cfa69fe-603f-45b7-bbae-3bec67837291" style="width:50%; height:auto;"/></p>
 
 1. turn power to the charger off at the consumer unit
 2. take the cover off
@@ -177,11 +193,6 @@ After installation - it is normal to sometimes briefly recieve a "Controller Err
 The openeo_download.py program helps to manage the download and deployment of the software. Run with no parameters, it will locate and download/install the latest release from GitHub. Parameters available to further assist are:
 * ```--list``` : list available releases or branches (for dev use only)
 * ```--release <name>```: install the given release. This might allow for install of an earlier release, for example. The ```<name>``` can also be a branch name, in which case it will download and try to deploy the head of the named branch, though this is intended for development use only.   
-
-## Important Notes
-The openeo charger cannot currently accommodate the following features:
-
-* Control is currently only possible locally via the web interface and some phones when connected to the same wireless network as the charger.  Whilst it is possible to expose your openeo instance to the public internet, we strongly advise that you do not do so, since the application has not been audited for security vulnerabilities yet.  This also means you can't (yet) control charging remotely, though we will be releasing Home Assistant support in the near future which should allow this.
 
 ## Disclaimer
 The software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software.   Please see the important terms and conditions in the `LICENSE.txt` file.   The software has been developed by clean-room reverse engineering of the existing EO software and no copyrighted EO code is used in this application.  
