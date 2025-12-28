@@ -346,7 +346,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
             onClick={addSchedule}
             className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-fuchsia-500 text-white font-semibold shadow-lg hover:opacity-95 active:scale-98"
           >
-            + New Schedule
+            + New Timer
           </button>
 ) : (
   <div className="h-[58px] m-0 p-0"></div>
@@ -361,7 +361,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
                 schedules[active]?.type === "switch" || schedules.length === 0
             }
             >
-            Delete
+            Delete Timer
             </button>
 )}
 
