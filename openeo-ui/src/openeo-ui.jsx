@@ -162,7 +162,7 @@ function debounce(func, delay) {
     obj["scheduler:schedule"]=JSON.stringify(schedulelist);
 
   try {
-    const isVite = !!import.meta.env;
+    const isVite = !!import.meta.env.DEV;
     let URL="setsettings";
     // This is just for dev/test
     if (isVite) { URL="http://192.168.123.28/"+URL }
@@ -176,6 +176,7 @@ function debounce(func, delay) {
     const data = await res.json();
     makeToastExt("Schedule Saved");
   } catch (err) {
+    makeToastExt("Save Error: "+err);
     console.error("Failed to save schedule:", err);
     setError(err.message);
   }
