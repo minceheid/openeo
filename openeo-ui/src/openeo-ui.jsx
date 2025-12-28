@@ -3,13 +3,6 @@ import StatusPanel from "./openeo-StatusPanel";
 import ManualControl from "./openeo-ManualControl";
 import ClockFace from "./openeo-ClockFace";
 
-let updateTick = 0;
-let updateFreq = 1;
-
-// Interval timers
-var statusUpdateInterval=10000;
-var configUpdateInterval=30000;
-
 
 /////////////////////////////////
 // On mobile phones, disable left/right swipe, if we can
@@ -18,7 +11,6 @@ document.addEventListener('touchmove', e => {
     e.preventDefault();
   }
 }, { passive: false });
-
 
 
 // Draw Page
@@ -124,8 +116,13 @@ export default function ScheduleCarousel() {
     // Initial fetch
     fetchConfig();
 
-    // Poll every 1 second
-    const intervalId = setInterval(fetchConfig, 30000);
+
+    let pollinterval=30000 // 30 seconds
+    if (typeof(configUpdateInterval)!='undefined') {
+      pollinterval=configUpdateInterval
+    }
+    console.log("Config update interval",pollinterval);    
+    const intervalId = setInterval(fetchConfig, pollinterval);
 
     // Cleanup on unmount
     return () => {

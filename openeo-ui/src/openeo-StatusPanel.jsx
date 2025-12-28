@@ -79,8 +79,12 @@ export default function StatusPanel() {
     // Initial fetch
     fetchStatus();
 
-    // Poll every 1 second
-    const intervalId = setInterval(fetchStatus, 1000);
+    let pollinterval=1000 // 1 second
+    if (typeof(statusUpdateInterval)!='undefined') {
+      pollinterval=statusUpdateInterval
+    }
+    console.log("Status Update interval",pollinterval);
+    const intervalId = setInterval(fetchStatus, pollinterval);
 
     // Cleanup on unmount
     return () => {
