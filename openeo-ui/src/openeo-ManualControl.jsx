@@ -9,7 +9,7 @@ export default function ManualControl({ schedule, onChange, onCommit,setTimersAc
 
   <div className="absolute top-0  items-center justify-center text-white/80 text-3xl font-semibold unselectable mt-5">
   
-    Manual Override
+    Manual Control
   </div>
 
   <Toggle
