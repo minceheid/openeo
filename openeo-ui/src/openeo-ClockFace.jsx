@@ -222,7 +222,7 @@ export default function ClockFace({
      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] mb-[15px]">
         <AmpSlider
         value={schedule.amps}
-        min={0}
+        min={6}
         max={32}
         onChange={(v) => onChange({ ...schedule, amps: v })}
         onCommit={onCommit}

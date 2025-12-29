@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 
-export default function AmpSlider({ value, min = 0, max = 32, onChange, onCommit,active }) {
+export default function AmpSlider({ value, min = 6, max = 32, onChange, onCommit,active }) {
   const trackRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const activePointer = useRef(null); // tracks active touch/mouse
