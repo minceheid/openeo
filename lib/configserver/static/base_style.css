@@ -339,7 +339,7 @@ a {
 }
 
 /* Portrait phone tweaks */
-@media (orientation: portrait) and (max-width: 768px) {
+@media (orientation: portrait) and (max-width: 768px) and (pointer: coarse) {
 	.toast-msg-container {
 		width: 100%;
 		margin-top: 100%;
