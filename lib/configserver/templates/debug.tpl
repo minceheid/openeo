@@ -1,6 +1,6 @@
 <div id=output></div>
 {% include 'html_footer.tpl' %}
-  <script>const endpoints = ["/getstatus", "/getconfig", "/debugdata"];
+  <script>const endpoints = ["getstatus", "getconfig", "debugdata"];
 
     // recursive pretty-printer that handles multiline text
     function formatJson(obj, indent = 2) {

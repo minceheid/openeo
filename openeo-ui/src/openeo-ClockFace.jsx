@@ -159,7 +159,7 @@ export default function ClockFace({
         ref={svgRef}
         viewBox={`0 0 ${size} ${size}`}
         className="w-[320px] sm:w-[360px] drop-shadow-xl
-        absolute top-0 left-1/2 -translate-x-1/2 translate-y-1/10
+        absolute top-0 left-1/2 -translate-x-1/2 translate-y-2/100
         "
       >
         <defs>
@@ -219,7 +219,7 @@ export default function ClockFace({
       </svg>
 
       {/* Amps slider */}
-     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] mb-[15px]">
+     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] mb-[5px]">
         <AmpSlider
         value={schedule.amps}
         min={6}

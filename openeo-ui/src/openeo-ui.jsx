@@ -266,17 +266,17 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
 
 
   return (
-    <div className="min-h-screen w-full bg-[#1e242b] text-white flex items-center justify-center p-6">
+    <div className="min-h-screen w-full bg-[#1e242b] text-white flex justify-center p-6 " id="mainDiv">
       <div className="w-full max-w-5xl">
 
           {/* Carousel rail */}
-          <div className="flex items-center gap-6 items-stretch transition-transform duration-500 ease-out" id="carouselRail"
+          <div className="flex items-center gap-6 items-stretch transition-transform duration-500 ease-out mt-[10vh]" id="carouselRail"
             style={{ transform: `translateX(${translateX})` }}
           >
                 
             {visibleSchedules.map((sch, i) => (
             <div key={sch.id} 
-                className={`flex items-center justify-center max-width shrink-0 w-[340px] sm:w-[380px] min-h-[462px] rounded-3xl bg-[#2b3139] ring-1 ring-white/10 p-5 backdrop-blur shadow-lg transition-all duration-500 ${i === active ? "scale-100 opacity-100" : "scale-90 brightness-60"}`}
+                className={`flex items-center justify-center max-width shrink-0 w-[340px] sm:w-[380px] min-h-[442px] rounded-3xl bg-[#2b3139] ring-1 ring-white/10 p-5 backdrop-blur shadow-lg transition-all duration-500 ${i === active ? "scale-100 opacity-100" : "scale-90 brightness-60"}`}
             >
                 {sch.type === "switch" ? (
                 <ManualControl
@@ -333,7 +333,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
         </div>
 
         {/* Dots */}
-        <div className="mt-3 flex justify-center gap-2">
+        <div className="mt-1 flex justify-center gap-2 h-auto">
           {timersActive && visibleSchedules.map((_, i) => (
             <button key={i} onClick={() => setActive(i)} className={`h-2.5 w-2.5 rounded-full ${i === active ? 'bg-white' : 'bg-white/30 hover:bg-white/50'}`} />
           ))}
@@ -341,16 +341,14 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
 
         {/* Add / Delete buttons */}
 
-        <div className="mt-3 flex items-center justify-center gap-2">
-{ timersActive ? (
+        <div className="mt-1 flex items-center justify-center gap-2 h-auto">
+{ timersActive && (
           <button
             onClick={addSchedule}
             className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-fuchsia-500 text-white font-semibold shadow-lg hover:opacity-95 active:scale-98"
           >
             + New Timer
           </button>
-) : (
-  <div className="h-[58px] m-0 p-0"></div>
 )}
 
 { schedules[active]?.type !== "switch" && (
@@ -365,14 +363,13 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
             Delete Timer
             </button>
 )}
-
         </div>
+      </div>
 
+      <div className="statusPanelDiv">
+        <StatusPanel></StatusPanel>
+      </div>
 
-        <div className="bottom-objects-flex">
-          <StatusPanel></StatusPanel>
-        </div>
-    </div>
   </div>
 
     

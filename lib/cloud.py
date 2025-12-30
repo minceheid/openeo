@@ -28,7 +28,7 @@ class cloudClassPlugin(PluginSuperClass):
 
     proxythread=None
     failurecount=0
-    maxfailurecount=20
+    maxfailurecount=100
     failuretime=None
     killflag=False
 
@@ -112,7 +112,7 @@ class cloudClassPlugin(PluginSuperClass):
             f = ssl_sock.makefile('rw', encoding='utf-8', newline='\n')
 
             # Send AUTH
-            connectionstr=f"AUTH {client_id} {self.pluginConfig['authtoken']} {globalState.appVer}\n"
+            connectionstr=f"AUTH {client_id} {self.pluginConfig['authtoken']} {globalState.stateDict['app_version']} {globalState.stateDict['app_deploy_directory']}\n"
 
             ssl_sock.sendall(bytearray(connectionstr,'utf-8'))
 

@@ -6,7 +6,6 @@ export default function StatusPanel() {
   const [error, setError] = useState(null);
 
 
-  
   function FriendlyState(status) {
     let state=status.eo_charger_state;
     /* Convert the state into a user-friendly message, that summarises roughly
@@ -30,30 +29,21 @@ export default function StatusPanel() {
       }
     }
     
-    if (state == 'idle') {
+    if (state == 'idle' || state == 'plug-present' ) {
       state = "Idle"; 
-    } else if (state == 'plug-present') {
-      state = "Waiting for Connection";
     } else if (state == 'car-connected') {
-      state = "Waiting for Vehicle";
+      state = "Connected";
     } else if (state == 'mains-fault') {
       state = "Error";
     } else if (state == 'charging' && status.eo_amps_requested > 0) {
       state = "Charging";
     } else if (state == 'charging' || state == 'charge-complete' || state == 'charge-suspended' || state== 'charge-paused') {
-      // If car is still charging, show 'Pausing'
-      if (status.eo_current_vehicle > 3) {
-        state = "Pausing (Waiting for Vehicle)";
-      } else {
-          state = "Paused";
-      }
+      state = "Paused";
     } else {
       state = "Unknown";
     }
     return state;
   }
-
-
 
   useEffect(() => {
     let cancelled = false;
@@ -94,44 +84,44 @@ export default function StatusPanel() {
   }, []);
 
   return (
-    <div>
+    <>
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
 
       {!status ? ( <p>Loading…</p> ) : (
-      <div>
-      <div className="status-info" id="statusInfo">
-          
+      <>
+        <div className="status-info" id="statusInfo">
+            
           {
-          !status.eo_connected_to_controller ? (
-            <span className="status-item" id="statusWhatDoing">Waiting..</span>
-           ) : (
-            <span
-              className={`status-item ${FriendlyState(status) === "Charging" ? "status-charging" : "status-other"}`}
-              id="statusWhatDoing"
-            >         
-            {FriendlyState(status)}</span>
-           )
-        }
-        <span className="status-break"></span> 
-        <span className="status-item" id="statusChargeCurrent">{Math.round(status.eo_current_vehicle, 0) + "/" + Math.round(status.eo_amps_requested, 0) + "A"}</span>
-        <span className="status-break"></span>
-        <span className="status-item" id="statusChargeVolt">{Math.round(status.eo_live_voltage, 0) + "V"}</span>
-        <span className="status-break"></span>
-        <span className="status-item" id="statusChargePower">{Number(status.eo_power_delivered).toFixed(2) + "kW"}</span>
-        <span className="status-break"></span>
-        <span className="status-item" id="statusChargeSession">{Number(status.eo_session_kwh).toFixed(2) + "kWh"}</span>
-        <span className="status-break"></span>
-        <span className="status-item" id="statusLocaltime">{status.eo_localtime}</span>
-      </div>
-      <div id="version-info" className="version-info">
-          {status.app_version==status.openeo_latest_version ? (
+            !status.eo_connected_to_controller ? (
+              <span className="status-item" id="statusWhatDoing">Waiting..</span>
+            ) : (
+              <span
+                className={`status-item ${FriendlyState(status) === "Charging" ? "status-charging" : "status-other"}`}
+                id="statusWhatDoing"
+              >         
+              {FriendlyState(status)}</span>
+            )
+          }
+          <span className="status-break"></span> 
+          <span className="status-item" id="statusChargeCurrent">{Math.round(status.eo_current_vehicle, 0) + "/" + Math.round(status.eo_amps_requested, 0) + "A"}</span>
+          <span className="status-break"></span>
+          <span className="status-item" id="statusChargeVolt">{Math.round(status.eo_live_voltage, 0) + "V"}</span>
+          <span className="status-break"></span>
+          <span className="status-item" id="statusChargePower">{Number(status.eo_power_delivered).toFixed(2) + "kW"}</span>
+          <span className="status-break"></span>
+          <span className="status-item" id="statusChargeSession">{Number(status.eo_session_kwh).toFixed(2) + "kWh"}</span>
+          <span className="status-break"></span>
+          <span className="status-item" id="statusLocaltime">{status.eo_localtime}</span>
+        </div>
+        <div id="version-info" className="version-info">
+          {status.openeo_latest_version === undefined || status.app_version === status.openeo_latest_version ? (
             <span id="statusVersion">openeo {status.app_version}</span>
           ) : (
             <span id="statusVersion" style={{color: "red"}} onClick={() => (window.location.href="update.html")}>openeo {status.app_version} (Update Available)</span>
           )}
-      </div>
-      </div>
+        </div>
+      </>
     )}
-  </div>
+  </>
   );
 }

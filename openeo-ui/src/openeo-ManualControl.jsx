@@ -42,7 +42,7 @@ export default function ManualControl({ schedule, onChange, onCommit,setTimersAc
     Charging {schedule.enabled ? "Enabled" : "Disabled"}
   </div>
 
-  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] mb-[15px]">
+     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] mb-[5px]">
     <AmpSlider
       value={schedule.amps}
       min={6}

@@ -29,6 +29,12 @@ class checkversionClassPlugin(PluginSuperClass):
                                       # (assumes a 5 second main loop, so in reality will be slightly more than a week)
 
     def poll(self):
+
+        # If we're not running a mainstream release (that begins with "v") then
+        # don't bother polling
+        if globalState.stateDict["app_version"][0]!="v":
+            return 0
+
         latest_release=self.get_releases()[0]
         globalState.stateDict["openeo_last_version_check"]=str(time.time())
         globalState.stateDict["openeo_latest_version"]=latest_release
