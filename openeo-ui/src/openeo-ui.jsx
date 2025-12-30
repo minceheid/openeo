@@ -266,11 +266,11 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
 
 
   return (
-    <div className="min-h-screen w-full bg-[#1e242b] text-white flex items-center justify-center p-6 " id="mainDiv">
+    <div className="min-h-screen w-full bg-[#1e242b] text-white flex justify-center p-6 " id="mainDiv">
       <div className="w-full max-w-5xl">
 
           {/* Carousel rail */}
-          <div className="flex items-center gap-6 items-stretch transition-transform duration-500 ease-out" id="carouselRail"
+          <div className="flex items-center gap-6 items-stretch transition-transform duration-500 ease-out mt-[10vh]" id="carouselRail"
             style={{ transform: `translateX(${translateX})` }}
           >
                 
@@ -363,14 +363,13 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
             Delete Timer
             </button>
 )}
-
         </div>
+      </div>
 
+      <div className="statusPanelDiv">
+        <StatusPanel></StatusPanel>
+      </div>
 
-        <div className="statusPanelDiv">
-          <StatusPanel></StatusPanel>
-        </div>
-    </div>
   </div>
 
     
