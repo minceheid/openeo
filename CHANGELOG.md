@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.2](https://github.com/minceheid/openeo/compare/v0.7.1...v0.7.2) (2025-12-30)
+
+
+### Bug Fixes
+
+* multiple fixes ([393776e](https://github.com/minceheid/openeo/commit/393776e2ba407e969e055b2e36d05d116aa4163f))
+* remove debug message from ct_tuner ([ed94aca](https://github.com/minceheid/openeo/commit/ed94aca14d34c5d1cf06560919ffd3bbc91e36e0))
+
 ## [0.2.3](https://github.com/minceheid/openeo/compare/v0.2.2...v0.2.3) (2025-07-24)
 
 
