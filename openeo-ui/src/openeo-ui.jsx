@@ -333,7 +333,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
         </div>
 
         {/* Dots */}
-        <div className="mt-1 flex justify-center gap-2">
+        <div className="mt-1 flex justify-center gap-2 h-auto">
           {timersActive && visibleSchedules.map((_, i) => (
             <button key={i} onClick={() => setActive(i)} className={`h-2.5 w-2.5 rounded-full ${i === active ? 'bg-white' : 'bg-white/30 hover:bg-white/50'}`} />
           ))}
@@ -341,7 +341,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
 
         {/* Add / Delete buttons */}
 
-        <div className="mt-1 flex items-center justify-center gap-2">
+        <div className="mt-1 flex items-center justify-center gap-2 h-auto">
 { timersActive && (
           <button
             onClick={addSchedule}

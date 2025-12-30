@@ -339,7 +339,7 @@ a {
 }
 
 /* Portrait phone tweaks */
-@media (orientation: portrait) and (max-width: 768px) and (pointer: coarse) {
+@media (orientation: portrait) and (max-width: 768px) /*and (pointer: coarse)*/ {
 	.toast-msg-container {
 		width: 100%;
 		margin-top: 100%;
@@ -354,6 +354,10 @@ a {
 	
 	.version-info { visibility: hidden; }
 	.top-status { visibility: hidden; }
+
+	.statusPanelDiv {
+		height: auto;
+	}
 
 	.statusPanelDiv .status-info {
 		position: absolute;

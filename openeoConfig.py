@@ -129,9 +129,12 @@ class openeoConfigClass:
 
         if isinstance(key_or_dict, dict):
             for key, value in key_or_dict.items():
-                self.logwrite(f"Config update {module}:{key}={value}")
+                # Don't write any keys prefixed by underscore to the log
+                if key[0]!="_":
+                    self.logwrite(f"Config update {module}:{key}={value}")
         else:
-            self.logwrite(f"Config update {module}:{key}={value}")
+            if key_or_dict[0]!="_":
+                self.logwrite(f"Config update {module}:{key_or_dict}={value}")
 
 
     def __init__(self,defaultConfig=None):
