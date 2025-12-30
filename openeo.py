@@ -138,10 +138,7 @@ def main():
                             #    globalState.stateDict["eo_amps_requested_solar"] = max(globalState.stateDict["eo_amps_requested_solar"], module_current)
 
                             _LOGGER.debug("polled %s, amps_requested=%d" % (module_name, module_current))
-        
-        if globalState.stateDict["eo_always_supply_current"]:
-            globalState.stateDict["eo_amps_requested"] = 32
-        
+                
         globalState.stateDict["eo_amps_requested"] = min(globalState.stateDict["eo_overall_limit_current"], globalState.stateDict["eo_amps_requested"])
         
         _LOGGER.info("Amps Requested: %d amps (overall limit: %d amps, always supply: %r), Charger State: %s" % \

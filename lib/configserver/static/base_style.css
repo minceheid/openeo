@@ -33,7 +33,6 @@ a {
 	left: 0;
 	top: 0;
 	width: 100%;
-/*	height: 100%;*/
 	display: flex;
 	flex-direction: column;
 }
@@ -61,16 +60,14 @@ a {
 	margin-left: auto;
 	margin-right: 1em;
 	float: right;
-	  white-space: nowrap;        /* prevents line breaks */
-	    display: inline-flex;       /* keeps children on same line */
-
-
+	white-space: nowrap;        /* prevents line breaks */
+	display: inline-flex;       /* keeps children on same line */
 }
 
 .logo-inner a {
 	font-weight: normal;
-		  white-space: nowrap;        /* prevents line breaks */
-	    display: inline-flex;       /* keeps children on same line */
+	white-space: nowrap;        /* prevents line breaks */
+	display: inline-flex;       /* keeps children on same line */
 }
 
 .logo img {
@@ -111,7 +108,7 @@ a {
 	display: flex;
 	justify-content: left;
 	align-items: center;    
-		box-sizing: content-box;
+	box-sizing: content-box;
  
 }
 
@@ -120,7 +117,7 @@ a {
 	margin: 0;
 	height: 1em;
 	width: 12em;
-			box-sizing: content-box;
+	box-sizing: content-box;
 
 }
 
@@ -165,40 +162,6 @@ a {
 	padding: 0.5em;
 }
 
-.mode-inner {
-	display: inline-block;
-	width: 4em;
-	margin: 0.5em;
-}
-
-.mode-inner svg.svg-use-fill {
-	fill: #666666;
-}
-.mode-inner svg.svg-use-stroke {
-	stroke: #666666;
-}
-
-.mode-inner:hover svg.svg-use-fill {
-	fill: white;
-}
-.mode-inner:hover svg.svg-use-stroke {
-	stroke: white;
-}
-
-.mode-inner.active svg.svg-use-fill {
-	fill: #48e073;
-}
-.mode-inner.active svg.svg-use-stroke {
-	stroke: #48e073;
-}
-
-.mode-inner.disabled svg.svg-use-fill {
-	fill: #4d4d4d;
-}
-.mode-inner.disabled svg.svg-use-stroke {
-	stroke: #4d4d4d;
-}
-
 #startTime, #endTime {
 	font-weight: bold;
 }
@@ -238,18 +201,8 @@ a {
 	background-color: #aa00003f;
 }
 
-.mode-switch {
-	padding-top: 2em;
-	width: 100%;
-	flex-direction: row;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	visibility: hidden;
-}
-
 /* Flexbox for objects at the bottom */
-.bottom-objects-flex {
+.statusPanelDiv {
 	position: absolute;
 	left: 0;
 	bottom: 0;
@@ -298,27 +251,18 @@ a {
 	font-weight: bold;
 }
 
-.status-paused-by-evse {
-	color: #ebe834;
-	font-weight: bold;
-}
 
-.status-fault {
-	color: #ba2020;
-	font-weight: bold;
+.eoButton {
+  border-radius: 12px;
+  z-index: 1000;
+  transition-duration: 0.4s;
+  justify-content: center;
+  align-items: center;
 }
-
-/* These have the same color */
-.status-paused-by-connection {
-	color: #299ae6;
-	font-weight: bold;
+.eoButton:hover {
+  background-color: #04AA6D; /* Green */
+  color: white;
 }
-
-.status-paused-by-vehicle {
-	color: #299ae6;
-	font-weight: bold;
-}
-
 
 /* Landscape phone tweaks */
 @media (orientation: landscape) and (max-height: 500px) {
@@ -331,19 +275,6 @@ a {
 		width: 100%;
 		text-align: center;
 		margin-top: -2.5em; /* There's probably a better way... */
-	}
-	
-	.mode-switch {
-		flex-direction: column;
-		display: flex;
-		align-items: left;
-		justify-content: left;
-		width: 20%;
-	}
-	
-	.mode-switch .mode-inner {
-		margin: auto;
-		width: 3.5em;
 	}
 	
 	.toast-msg-container {
@@ -361,7 +292,7 @@ a {
 	}
 	
 	/* Flexbox moves to the RHS */
-	.bottom-objects-flex {
+	.statusPanelDiv {
 		position: absolute;
 		right: 0;
 		top: 0;
@@ -392,10 +323,10 @@ a {
 
 	.version-info { visibility: hidden; }
 	.top-status { visibility: hidden; }
-	.bottom-objects-flex {
+	.statusPanelDiv {
 		height: 7%;
 	}
-	.bottom-objects-flex .status-info {
+	.statusPanelDiv .status-info {
 	position: fixed;
 	bottom: 0;
 	left: 0;
@@ -408,12 +339,10 @@ a {
 }
 
 /* Portrait phone tweaks */
-@media (orientation: portrait) and (max-width: 500px) {
+@media (orientation: portrait) and (max-width: 768px) {
 	.toast-msg-container {
 		width: 100%;
 		margin-top: 100%;
-
-
 	}
 	
 	/* Make the logo text smaller on a small screen. */
@@ -423,41 +352,28 @@ a {
 		font-size: 12pt;
 	}
 	
-	/* Nudge down the top status line to give more space for a long charger name. */
-	.top-status {
-		margin-top: 1em;
-	}
-
 	.version-info { visibility: hidden; }
 	.top-status { visibility: hidden; }
 
-	.bottom-objects-flex {
-		height: 7%;
-	}
-
-	.bottom-objects-flex .status-info {
-	position: fixed;
-	bottom: 0;
+	.statusPanelDiv .status-info {
+	position: absolute;
 	left: 0;
-	right: 0;
-	margin-left:0vh;
-	margin-right:0vh;
-	margin-bottom:0vh;
-		padding-top: 4px;
-		padding-bottom: 4px;
+	bottom: 0;
+	margin-top:0;
+	margin-left:0;
+	margin-right:0;
+	/* margin-bottom: max(48px, 4px, env(safe-area-inset-bottom));*/
+	margin-bottom: max(2px, env(safe-area-inset-bottom));
+	width: 100%;
+	font-size: 0.8rem;
 	}
 
+	#mainDiv {
+		padding-top:0;
+		padding-left:0;
+		padding-right:0;
+		/* padding-bottom: max(64px, 4px, env(safe-area-inset-bottom));*/
+		padding-bottom: max(2px, env(safe-area-inset-bottom));
+	}
 }
 
-
-.eoButton {
-  border-radius: 12px;
-  z-index: 1000;
-  transition-duration: 0.4s;
-  	justify-content: center;
-  align-items: center;
-}
-.eoButton:hover {
-  background-color: #04AA6D; /* Green */
-  color: white;
-}
