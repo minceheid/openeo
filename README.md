@@ -7,6 +7,13 @@ EO Charging announced in July 2025 that their EO Smart Home app is being discont
 <img src="https://github.com/user-attachments/assets/72bbf639-530b-4743-a0a7-431bfc92eaa2" />
 </p>
 
+## NEW: Donate to support the development
+Several folks have asked about how they might be able to contribute, to thank and to support. The primary method that I'd encourage is for them to subscribe to the OpenEO cloud service. This will give those who wish to contribute an additional service. However - for those that would prefer not to subscribe to the cloud service, here is a payment link that should allow a similar donation. Any payment is entirely voluntary and very much appreciated.
+
+<a href="https://donate.stripe.com/9B66oJ0Lb2AkbeZ9SF2oE00">
+  <img src="https://github.com/user-attachments/assets/4e257c47-0f61-4faa-8883-8594fb428ef7" style="width:25%; height:auto;"/>
+</a>
+
 ## NEW: Multiple Schedules
 New for the current release - multiple timed schedules can be defined. In order to do this, we had to redesign the UI: in previous versions there was two distinct modes of operation: "Manual" and "Schedule" - the timed schedule would not run if the charger was in "Manual" mode, and vice versa. 
 This has now changed - the new concept is that all defined timer schedules will operate, and they can be overriden by a manual control (either to disable all timers, or to manually switch the charger on).
