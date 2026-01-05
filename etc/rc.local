@@ -1,5 +1,12 @@
 #!/bin/sh -e 
 
-/sbin/iwconfig wlan0 power off
+# Wireless power saving mode disable
+
+# Legacy method
+#/sbin/iwconfig wlan0 power off
+
+# new method 
+/usr/sbin/iw wlan0 set power_save off
+
 
 exit $?
