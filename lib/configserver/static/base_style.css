@@ -338,7 +338,6 @@ a {
 
 }
 
-/* Portrait phone tweaks */
 @media (orientation: portrait) and (max-width: 768px) /*and (pointer: coarse)*/ {
 	.toast-msg-container {
 		width: 100%;
@@ -369,6 +368,7 @@ a {
 		margin-bottom: max(2px, env(safe-area-inset-bottom));
 		width: 100%;
 		font-size: 0.8rem;
+
 	}
 
 	#mainDiv {
@@ -392,5 +392,5 @@ a {
 		margin-bottom: max(2px, env(safe-area-inset-bottom));
 		transform: none;
 	}
-}
 
+}
