@@ -1,0 +1,194 @@
+<head>
+<link rel="stylesheet" href="debug.css">
+</head>
+<script src="https://cdn.plot.ly/plotly-3.1.0.min.js" charset="utf-8"></script>
+
+
+<div id='chartDiv' style="height:90vh;width:auto"></div>
+<div id='chartDiv2' style="height:90vh;width:auto"></div>
+<div id=output></div>
+
+<script>
+
+statistics_charging();
+statistics_charger();
+
+function statistics_charging() {
+  var chartdata = [];
+  var timer = null;
+  var layout = { grid: {rows: 3,columns: 1, pattern: 'independent'},
+                    showlegend:true,
+                    margin: { t: 30 },
+                    paper_bgcolor: "#282c34",
+                    plot_bgcolor: "#282c34",
+                    font: { color: "#eee"},
+                    y1: {rangemode: 'tozero'},              
+                    y2: {rangemode: 'tozero'},  
+                    y3: {rangemode: 'tozero'},  
+                    };
+
+  // Calculate Legend positions
+  const legends=["legend","legend2","legend3"]
+  legends.forEach((x,i) => {
+    layout[x]={y:(legends.length-i) * (1/legends.length) -0.03, yanchor:'top'}
+  })
+
+  url='../getchartdata?type=plotly&series=eo_charger_state_id,eo_amps_requested_solar:eo_amps_requested_grid:eo_amps_requested_site_limit:eo_amps_requested:eo_amps_delivered,eo_current_vehicle:eo_current_site:eo_current_solar';
+
+  fetch(url, {    method: 'GET'    })
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+          chartdata=data;
+          // further process plotly data
+          data.forEach(function (item, index) {
+
+            switch (item.key) {
+              case 'eo_power_requested','eo_amps_requested':
+                item.line={color:'orange',dash:'dot',width:4};
+                break;
+              case 'eo_power_delivered','eo_amps_delivered':
+                item.line={color:'red',width:4};
+                break;
+              case 'eo_power_requested_grid','eo_amps_requested_grid':
+                item.fillcolor='lightblue';
+                item.line={color:'black',width:0.25};
+                item.stackgroup="power_areastack";
+                delete item["mode"];
+                delete item["type"];
+                break;
+              case 'eo_power_requested_solar','eo_amps_requested_solar':
+                item.fillcolor='lightgreen';
+                item.line={color:'black',width:0.25};
+                item.stackgroup="power_areastack";
+                delete item["mode"];
+                delete item["type"];
+                break;
+              case 'eo_power_requested_site_limit','eo_amps_requested_site_limit':
+                item.fillcolor='darkgrey';
+                item.line={color:'black',width:0.25};
+                item.stackgroup="power_areastack";
+                delete item["mode"];
+                delete item["type"];
+                break;
+              case 'eo_current_vehicle':
+                item.line={color:'red',width:2};
+                break;
+              case 'eo_current_site':
+                item.line={color:'orange',width:2};
+                break;            
+              case 'eo_current_solar':
+                item.line={color:'lime',width:2};
+                break;
+            }
+
+          })
+
+          Plotly.newPlot('chartDiv',chartdata,layout,{responsive:true});
+
+      })        
+      .catch(error => {
+          console.log('Error fetching status: ', error);
+        });
+
+      }
+    
+
+function statistics_charger() {
+  var chartdata = [];
+  var timer = null;
+  var layout = { grid: {rows: 4,columns: 1, pattern: 'independent'},
+                    showlegend:true,
+                    margin: { t: 30 },
+                    paper_bgcolor: "#282c34",
+                    plot_bgcolor: "#282c34",
+                    font: { color: "#eee"},
+                    yaxis: {rangemode: 'tozero'},              
+                    yaxis2: {rangemode: 'tozero'},  
+                    yaxis3: {rangemode: 'tozero'},  
+                    yaxis4: {rangemode: 'tozero'},  
+                    };
+  // Calculate Legend positions
+  const legends=["legend","legend2","legend3","legend4"]
+  legends.forEach((x,i) => {
+    layout[x]={y:(legends.length-i) * (1/legends.length) -0.03, yanchor:'top'}
+  })
+
+  url='../getchartdata?type=plotly&series=sys_cpu_temperature:sys_wifi_strength,sys_1m_load_average,sys_free_memory:sys_available_memory,eo_serial_errors';
+
+
+  fetch(url, { method: 'GET'})
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+          chartdata=data;
+          Plotly.newPlot('chartDiv2',chartdata,layout,{responsive:true});
+      })        
+      .catch(error => {
+          console.log('Error fetching status: ', error);
+        });
+
+      }
+
+
+const endpoints = ["../getstatus", "../getconfig", "../debugdata"];
+//const endpoints = ["../getstatus", "../getconfig"];
+
+    async function fetchAndDisplay(endpoint) {
+      const container = document.getElementById("output");
+
+      // create a wrapper div for this endpoint
+      const endpointDiv = document.createElement("div");
+      endpointDiv.className = "endpoint";
+
+      // title
+      const title = document.createElement("h2");
+      title.textContent = endpoint;
+      endpointDiv.appendChild(title);
+
+      container.appendChild(endpointDiv);
+
+      try {
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+
+        const target = document.getElementById("output");
+        if (endpoint=="../getstatus") {
+          renderDictToDOM({data}, endpointDiv);
+        } else {
+          renderDictToDOM(data, endpointDiv);
+        }
+        
+      } catch (err) {
+        console.log(`Error: ${err.message}`);
+      }
+    }
+
+    function renderDictToDOM(dict, parentElement) {
+    Object.entries(dict).forEach(([key, value]) => {
+        // Container for this item
+        const container = document.createElement("div");
+        container.className = "item";
+
+        // Title (key)
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "itemTitle";
+        titleDiv.textContent = key;
+
+        // Value (pretty-printed JSON)
+        const pre = document.createElement("pre");
+        console.log(value);
+        let jsonString = JSON.stringify(value, null, 2);
+
+        // unescape real linefeeds for display
+        jsonString = jsonString.replace(/\\n/g, "\n");
+        pre.textContent = jsonString;
+
+        // Assemble
+        container.appendChild(titleDiv);
+        container.appendChild(pre);
+        parentElement.appendChild(container);
+    });
+}
+    // loop through endpoints and build UI dynamically
+    endpoints.forEach(fetchAndDisplay);
+  </script>

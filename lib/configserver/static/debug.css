@@ -1,0 +1,20 @@
+body {
+	background-color: #282c34;
+	font-family: Arial, sans-serif;
+	color: white;
+}
+
+.endpoint {
+    background-color: #282c34;
+    font-family: Arial, sans-serif;
+	color: white;
+}
+
+.endpoint h2 {
+    font-size: 2.0em
+}
+
+div.endpoint div.item div.itemTitle {
+    font-size: 1.5em;
+    background-color: #3e4147;
+}

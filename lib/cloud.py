@@ -6,7 +6,7 @@ OpenEO Module: Cloud Proxy Server
 """
 #################################################################################
 import logging, threading, socket,ssl,pprint
-import urllib,re,json
+import urllib,re,time
 import globalState,util
 import traceback
 from lib.PluginSuperClass import PluginSuperClass
@@ -28,12 +28,11 @@ class cloudClassPlugin(PluginSuperClass):
 
     proxythread=None
     failurecount=0
-    maxfailurecount=100
-    failuretime=None
-    killflag=False
+    looptime=15
+    maxfailurecount=int((24*60*60)/looptime) # about 24h
+    ssl_sock=None
 
     def poll(self):
-        self.killflag=False
 
         # Have we had too many failures? - if so, we should probably autodisable
         if self.failurecount>self.maxfailurecount:
@@ -45,21 +44,10 @@ class cloudClassPlugin(PluginSuperClass):
             if self.pluginConfig["enabled"] and (self.proxythread is None or not self.proxythread.is_alive()):
                 # Enabled, but not running, so best we try starting
                 self._thread_start()
-                return(0)
 
-            if not self.pluginConfig["enabled"] and (self.proxythread is not None and self.proxythread.is_alive()):
-                # Not Enabled, but running, we should kill the thread
-                self._thread_stop()
-                return(0)
-            
-            # We are operating as expected, so should probably reset the failurecount
-            # Using the following expression to try and work around a race condition. If a connection attempt
-            # takes >5 seconds, we can come around for the next poll(), and think the session is established, and reset
-            # the failurecount to 0. Instead, let's just decrement the failurecount if we think there is a sucessful 
-            # connection.
-            if (self.failurecount>0):
-                self.failurecount-=1
-                _LOGGER.warning(f"OpenEO Cloud - FailureCount decrement")
+            if (not self.pluginConfig["enabled"]) and (self.ssl_sock is not None):
+                self.ssl_sock.close()
+                self.ssl_sock=None
 
         return(0)
 
@@ -81,85 +69,90 @@ class cloudClassPlugin(PluginSuperClass):
 
     def _proxythread(self):
         """Connect to a TCP socket with AUTH handshake and receive commands."""
-        client_id=globalState.stateDict["eo_serial_number"]
 
-        if client_id=="" or client_id is None:
-            _LOGGER.warning(f"OpenEO Cloud - waiting for EO serial comms to be established before Cloud Connection can begin")
-            return(0)
-        
-        if self.pluginConfig['authtoken']=="" or self.pluginConfig['authtoken'] is None:
-            _LOGGER.warning(f"OpenEO Cloud module enabled, but authorisation token not defined in module settings. Not Connecting.")
-            self.failurecount+=1
-            return(0)
+        while self.pluginConfig["enabled"]:
+            
+            client_id=globalState.stateDict["eo_serial_number"]
 
-        try:
-            _LOGGER.warning(f"OpenEO Cloud - Connecting to {self.pluginConfig['server']}:{self.pluginConfig['port']}. Attempt {self.failurecount}/{self.maxfailurecount}")
-
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 30)
-            s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
-            s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 5)
-
-            context = ssl.create_default_context()
-            context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE
-            ssl_sock = context.wrap_socket(s, server_hostname=self.pluginConfig['server'])
-
-            ssl_sock.connect((self.pluginConfig['server'], self.pluginConfig['port']))
-
-            #print("Connected, keep-alive enabled.")
-            f = ssl_sock.makefile('rw', encoding='utf-8', newline='\n')
-
-            # Send AUTH
-            connectionstr=f"AUTH {client_id} {self.pluginConfig['authtoken']} {globalState.stateDict['app_version']} {globalState.stateDict['app_deploy_directory']}\n"
-
-            ssl_sock.sendall(bytearray(connectionstr,'utf-8'))
-
-            # Wait for OK
-            response=f.readline().rstrip('\n')
-            if response != "OK":
-                _LOGGER.warning(f"OpenEO Cloud Connection unauthorised. Cannot connect.")
-                ssl_sock.close()
+            if client_id=="" or client_id is None:
+                _LOGGER.warning(f"OpenEO Cloud - waiting for EO serial comms to be established before Cloud Connection can begin")
+                time.sleep(self.looptime)
+                continue
+            
+            if self.pluginConfig['authtoken']=="" or self.pluginConfig['authtoken'] is None:
+                _LOGGER.warning(f"OpenEO Cloud module enabled, but authorisation token not defined in module settings. Not Connecting.")
                 self.failurecount+=1
-                # We need to back off, otherwise the server will ban us
-                return(0)
+                time.sleep(self.looptime)
+                continue
 
-            _LOGGER.warning(f"OpenEO Cloud Connection - Sucessfully Authorised.")
-
-
-            # Command loop
-            while True:
-                if self.killflag:
-                    self.failurecount+=1
-                    return(0)
-
-                command=f.readline().rstrip('\n')
-
-                if command=="ACK":
-                    # ACK message used for detecting dead connections
-                    ssl_sock.sendall(bytearray(f"ACK\n",'utf-8'))
-                else:
-                    r=self.get_output(command)
-
-                    for x in r['headers']:
-                        (a,b)=x
-                        ssl_sock.sendall(bytearray(f"HDR {a} {b}\n",'utf-8'))
-
-                    ssl_sock.sendall(bytearray(f"LEN {r['bodylen']}\n",'utf-8'))
-                    ssl_sock.sendall(r['body'])
-
-
-        except Exception as e:
-            _LOGGER.error(f"OpenEO Cloud Connection error: {e}")
-            self.failurecount+=1
-
-        finally:
             try:
-                ssl_sock.close()
-            except:
-                pass
-        self.failurecount+=1
+                _LOGGER.warning(f"OpenEO Cloud - Connecting to {self.pluginConfig['server']}:{self.pluginConfig['port']}. Attempt {self.failurecount}/{self.maxfailurecount}")
+
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 30)
+                s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
+                s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 5)
+
+                context = ssl.create_default_context()
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
+                self.ssl_sock = context.wrap_socket(s, server_hostname=self.pluginConfig['server'])
+                self.ssl_sock.connect((self.pluginConfig['server'], self.pluginConfig['port']))
+                
+                #self.ssl_sock.settimeout(15.0)  # 5 seconds
+                f = self.ssl_sock.makefile('rw', encoding='utf-8', newline='\n')
+
+                # Send AUTH
+                connectionstr=f"AUTH {client_id} {self.pluginConfig['authtoken']} {globalState.stateDict['app_version']} {globalState.stateDict['app_deploy_directory']}\n"
+
+                self.ssl_sock.sendall(bytearray(connectionstr,'utf-8'))
+
+                # Wait for OK
+                response=f.readline().rstrip('\n')
+                if response != "OK":
+                    _LOGGER.warning(f"OpenEO Cloud Connection unauthorised. Cannot connect.")
+                    self.ssl_sock.close()
+                    self.failurecount+=1
+                    time.sleep(self.looptime)
+                    continue
+
+                _LOGGER.warning(f"OpenEO Cloud Connection - Sucessfully Authorised.")
+                self.failurecount=0
+
+                # Command loop
+                while True:
+                    if not self.pluginConfig["enabled"]:
+                        self.failurecount+=1
+                        _LOGGER.warning(f"OpenEO Cloud Connection - Module unexpectedly disabled.")
+                        break
+
+                    command=f.readline().rstrip('\n')
+
+                    if command=="ACK":
+                        # ACK message used for detecting dead connections
+                        self.ssl_sock.sendall(bytearray(f"ACK\n",'utf-8'))
+                    else:
+                        r=self.get_output(command)
+
+                        for x in r['headers']:
+                            (a,b)=x
+                            self.ssl_sock.sendall(bytearray(f"HDR {a} {b}\n",'utf-8'))
+
+                        self.ssl_sock.sendall(bytearray(f"LEN {r['bodylen']}\n",'utf-8'))
+                        self.ssl_sock.sendall(r['body'])
+
+            except Exception as e:
+                _LOGGER.error(f"OpenEO Cloud Connection error: {e}")
+                self.failurecount+=1
+
+            finally:
+                try:
+                    self.ssl_sock.close()
+                except:
+                    pass
+
+        _LOGGER.warning(f"OpenEO Cloud - closed comms")
 
 
     def get_output(self,command):
@@ -174,10 +167,11 @@ class cloudClassPlugin(PluginSuperClass):
 
         if not m:
             _LOGGER.error(f"OpenEO Cloud error: Malformed command {command}")
-
             return(returnval)
 
         method=m.group(1)
+
+        # This is important security consideration: only ever allow pages to be retrieved from localhost.
         URL="http://localhost"+m.group(2)
 
         match method:
@@ -187,7 +181,6 @@ class cloudClassPlugin(PluginSuperClass):
                 returnval["body"] = response.read()
             case "POST":
                 data=m.group(3)
-
                 data = data.encode('ascii') # data should be bytes
                 response = urllib.request.urlopen(URL,data)
                 returnval["headers"]=response.getheaders()

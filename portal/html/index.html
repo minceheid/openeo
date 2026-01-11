@@ -149,12 +149,6 @@
     <div id="ssh-message" class="message green"></div>
   </div>
 
-  <!-- Software Update -->
-  <div class="section" id="update-div" style="display:None">
-    <h2>Software Update</h2>
-    <button id="update-software">Update to Latest Version</button>
-    <div id="update-message" class="message green"></div>
-  </div>
   <script>
   
   let selectedSSID = null;
@@ -172,7 +166,7 @@
 
   const loadWiFiNetworks = async () => {
     try {
-      const res = await fetch("/cgi-bin/get_wifi.cgi");
+      const res = await fetch("/api/get_wifi");
       const myData = await res.json();
       const ssids = await myData["SSID"];
       const list = document.getElementById("wifi-list");
@@ -219,40 +213,17 @@
     msg.textContent = "Connecting..";
     try {
     	msg.textContent += "Refreshing page..";
-      const res = await fetch(`/cgi-bin/set_wifi.cgi?ssid=${encodeURIComponent(selectedSSID)}&password=${encodeURIComponent(password)}`);
+      const res = await fetch(`/api/set_wifi?ssid=${encodeURIComponent(selectedSSID)}&password=${encodeURIComponent(password)}`);
       // when network is updated, we lose connection, so we don't get a good response from this fetch
       // instead, let's reload the page after a 2 second pause and see what the result is..
     	await new Promise(r => setTimeout(r,2000));
-	    location.reload();
+	    //location.reload();
     } catch (err) {
       msg.textContent = "Failed to apply settings ("+err+")";
       msg.style.color = "#f44336";
     }
   };
 
-  ////////////////////////////////////
-  // Update Software
-
-  document.getElementById("update-software").onclick = async () => {
-    const msg = document.getElementById("update-message");
-    msg.textContent = "Updating...";
-    try {
-      const res = await fetch("/cgi-bin/update.cgi", { method: "POST", });
-      const result = await res;
-      output=await result.text();
-      msg.textContent = result.status==200 ? "Update successful." : "Update Error";
-      msg.style.color = result.status==200 ? "#4caf50" : "#f44336";
-      msg.innerHTML += "<br><br>Update output:<br><pre>"+output+"</pre>";
-      console.log(output);
-      // This is a bit of a hack
-      alert("Software Update Complete - Rebooting Charger");
-      const reboot = await fetch("/cgi-bin/reboot.cgi", { method: "POST", });
-    } catch (err) {
-      msg.textContent = "Failed to update. ("+err+")";
-      msg.style.color = "#f44336";
-	    console.log(err);
-    }
-  };
 
   ////////////////////////////////////
   // Update SSH Authorized_keys
@@ -267,7 +238,7 @@
     }
     msg.textContent = "Applying...";
     try {
-      const res = await fetch("/cgi-bin/set_ssh.cgi", {
+      const res = await fetch("/api/set_ssh", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ key })
