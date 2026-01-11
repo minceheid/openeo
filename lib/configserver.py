@@ -189,14 +189,19 @@ class configserverClassPlugin(PluginSuperClass):
             ## expose the logger module metrics to the api, if that is available
             ## in cfg
             if re.search("^/debugdata",self.path):
-                results = {"configDB":str(globalState.configDB)}
+                results = {}
                 for cmd in ["whoami",
                             "df -k",
                             "netstat -4l",
                             "ps -ef | grep openeo",
                             "free -h",
                             "systemctl status openeo --no-pager  --output=short-precise",
-                            "ls -l /home/pi/releases/"]:
+                            "ls -l /home/pi/releases/",
+                            "journalctl --list-boots",
+                            "journalctl -b 2",
+                            "journalctl -b 1",
+                            "journalctl"
+                            ]:
                     try:
                         result = subprocess.run(
                             cmd,
@@ -208,6 +213,9 @@ class configserverClassPlugin(PluginSuperClass):
                         results[cmd] = result.stdout.strip()
                     except subprocess.CalledProcessError as e:
                         results[cmd] = f"Error: {e.stderr.strip() or e}"
+
+                # Get Log entries
+                results["log"]=globalState.configDB.logget()
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()

@@ -34,6 +34,8 @@ fi
 # Install prereq packages
 sudo apt-get update
 sudo apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil python3-paho-mqtt
+sudo apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil python3-paho-mqtt dnsmasq iptables
+
 
 if [ $? -ne 0 ] ; then
 	echo >&2 "ERROR: Package Install failed - Deploy Aborted"
@@ -67,17 +69,21 @@ sudo chmod 666 /dev/vcio
 sudo cp $MYDIR/etc/openeo.service /etc/systemd/system/
 sudo cp $MYDIR/etc/rc.local /etc/rc.local
 
+#############
+# Setup Portal
+echo ">> Deploying Portal Config"
+sudo cp -r $MYDIR/portal/config/* /
+
+
+# Enable peristent journals
+sudo mkdir -p /etc/systemd/journald.conf.d
+sudo cp $MYDIR/etc/99-permanent-journal.conf /etc/systemd/journald.conf.d
+
 # If Nginx is installed (it was included in previous deploy scripts), then ensure that it is removed
 systemctl status nginx >/dev/null 2>/dev/null
 if [ $? -ne 4 ]; then
     echo ">> Removing unused nginx service..."
     sudo apt-get --purge autoremove -y nginx
-fi
-# If dnsmasq is installed (it was included in previous deploy scripts), then ensure that it is removed
-systemctl status dnsmasq >/dev/null 2>/dev/null
-if [ $? -ne 4 ]; then
-    echo ">> Removing unused dnsmasq service..."
-    sudo apt-get --purge autoremove -y dnsmasq
 fi
 
 echo ">> Enabling services..."
@@ -85,3 +91,6 @@ sudo systemctl daemon-reload
 sudo systemctl start rc-local.service
 sudo systemctl enable openeo
 sudo systemctl restart openeo
+sudo systemctl force-reload systemd-journald
+sudo systemctl enable dnsmasq
+sudo systemctl enable openeo_portal

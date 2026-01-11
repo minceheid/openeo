@@ -4,7 +4,7 @@ OpenEO Class for handling configuration get/set
 """
 #################################################################################
 
-import sqlite3,logging,json,os,time,re,numbers
+import sqlite3,logging,json,os,time,re,numbers,datetime
 from threading import Lock
 
 # logging for use in this module
@@ -20,6 +20,25 @@ class openeoConfigClass:
 
     LOG_TABLE = "log"
     #LOG_PURGE_TTL = 3600 * 12 # 12 hours
+
+
+    def logget(self):
+        """
+        Retrieves the entire logfile
+        """
+
+        rows=[]
+        with self.lock:
+            self.cursor.execute(f'''
+                SELECT * from {self.LOG_TABLE} 
+            ''')
+            rows = self.cursor.fetchall()
+        
+        string=""
+        for row in rows:
+            string+=f"{datetime.datetime.fromtimestamp(row[0])} {row[1]}\n"
+
+        return string
 
     def logwrite(self,message):
         """

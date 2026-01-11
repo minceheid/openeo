@@ -3,7 +3,7 @@ Description=openeo startup
 After=multi-user.target
 
 [Service]
-ExecStart=/home/pi/openeo/portal/tools/openeo_portal.bash
+ExecStart=/home/pi/openeo/portal/portal.py
 Type=oneshot
 
 [Install]
