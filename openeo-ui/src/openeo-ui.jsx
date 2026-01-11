@@ -267,6 +267,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
 
   return (
     <div className="min-h-screen w-full bg-[#1e242b] text-white flex justify-center p-6 " id="mainDiv">
+
       <div className="w-full max-w-5xl">
 
           {/* Carousel rail */}
@@ -342,6 +343,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
         {/* Add / Delete buttons */}
 
         <div className="mt-1 flex items-center justify-center gap-2 h-auto">
+
 { timersActive && (
           <button
             onClick={addSchedule}
@@ -369,7 +371,6 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
       <div className="statusPanelDiv">
         <StatusPanel></StatusPanel>
       </div>
-
   </div>
 
     
