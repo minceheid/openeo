@@ -267,7 +267,10 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
 
   return (
     <div className="min-h-screen w-full bg-[#1e242b] text-white flex justify-center p-6 " id="mainDiv">
+<<<<<<< HEAD
 
+=======
+>>>>>>> a25b78f (fix: aesthetic improvements on timer disble)
       <div className="w-full max-w-5xl">
 
           {/* Carousel rail */}
@@ -371,6 +374,10 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
       <div className="statusPanelDiv">
         <StatusPanel></StatusPanel>
       </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> a25b78f (fix: aesthetic improvements on timer disble)
   </div>
 
     

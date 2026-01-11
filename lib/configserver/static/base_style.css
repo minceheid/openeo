@@ -370,7 +370,10 @@ a {
 		margin-bottom: max(2px, env(safe-area-inset-bottom));
 		width: 100%;
 		font-size: 0.8rem;
+<<<<<<< HEAD
 
+=======
+>>>>>>> a25b78f (fix: aesthetic improvements on timer disble)
 	}
 
 	#mainDiv {
@@ -379,6 +382,25 @@ a {
 		padding-right:0;
 		padding-bottom: max(2px, env(safe-area-inset-bottom));
 	}
+<<<<<<< HEAD
+=======
+
+	.toast-msg-container {
+		width: 100%;
+		z-index: 2000;
+		position: absolute;
+		visibility: hidden;
+		justify-content: center;
+		left: 0;
+		bottom: 0;
+		margin-top:0;
+		margin-left:0;
+		margin-right:0;
+		margin-bottom: max(2px, env(safe-area-inset-bottom));
+		transform: none;
+	}
+}
+>>>>>>> a25b78f (fix: aesthetic improvements on timer disble)
 
 	.toast-msg-container {
 		width: 100%;
