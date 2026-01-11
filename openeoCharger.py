@@ -105,7 +105,7 @@ class openeoChargerClass:
         # Calcualte duty cycle
         duty=0
         if requested_limit>=6:
-            duty=int(requested_limit*(1/0.062))
+            duty=round(requested_limit*(1/0.06))
 
         # Construct and send instruction packet.  Duty cycle must be uppercase.
         packet="+"+self.EO_COMMAND["SET_LIMIT"]+self.my_address+f'{duty:03X}'

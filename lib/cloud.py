@@ -32,6 +32,7 @@ class cloudClassPlugin(PluginSuperClass):
     maxfailurecount=int((24*60*60)/looptime) # about 24h
     ssl_sock=None
 
+
     def poll(self):
 
         # Have we had too many failures? - if so, we should probably autodisable
@@ -81,6 +82,7 @@ class cloudClassPlugin(PluginSuperClass):
             
             if self.pluginConfig['authtoken']=="" or self.pluginConfig['authtoken'] is None:
                 _LOGGER.warning(f"OpenEO Cloud module enabled, but authorisation token not defined in module settings. Not Connecting.")
+
                 self.failurecount+=1
                 time.sleep(self.looptime)
                 continue
