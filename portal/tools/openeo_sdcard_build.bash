@@ -75,8 +75,7 @@ echo ">> Installing packages..."
 # Weirdly, at this point in the build, config has not yet been put into /boot/firmware/
 mkdir /boot/firmware
 cp /boot/config.txt /boot/firmware/config.txt
-su - pi -c "wget https://raw.githubusercontent.com/minceheid/openeo/refs/heads/main/deploy.bash -O /tmp/deploy.bash"
-su - pi -c "bash /tmp/deploy.bash"
+su - pi -c "curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -"
 mv /boot/firmware/config.txt /boot/config.txt
 rmdir /boot/firmware
 
@@ -94,7 +93,7 @@ rmdir $dir
 sudo losetup -d "$LOOP_DEV"
 
 echo ">> Compressing.."
-xz -f -9e $IMAGE_NAME
+xz -f -T0 $IMAGE_NAME
 
 echo "✅ Done! Image saved as $WORK_DIR/$IMAGE_NAME"
 
