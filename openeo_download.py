@@ -122,17 +122,18 @@ def verify_required_file(sha: str, filename: str = "openeo_download.py"):
 
 def ensure_environment():
     """Verify script is running under correct conditions."""
-    if getpass.getuser() != "pi" and getpass.getuser() != "root":
+    if getpass.getuser() == "pi":
+        # Run sudo check silently (no stdout/stderr leakage)
+        try:
+            subprocess.run(["sudo", "whoami"], check=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            raise DeploymentError("The 'pi' user does not appear to have full sudo rights.")
+    else if getpass.getuser() == "root":
+        print("Running as root - this should be used strictly for image building.")
+    else:
         raise DeploymentError("This script must be run as the 'pi' user.")
-
-    # Run sudo check silently (no stdout/stderr leakage)
-    try:
-        subprocess.run(["sudo", "whoami"], check=True,
-                       stdout=subprocess.DEVNULL,
-                       stderr=subprocess.DEVNULL)
-    except subprocess.CalledProcessError:
-        raise DeploymentError("The 'pi' user does not appear to have full sudo rights.")
-
 
 
 def prepare_release_dir():
@@ -148,7 +149,11 @@ def download_and_extract(url: str, destdir: str):
 
     if os.path.exists(destdir):
         print(f"Removing existing installation at {destdir}")
-        subprocess.run(["sudo", "rm", "-rf", destdir], check=True)
+        if getpass.user() == "pi":
+            subprocess.run(["sudo", "rm", "-rf", destdir], check=True)
+        else:
+            subprocess.run(["rm", "-rf", destdir], check=True)
+
 
     retries = 3
     for attempt in range(1, retries + 1):
