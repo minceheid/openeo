@@ -140,8 +140,8 @@ def prepare_release_dir():
     """Ensure release directory exists and is writable by the pi user."""
     if not os.path.isdir(RELEASEDIR):
         os.mkdir(RELEASEDIR)
-        uid= pwd.getpwnam('pi')[2]
-        gid= grp.getgrnam('pi')[2]
+        uid= getpwnam('pi')[2]
+        gid= getgrnam('pi')[2]
         os.chown(RELEASEDIR,uid,gid)
         
     os.chdir(RELEASEDIR)

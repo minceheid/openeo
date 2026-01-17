@@ -50,7 +50,7 @@ done
 ## Copy Files
 echo ">> Deploying config..."
 sudo cp -r $MYDIR/../config/* $MOUNT_DIR/
-sudo cp -p $MYDIR/openeo_download.py $MOUNT_DIR/
+sudo cp -p $MYDIR/../../openeo_download.py $MOUNT_DIR/
 
 echo ">> Running chroot setup..."
 sudo chroot "$MOUNT_DIR" /bin/bash <<'EOF_chroot'
