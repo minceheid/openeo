@@ -19,23 +19,13 @@ if [ ! -d $MOUNT_DIR ] ; then
 fi
 
 # === PREPARE ===
-
 if [ ! -d $WORK_DIR ] ; then
 	mkdir -p $WORK_DIR
 fi
-
 cd "$WORK_DIR"
 
-BASE_IMAGE=latest.img
-if [ ! -f $BASE_IMAGE ] ; then
-	echo ">> Downloading base image..."
-	curl -L $BASE_IMAGE_URL | unxz >$BASE_IMAGE
-else
-	echo ">> Skipping base image download..."
-fi
-
-echo ">> Making a copy of $BASE_IMAGE..."
-cp "$BASE_IMAGE" "$IMAGE_NAME"
+echo ">> Downloading base image..."
+curl -L $BASE_IMAGE_URL | unxz >$IMAGE_NAME
 
 # === SETUP LOOP DEVICE ===
 echo ">> Setting up loop device..."
@@ -60,30 +50,34 @@ done
 ## Copy Files
 echo ">> Deploying config..."
 sudo cp -r $MYDIR/../config/* $MOUNT_DIR/
+sudo cp -p $MYDIR/openeo_download.py $MOUNT_DIR/
 
 echo ">> Running chroot setup..."
 sudo chroot "$MOUNT_DIR" /bin/bash <<'EOF_chroot'
+
+echo ">> Configuring locale"
 
 raspi-config nonint do_hostname openeo
 raspi-config nonint do_wifi_country GB
 raspi-config nonint do_change_timezone Europe/London
 
-echo ">> Installing packages..."
+echo ">> Installing OpenEO..."
 
-#############
-## Deploy openeo
 # Weirdly, at this point in the build, config has not yet been put into /boot/firmware/
+# so we need to manipulate the location for the standard openeo_download/deploy scripts
+# to work correctly. I wonder if this may change in future OS releases.
 mkdir /boot/firmware
 cp /boot/config.txt /boot/firmware/config.txt
-su - pi -c "curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 - --no-deploy"
-DEPLOYED_VERSION=$(ls -td  /home/pi/releases/* | head -n1 )
-echo ">> Deploying openeo version from $DEPLOYED_VERSION ..."
-$DEPLOYED_VERSION/openeo_deploy.bash
+
+# Note that openeo_download.py here is being invoked as root. This is the only case that
+# we should be doing that - normally this script should be run as the pi user
+/openeo_download.py
+rm /openeo_download.py
+
+# put the config.txt back where the first boot process expects it to be
 mv /boot/firmware/config.txt /boot/config.txt
 rmdir /boot/firmware
-
 EOF_chroot
-
 
 # === CLEANUP ===
 echo ">> Cleaning up..."
@@ -99,4 +93,3 @@ echo ">> Compressing.."
 xz -f -T0 $IMAGE_NAME
 
 echo "✅ Done! Image saved as $WORK_DIR/$IMAGE_NAME"
-

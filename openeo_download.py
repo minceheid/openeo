@@ -8,6 +8,8 @@ This script allows the `pi` user to:
   - Write the release/branch name to release.txt in the extracted directory
   - Run the included deployment script (openeo_deploy.bash)
 
+v0.7 update - this script now need to be runnable by either the pi user or root, if root, then we cannot use sudo.
+this is to support chroot build of images, and should not be used directly.
 Author: Mike Scott
 Date: 2025-08-20
 """
@@ -22,12 +24,12 @@ import time
 from datetime import datetime, timezone
 from urllib.error import URLError, HTTPError
 from urllib.request import urlopen
+from pwd import getpwnam
+from grp import getgrnam
 
 
 GITHUB_REPO = "minceheid/openeo"
 RELEASEDIR = "/home/pi/releases"
-CUTOFF_DATE = datetime(2025, 7, 31, tzinfo=timezone.utc)
-
 
 # ---------------------------
 # Utility & Error Handling
@@ -88,9 +90,7 @@ def get_releases_and_branches() -> list[str]:
     # Fetch releases
     releases_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases"
     for release in fetch_json(releases_url):
-        release_date = datetime.fromisoformat(release["created_at"].replace("Z", "+00:00"))
-        if release_date > CUTOFF_DATE:
-            releases.append(release["name"])
+        releases.append(release["name"])
 
     # Fetch branches
     branches_url = f"https://api.github.com/repos/{GITHUB_REPO}/branches"
@@ -137,12 +137,13 @@ def ensure_environment():
 
 
 def prepare_release_dir():
-    """Ensure release directory exists and is writable."""
+    """Ensure release directory exists and is writable by the pi user."""
     if not os.path.isdir(RELEASEDIR):
         os.mkdir(RELEASEDIR)
-    os.chdir(RELEASEDIR)
-
-
+        uid= pwd.getpwnam('pi')[2]
+        gid= grp.getgrnam('pi')[2]
+        os.chown(RELEASEDIR,uid,gid)
+        os.chdir(RELEASEDIR)
 
 def download_and_extract(url: str, destdir: str):
     """Download and extract a tarball from GitHub, retrying on 403 errors."""
@@ -259,7 +260,6 @@ def main():
         if args.no_deploy:
             print("Skipping deployment script as per --no-deploy option.")
         else:
-            print("Running deployment script.")
             run_deploy_script(destdir)
 
         print("Deployment complete. A reboot is recommended.")

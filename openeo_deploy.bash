@@ -6,7 +6,7 @@
 # to it, but refreshing it completely, leaving it in a working state, even if the deploy script is run multiple times
 # it is expected that the deploy script is required to be run at every version update or redeployment of software
 # v0.7 update - this script now need to be runnable by either the pi user or root, if root, then we cannot use sudo.
-# this is to support chroot build of images
+# this is to support chroot build of images, and should not be used directly.
 
 MYDIR=$(realpath $(dirname $0))
 MYACCOUNT=$(whoami)
@@ -18,7 +18,7 @@ if [ "$(whoami)" = "pi" ]; then
         exit 1
     fi
     SUDO="sudo"
-else if [ "$(whoami)" = "root"]; then
+else if [ "$(whoami)" = "root" ]; then
     echo ">> Running as root for image deploy"
     SUDO=""
 else
@@ -29,6 +29,7 @@ fi
 # Create a config directory, if it isn't already there
 # We want to separate config from code, so having a single location outside of the releases area
 # is where we want to keep our config
+# ### MMS - MOVE THIS INTO OPENEO
 if [ ! -d $PIHOME/etc ]; then
     mkdir -p $PIHOME/etc
     chown pi:pi $PIHOME/etc
@@ -37,7 +38,6 @@ fi
 # Install prereq packages
 $SUDO apt-get update
 $SUDO apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil python3-paho-mqtt dnsmasq iptables
-
 
 if [ $? -ne 0 ] ; then
 	echo >&2 "ERROR: Package Install failed - Deploy Aborted"
@@ -73,7 +73,6 @@ $SUDO cp $MYDIR/etc/rc.local /etc/rc.local
 # Setup Portal
 echo ">> Deploying Portal Config"
 $SUDO cp -r $MYDIR/portal/config/* /
-
 
 # Enable peristent journals
 $SUDO mkdir -p /etc/systemd/journald.conf.d
