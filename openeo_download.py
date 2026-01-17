@@ -130,7 +130,7 @@ def ensure_environment():
                         stderr=subprocess.DEVNULL)
         except subprocess.CalledProcessError:
             raise DeploymentError("The 'pi' user does not appear to have full sudo rights.")
-    else if getpass.getuser() == "root":
+    elif getpass.getuser() == "root":
         print("Running as root - this should be used strictly for image building.")
     else:
         raise DeploymentError("This script must be run as the 'pi' user.")
