@@ -254,6 +254,7 @@ def main():
         if args.no_deploy:
             print("Skipping deployment script as per --no-deploy option.")
         else:
+            print("Running deployment script.")
             run_deploy_script(destdir)
 
         print("Deployment complete. A reboot is recommended.")
