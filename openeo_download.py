@@ -122,7 +122,7 @@ def verify_required_file(sha: str, filename: str = "openeo_download.py"):
 
 def ensure_environment():
     """Verify script is running under correct conditions."""
-    if getpass.getuser() != "pi":
+    if getpass.getuser() != "pi" and getpass.getuser() != "root":
         raise DeploymentError("This script must be run as the 'pi' user.")
 
     # Run sudo check silently (no stdout/stderr leakage)
