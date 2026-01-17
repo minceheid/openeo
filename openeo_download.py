@@ -213,6 +213,7 @@ def main():
     parser = argparse.ArgumentParser(description="Download and deploy GitHub release/branch for OpenEO.")
     parser.add_argument("-r", "--release", help="Release tag or branch name to install")
     parser.add_argument("-l", "--list", action="store_true", help="List available releases or branches")
+    parser.add_argument("-n", "--no-deploy", action="store_true", help="Do not run deployment script after download")
     args = parser.parse_args()
 
     try:
@@ -250,7 +251,10 @@ def main():
         # Write release.txt with release or branch name
         write_release_file(destdir, selected)
 
-        run_deploy_script(destdir)
+        if args.no_deploy:
+            print("Skipping deployment script as per --no-deploy option.")
+        else:
+            run_deploy_script(destdir)
 
         print("Deployment complete. A reboot is recommended.")
 

@@ -75,7 +75,10 @@ echo ">> Installing packages..."
 # Weirdly, at this point in the build, config has not yet been put into /boot/firmware/
 mkdir /boot/firmware
 cp /boot/config.txt /boot/firmware/config.txt
-su - pi -c "curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -"
+su - pi -c "curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 - --no-deploy"
+DEPLOYED_VERSION=$(ls -td  $PIHOME/releases/* | head -n1 )
+echo ">> Deploying openeo version from $DEPLOYED_VERSION ..."
+$DEPLOYED_VERSION/openeo_deploy.bash
 mv /boot/firmware/config.txt /boot/config.txt
 rmdir /boot/firmware
 
