@@ -10,7 +10,7 @@
 
 MYDIR=$(realpath $(dirname $0))
 MYACCOUNT=$(whoami)
-HOME=/home/pi
+PIHOME=/home/pi
 
 if [ "$(whoami)" = "pi" ]; then
     if [ "$(sudo whoami)" != "root" ]; then
