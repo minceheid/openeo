@@ -143,7 +143,8 @@ def prepare_release_dir():
         uid= pwd.getpwnam('pi')[2]
         gid= grp.getgrnam('pi')[2]
         os.chown(RELEASEDIR,uid,gid)
-        os.chdir(RELEASEDIR)
+        
+    os.chdir(RELEASEDIR)
 
 def download_and_extract(url: str, destdir: str):
     """Download and extract a tarball from GitHub, retrying on 403 errors."""

@@ -1,4 +1,4 @@
-#!/usr/bin/bash 
+#!/usr/bin/bash  
 # ##################
 # Openeo deployment script
 # This script is version dependant, and should be run to set and/or update the RPi build to be compatible with openeo
@@ -18,7 +18,7 @@ if [ "$(whoami)" = "pi" ]; then
         exit 1
     fi
     SUDO="sudo"
-else if [ "$(whoami)" = "root" ]; then
+elif [ "$(whoami)" = "root" ]; then
     echo ">> Running as root for image deploy"
     SUDO=""
 else
