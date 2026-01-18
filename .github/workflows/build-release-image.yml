@@ -5,12 +5,7 @@ on:
     types: [created]
 
   workflow_dispatch:
-    inputs:
-      test_release:
-        description: "Upload as draft prerelease"
-        required: false
-        default: "true"
-        
+
 permissions:
   contents: write   # REQUIRED to upload release assets
 
@@ -27,15 +22,31 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
-            gzip
+            gzip \
+            xz-utils
 
       - name: Build SD card image
         run: |
           chmod +x ./portal/tools/openeo_sdcard_build.bash
           ./portal/tools/openeo_sdcard_build.bash
 
+      - name: Rename image with release tag
+        if: github.event_name == 'release'
+        run: |
+          mv /tmp/openeo.img.xz \
+             /tmp/openeo_${{ github.event.release.tag_name }}.img.xz
+
       - name: Upload image to release
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            /tmp/openeo.img.xz
+            /tmp/openeo_${{ github.event.release.tag_name }}.img.xz
+
+      # allow manual testing without a release
+      - name: Upload image as workflow artifact (manual run)
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: openeo_sdcard_image
+          path: /tmp/openeo.img.xz

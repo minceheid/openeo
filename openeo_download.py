@@ -249,7 +249,8 @@ def main():
         destdir = f"openeo-{sha}"
 
         print(f"Selected '{selected}' → {url} → {destdir}")
-
+        
+        prepare_release_dir()
         os.chdir(RELEASEDIR)
         download_and_extract(url, destdir)
 
