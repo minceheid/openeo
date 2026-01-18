@@ -4,6 +4,13 @@ on:
   release:
     types: [created]
 
+  workflow_dispatch:
+    inputs:
+      test_release:
+        description: "Upload as draft prerelease"
+        required: false
+        default: "true"
+        
 permissions:
   contents: write   # REQUIRED to upload release assets
 
@@ -31,4 +38,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            output//openeo.img.xz
+            /tmp/openeo.img.xz

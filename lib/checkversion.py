@@ -58,8 +58,9 @@ class checkversionClassPlugin(PluginSuperClass):
             github_releases=self.fetch_json(URL)
             
             for release in github_releases:
-                releases.append(release["name"])
-
+                if not release["draft"] and not release["prerelease"]:
+                    releases.append(release["name"])
+        
         except:
             print(f"Github API call to {URL} failed.. ignoring version check")
             releases.append("Unknown")

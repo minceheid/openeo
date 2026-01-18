@@ -88,7 +88,8 @@ def get_releases_and_branches() -> list[str]:
     # Fetch releases
     releases_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases"
     for release in fetch_json(releases_url):
-        releases.append(release["name"])
+        if not release["draft"] and not release["prerelease"]:
+            releases.append(release["name"])
 
     # Fetch branches
     branches_url = f"https://api.github.com/repos/{GITHUB_REPO}/branches"
