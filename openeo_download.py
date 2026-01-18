@@ -24,8 +24,6 @@ import time
 from datetime import datetime, timezone
 from urllib.error import URLError, HTTPError
 from urllib.request import urlopen
-from pwd import getpwnam
-from grp import getgrnam
 
 
 GITHUB_REPO = "minceheid/openeo"
@@ -144,7 +142,6 @@ def prepare_release_dir():
         gid= getgrnam('pi')[2]
         os.chown(RELEASEDIR,uid,gid)
         
-    os.chdir(RELEASEDIR)
 
 def download_and_extract(url: str, destdir: str):
     """Download and extract a tarball from GitHub, retrying on 403 errors."""
@@ -252,7 +249,7 @@ def main():
 
         print(f"Selected '{selected}' → {url} → {destdir}")
 
-        prepare_release_dir()
+        os.chdir(RELEASEDIR)
         download_and_extract(url, destdir)
 
         # Write release.txt with release or branch name

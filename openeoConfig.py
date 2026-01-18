@@ -6,14 +6,17 @@ OpenEO Class for handling configuration get/set
 
 import sqlite3,logging,json,os,time,re,numbers,datetime
 from threading import Lock
+from pwd import getpwnam
+from grp import getgrnam
 
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
 
 class openeoConfigClass:
 
-    DB_FILE = "/home/pi/etc/config.db"
-    JSON_FILE = "/home/pi/etc/config.json"
+    CONFIG_DIR = "/home/pi/etc/"
+    DB_FILE = CONFIG_DIR+"config.db"
+    JSON_FILE = CONFIG_DIR+"config.json"
     CONFIG_TABLE_1 = "configuration"
     CONFIG_TABLE_2 = "configuration_v2"
     CONFIG_TABLE=CONFIG_TABLE_2
@@ -163,6 +166,14 @@ class openeoConfigClass:
         othewise default configuration will be set by modules as they enable themselves
         """
      
+        # if CONFIG_DIR doesn't exist, create it
+        if not os.path.isdir(CONFIG_DIR):
+            os.mkdir(CONFIG_DIR)
+            uid= getpwnam('pi')[2]
+            gid= getgrnam('pi')[2]
+            os.chown(CONFIG_DIR,uid,gid)
+
+
         # Create mutex lock for protecting transactions
         self.lock=Lock()
 

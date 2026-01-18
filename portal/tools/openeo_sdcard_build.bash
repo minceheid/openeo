@@ -12,7 +12,7 @@ exec > >(tee file.log)
 BASE_IMAGE_URL="https://downloads.raspberrypi.org/raspios_lite_armhf_latest"
 IMAGE_NAME="openeo.img"
 MOUNT_DIR="/tmp/rpi.$$"
-WORK_DIR="."
+WORK_DIR="/tmp"
 
 if [ ! -d $MOUNT_DIR ] ; then
 	mkdir $MOUNT_DIR
