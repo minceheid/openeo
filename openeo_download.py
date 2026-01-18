@@ -24,7 +24,8 @@ import time
 from datetime import datetime, timezone
 from urllib.error import URLError, HTTPError
 from urllib.request import urlopen
-
+from pwd import getpwnam
+from grp import getgrnam
 
 GITHUB_REPO = "minceheid/openeo"
 RELEASEDIR = "/home/pi/releases"
@@ -249,7 +250,7 @@ def main():
         destdir = f"openeo-{sha}"
 
         print(f"Selected '{selected}' → {url} → {destdir}")
-        
+
         prepare_release_dir()
         os.chdir(RELEASEDIR)
         download_and_extract(url, destdir)
