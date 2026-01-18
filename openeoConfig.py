@@ -167,11 +167,11 @@ class openeoConfigClass:
         """
      
         # if CONFIG_DIR doesn't exist, create it
-        if not os.path.isdir(CONFIG_DIR):
-            os.mkdir(CONFIG_DIR)
+        if not os.path.isdir(self.CONFIG_DIR):
+            os.mkdir(self.CONFIG_DIR)
             uid= getpwnam('pi')[2]
             gid= getgrnam('pi')[2]
-            os.chown(CONFIG_DIR,uid,gid)
+            os.chown(self.CONFIG_DIR,uid,gid)
 
 
         # Create mutex lock for protecting transactions
