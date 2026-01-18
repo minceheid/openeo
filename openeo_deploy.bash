@@ -26,15 +26,6 @@ else
     exit 1
 fi
 
-# Create a config directory, if it isn't already there
-# We want to separate config from code, so having a single location outside of the releases area
-# is where we want to keep our config
-# ### MMS - MOVE THIS INTO OPENEO
-if [ ! -d $PIHOME/etc ]; then
-    mkdir -p $PIHOME/etc
-    chown pi:pi $PIHOME/etc
-fi
-
 # Install prereq packages
 $SUDO apt-get update
 $SUDO apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil python3-paho-mqtt dnsmasq iptables

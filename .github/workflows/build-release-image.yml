@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # REQUIRED to upload release assets
+  contents: write
 
 jobs:
   build-image:
@@ -24,27 +24,82 @@ jobs:
             build-essential \
             gzip \
             xz-utils \
-            qemu-user-static \
-            binfmt-support
-          sudo update-binfmts --enable qemu-arm
+            coreutils \
+            gh
 
       - name: Build SD card image
         run: |
           chmod +x ./portal/tools/openeo_sdcard_build.bash
+
+          TMP_IMG="/tmp/openeo.img"
           ./portal/tools/openeo_sdcard_build.bash
 
-      - name: Rename image with release tag
+          if [ ! -f "$TMP_IMG" ] || [ ! -s "$TMP_IMG" ]; then
+            echo "Error: SD card image not created or empty!"
+            exit 1
+          fi
+
+          # Determine release tag
+          RELEASE_TAG="${GITHUB_REF##*/}"
+          if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
+            RELEASE_TAG="${GITHUB_EVENT_RELEASE_TAG_NAME}"
+          fi
+
+          # Embed release tag inside image (optional)
+          mkdir -p /tmp/openeo_mount
+          sudo mount -o loop,offset=1048576 "$TMP_IMG" /tmp/openeo_mount || true
+          echo "$RELEASE_TAG" | sudo tee /tmp/openeo_mount/etc/openeo-image-release > /dev/null || true
+          sudo umount /tmp/openeo_mount || true
+
+          # Compress versioned image
+          VERSIONED_IMG="/tmp/openeo_${RELEASE_TAG}.img.xz"
+          xz -T0 -9 -c "$TMP_IMG" > "$VERSIONED_IMG"
+
+          # Compress stable latest image (only after successful build)
+          LATEST_IMG="/tmp/openeo_latest.img.xz"
+          ln "$VERSIONED_IMG" "$LATEST_IMG"
+
+      - name: Generate checksums
+        run: |
+          sha256sum /tmp/openeo_${RELEASE_TAG}.img.xz > /tmp/openeo_${RELEASE_TAG}.img.xz.sha256
+          sha256sum /tmp/openeo_latest.img.xz > /tmp/openeo_latest.img.xz.sha256
+
+      - name: Delete previous latest assets from release
         if: github.event_name == 'release'
         run: |
-          mv /tmp/openeo.img.xz \
-             /tmp/openeo_${{ github.event.release.tag_name }}.img.xz
+          RELEASE_ID=$(gh release view "${RELEASE_TAG}" --json id -q ".id")
+          ASSETS=$(gh release view "${RELEASE_TAG}" --json assets -q ".assets[].name")
+          for asset in $ASSETS; do
+            if [[ "$asset" == "openeo_latest.img.xz" || "$asset" == "openeo_latest.img.xz.sha256" ]]; then
+              echo "Deleting previous asset: $asset"
+              gh release delete-asset "$asset" --release-id $RELEASE_ID -y
+            fi
+          done
 
-      - name: Upload image to release
+      - name: Upload images and checksums to release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            /tmp/openeo_${{ github.event.release.tag_name }}.img.xz
+            /tmp/openeo_${RELEASE_TAG}.img.xz
+            /tmp/openeo_${RELEASE_TAG}.img.xz.sha256
+            /tmp/openeo_latest.img.xz
+            /tmp/openeo_latest.img.xz.sha256
+
+      - name: Update README badge with latest version
+        if: github.event_name == 'release'
+        run: |
+          # Update README badge (replace OpenEO-latest with actual tag)
+          sed -i "s/OpenEO-latest/OpenEO-${RELEASE_TAG}/g" README.md
+
+          # Optionally update VERSION.md
+          echo "Latest release: ${RELEASE_TAG}" > VERSION.md
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md VERSION.md
+          git commit -m "Update latest release to ${RELEASE_TAG}" || echo "No changes to commit"
+          git push origin HEAD:main
 
       # allow manual testing without a release
       - name: Upload image as workflow artifact (manual run)

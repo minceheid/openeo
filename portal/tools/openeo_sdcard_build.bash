@@ -87,7 +87,7 @@ rmdir $dir
 
 sudo losetup -d "$LOOP_DEV"
 
-echo ">> Compressing.."
-xz -f -T0 $IMAGE_NAME
+#echo ">> Compressing.."
+#xz -f -T0 $IMAGE_NAME
 
 echo "✅ Done! Image saved as $IMAGE_NAME"
