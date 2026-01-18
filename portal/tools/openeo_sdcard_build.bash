@@ -10,20 +10,14 @@ exec > >(tee file.log)
 
 # === CONFIGURATION ===
 BASE_IMAGE_URL="https://downloads.raspberrypi.org/raspios_lite_armhf_latest"
-IMAGE_NAME="openeo.img"
+IMAGE_NAME="/tmp/openeo.img"
 MOUNT_DIR="/tmp/rpi.$$"
-WORK_DIR="/tmp"
 
 if [ ! -d $MOUNT_DIR ] ; then
 	mkdir $MOUNT_DIR
 fi
 
 # === PREPARE ===
-if [ ! -d $WORK_DIR ] ; then
-	mkdir -p $WORK_DIR
-fi
-cd "$WORK_DIR"
-
 echo ">> Downloading base image..."
 curl -L $BASE_IMAGE_URL | unxz >$IMAGE_NAME
 
@@ -92,4 +86,4 @@ sudo losetup -d "$LOOP_DEV"
 echo ">> Compressing.."
 xz -f -T0 $IMAGE_NAME
 
-echo "✅ Done! Image saved as $WORK_DIR/$IMAGE_NAME"
+echo "✅ Done! Image saved as $IMAGE_NAME"
