@@ -35,6 +35,10 @@ sudo mount "$BOOT_DEV" "$MOUNT_DIR/boot"
 echo ">> Copying resolv.conf..."
 sudo cp /etc/resolv.conf "$MOUNT_DIR/etc/resolv.conf"
 
+# === QEMU SETUP ===
+echo ">> Copying QEMU binary..."
+sudo cp /usr/bin/qemu-arm-static $MOUNT_DIR/usr/bin/
+
 echo ">> Binding system folders..."
 for dir in proc sys dev; do
   sudo mount --bind /$dir "$MOUNT_DIR/$dir"
