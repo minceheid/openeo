@@ -150,7 +150,7 @@ def download_and_extract(url: str, destdir: str):
 
     if os.path.exists(destdir):
         print(f"Removing existing installation at {destdir}")
-        if getpass.user() == "pi":
+        if getpass.getuser() == "pi":
             subprocess.run(["sudo", "rm", "-rf", destdir], check=True)
         else:
             subprocess.run(["rm", "-rf", destdir], check=True)
