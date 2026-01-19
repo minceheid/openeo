@@ -57,17 +57,22 @@ $SUDO setcap CAP_NET_BIND_SERVICE=+eip $(realpath $(which python3))
 $SUDO usermod -a -G spi,gpio,video $(whoami)
 $SUDO chmod 666 /dev/vcio
 
-$SUDO cp $MYDIR/etc/openeo.service /etc/systemd/system/
-$SUDO cp $MYDIR/etc/rc.local /etc/rc.local
+# Config file deployment, replacing all previous file copy statements
+$SUDO cp -rp $MYDIR/config/* /
+
+#############
+# Redundant - for future removal
+#$SUDO cp $MYDIR/etc/openeo.service /etc/systemd/system/
+#$SUDO cp $MYDIR/etc/rc.local /etc/rc.local
+#$SUDO mkdir -p /etc/systemd/journald.conf.d
+#$SUDO cp $MYDIR/etc/99-permanent-journal.conf /etc/systemd/journald.conf.d
+#############
+
 
 #############
 # Setup Portal
 echo ">> Deploying Portal Config"
 $SUDO cp -r $MYDIR/portal/config/* /
-
-# Enable peristent journals
-$SUDO mkdir -p /etc/systemd/journald.conf.d
-$SUDO cp $MYDIR/etc/99-permanent-journal.conf /etc/systemd/journald.conf.d
 
 echo ">> Enabling services..."
 $SUDO systemctl daemon-reload
