@@ -90,7 +90,7 @@ def get_releases_and_branches() -> list[str]:
     releases_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases"
     for release in fetch_json(releases_url):
         if not release["draft"] and not release["prerelease"]:
-            releases.append(release["name"])
+            releases.append(release["tag_name"])
 
     # Fetch branches
     branches_url = f"https://api.github.com/repos/{GITHUB_REPO}/branches"
@@ -241,9 +241,7 @@ def main():
             selected = args.release
         else:
             selected = releases[0]  # default to newest candidate
-
         sha = resolve_commit_sha(selected)
-
         # Verify required file exists in commit before download
         verify_required_file(sha, "openeo_download.py")
 
