@@ -1,4 +1,9 @@
 # Cloudless software for the EO Smart Home Hub/Mini and Mini Pro 2 EV charger
+
+[![Latest Release](https://img.shields.io/github/v/release/minceheid/openeo)](
+https://github.com/minceheid/openeo/releases/latest
+)
+
 EO Charging announced in July 2025 that their EO Smart Home app is being discontinued on November 30th 2025. This disables the ability for owners to set automated timed schedules and to directly manage their device, which will then operate purely as a "plug & play" charger. This project aims to provide an alternate, open source software that can be directly installed on these devices to allow control from the local WiFi network without relying on the original manufacturer. 
 
 <p align="center">
@@ -38,8 +43,53 @@ This project has been designed to be compatible with the EO Smart Home Hub/Mini 
 <img src="https://github.com/user-attachments/assets/5488462c-a5c6-44c0-843b-16ec874e846a" style="width:25%; height:auto;" />
 </p>
 
-## Install Instructions
-This software can be installed onto a Raspberry OS Lite install. We recommend that you keep your original EO SD card safe and separate, so that you can revert easily, should things don't work out for you.
+## Install Instructions *NEW*
+The new and recommended method of install is to download a SD card image directly from GitHub, and boot your pi with it - here's how.
+
+1. Obtain a 8GB (or larger) micro SD card. It's worth ensuring that this is a known good card, and at least Class 10 for performance reasons. If the SD card in your hand has been sat at the back of your drawer for a decade, then it's probably worth disposing of it, and getting a new one. We recommend that you keep your original EO SD card safe and separate, so that you can revert easily, should things don't work out for you, however (I do wonder what possible use that crippled old software could be these days...) 
+3. Download the SD card image from here:
+
+[![Download SD Image](https://img.shields.io/badge/download-SD%20image-blue)](
+https://github.com/minceheid/openeo/releases/latest/download/openeo_latest.img.xz
+) [![SHA256](https://img.shields.io/badge/checksum-sha256-lightgrey)](
+https://github.com/minceheid/openeo/releases/latest/download/openeo_latest.img.xz.sha256
+)
+
+3. Get and install a tool to write SD cards. I use the [Raspberry Pi imager]([url](https://www.raspberrypi.com/software/)). Follow the instructions on the tool to write the image to the SD card.
+
+  
+4. *IMPORTANT* Once the new SD card has been created, remove power to your EO box by disconnecting it or by switching off the relevant breaker in your consumer unit. Please ensure that it is completely isolated from the mains electricity. *If you are unsure that the electricity is fully disconnected, then do not proceed*.
+5. Open the Smart Hub or Mini Pro 2 box by loosening the four captive screws that are visible on the front of the case (you may need to remove the four rubber covers, if they are fitted), and you will see the Raspberry Pi inside (Smart Hub is a Raspberry Pi 3, and the Mini Pro 2 is a smaller Raspberry Pi Zero). You can now switch the SD cards, keeping the original safe. Whilst you are doing this, on the Mini Pro 2, take care to not accidentally dislodge the cables connecting the Raspberry Pi board with the main control board in the lid of the unit.
+
+<table style="width:80%"><tr><td>
+<p align="center">
+<figure>
+<img src="https://github.com/user-attachments/assets/d6a89cbe-7f8c-448c-9222-654200d533d4" style="width:50%; height:auto;" />
+<br><figcaption>Smart Hub</figcaption>
+</figure>
+</td><td>
+<figure>
+<img src="https://github.com/user-attachments/assets/791a735f-6907-45ce-a0b4-738466f55b5b" style="width:50%; height:auto;" />
+<br><figcaption>Mini Pro 2</figcaption>
+</figure>
+</p>
+</td></tr></table>
+
+6. Close the EO enclosure, and apply power to it. The Raspberry Pi should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take about five minutes to fully boot before it is seen on the network. Be patient - it's only a small pi and it takes some time to set itself up.
+
+7. Once the pi fully boots, whilst standing close to your charger, you should have a wireless network called "OpenEO", use your phone or tablet to join this wireless network. Once joined, use your browser which will redirect to the wifi configuration interface, allowing you to set your charger to your home network. If you need command-line access to your charger, then here is also where you'd set a public SSH key. For security purposes, the OpenEO network is only available for 30 minutes after the charger starts, after which time it disables itself.
+
+<p align="center">
+<img src="https://github.com/user-attachments/assets/555814d8-eca1-49d2-9529-177a6713aa9d" style="width:25%; height:auto; "/>
+</p>
+
+8. Once the wifi network has been sucessfully configured, you should be able to disconenct from the OpenEO network, reconnect to your home network, and then browse to http://openeo.local/ or the IP address that was allocated by your network to see the full OpenEO interface.
+
+## Install Instructions - Manual Method
+
+Of course - it remains possible to carry out a manual install. Here's how we do that:
+
+This software can be installed onto a Raspberry OS Lite install. 
 
 1. Obtain a 8GB (or larger) micro SD card
 2. Flash the SD card with the Raspberry PI imager (Device: Raspberry Pi 3 for Home Hub and Raspberry Pi Zero for Mini Pro 2, Operating System: Raspberry PI OS Lite (32 bit)). Note that as of OpenEO v0.7, all development and testing is done on  Raspberry Pi OS (32 bit) Lite "Trixie", which was released in December 2025.
