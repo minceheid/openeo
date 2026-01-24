@@ -317,7 +317,7 @@ def webserver():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dir", default="html", help="Directory to serve")
+    parser.add_argument("--dir", default="/home/pi/openeo/portal/html", help="Directory to serve")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT)
     args = parser.parse_args()
 
