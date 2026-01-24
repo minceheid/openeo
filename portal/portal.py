@@ -17,7 +17,7 @@ from urllib.parse import parse_qs
 
 
 PORT = 81
-DEFAULT_TIMEOUT = 4*60
+DEFAULT_TIMEOUT = 30*60
 CONNECTION_NAME = "custom-wifi"
 WIFI_INTERFACE = "wlan0"
 DRYRUN=True
