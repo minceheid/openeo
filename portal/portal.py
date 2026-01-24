@@ -20,7 +20,7 @@ PORT = 81
 DEFAULT_TIMEOUT = 30*60
 CONNECTION_NAME = "custom-wifi"
 WIFI_INTERFACE = "wlan0"
-DRYRUN=True
+DRYRUN=False
 SSH_DIR="/home/pi/.ssh"
 auth_keys_file = os.path.join(SSH_DIR, "authorized_keys")
 
