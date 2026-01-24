@@ -25,11 +25,10 @@ else
 	nmcli con up id openeo-AP
 
 	sleep 5
-	service nginx restart
 	service dnsmasq start
 
 	####
-	# Nginx is listening on port 81 on all interfaces for the captive portal, deliberately
+	# portal.py is listening on port 81 on all interfaces for the captive portal, deliberately
 	# to avoid clashing with tcp/80 on the main user interface. We can't fix the main interface
 	# to a known IP adress, because we don't know what the IP address will be, but we definately
 	# want to access the captive portal through tcp/80, so probably easiest to use some iptables 

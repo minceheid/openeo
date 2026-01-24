@@ -77,7 +77,7 @@ def api_set_wifi(params):
 
 
 def api_set_ssh(params, post_data):
-    key = post_data.get("key", [None])[0]  # get first element from list
+    key = post_data.get("key", [None])  # get first element from list
 
     if is_valid_key(key):
         # Ensure SSH directory exists
@@ -291,7 +291,13 @@ class APIServerHandler(http.server.SimpleHTTPRequestHandler):
             else:   
                 result = API_HANDLERS[api_name](params)
 
-            self.send_response(200)
+            if "error" in result:
+                response = 500
+            else:
+                response = 200
+            print(f"response={response} result={result}")
+            
+            self.send_response(response)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(result, indent=2).encode())
