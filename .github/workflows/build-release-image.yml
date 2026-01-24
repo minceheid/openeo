@@ -41,17 +41,19 @@ jobs:
             exit 1
           fi
 
-          # Determine release tag
-          RELEASE_TAG="${GITHUB_REF##*/}"
           if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
-            RELEASE_TAG="${GITHUB_EVENT_RELEASE_TAG_NAME}"
+            RELEASE_TAG=$(jq -r .release.tag_name < "$GITHUB_EVENT_PATH")
+          else
+            RELEASE_TAG="${GITHUB_REF##*/}"
           fi
+          echo "Release tag is $RELEASE_TAG"
+          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
 
-          # Embed release tag inside image (optional)
-          mkdir -p /tmp/openeo_mount
-          sudo mount -o loop,offset=1048576 "$TMP_IMG" /tmp/openeo_mount || true
-          echo "$RELEASE_TAG" | sudo tee /tmp/openeo_mount/etc/openeo-image-release > /dev/null || true
-          sudo umount /tmp/openeo_mount || true
+          ## Embed release tag inside image (optional)
+          #mkdir -p /tmp/openeo_mount
+          #sudo mount -o loop,offset=1048576 "$TMP_IMG" /tmp/openeo_mount || true
+          #echo "$RELEASE_TAG" | sudo tee /tmp/openeo_mount/etc/openeo-image-release > /dev/null || true
+          #sudo umount /tmp/openeo_mount || true
 
           # Compress versioned image
           VERSIONED_IMG="/tmp/openeo_${RELEASE_TAG}.img.xz"
