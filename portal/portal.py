@@ -34,18 +34,14 @@ start_time = time.time()
 
 def on_startup():
     print("[STARTUP] Network startup")
-    subprocess.run(['sudo','/home/pi/openeo/portal/tools/openeo_portal.bash', 'start'],
-                    check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(['sudo','/home/pi/openeo/portal/tools/openeo_portal.bash', 'start'], check=False)
     print("[STARTUP] Webserver starting")
 
 
 def on_shutdown():
     print("[SHUTDOWN] Network stopping")
-    subprocess.run(['sudo','/home/pi/openeo/portal/tools/openeo_portal.bash', 'stop'],
-                    check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(['sudo','/home/pi/openeo/portal/tools/openeo_portal.bash', 'stop'], check=False)
     print("[SHUTDOWN] Webserver stopping")
-
-
 
 # =========================
 # API function definitions
@@ -154,10 +150,12 @@ def get_wifi_data():
 def get_ssh_public_key():
     try:
         with open(auth_keys_file, "r", encoding="utf-8") as f:
-            content = f.readline()
-            return content
+            return f.readline()
+    except FileNotFoundError:
+        return ""
     except Exception as e:
-            return f"Error reading file: {e}"
+        return f"Error reading file: {e}"
+
 
 
 def is_valid_ssid(ssid):
@@ -182,7 +180,7 @@ def setup_wifi_connection(ssid, password):
         
         # Delete any existing connection with this name
         subprocess.run(['sudo','nmcli', 'connection', 'delete', CONNECTION_NAME],
-                       check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                       check=False)
 
         # Add new connection profile
         subprocess.run([
