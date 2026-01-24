@@ -116,7 +116,7 @@ defaultConfig = {
         "chargersession" : { "enabled" : True },
         "logger" : { "enabled" : True },
         "checkversion" : { "enabled" : True },
-        "chargeroptions" : { "enabled" : True, "mode" : "schedule" },
+        "chargeroptions" : { "enabled" : True },
         "loadmanagement" : { "enabled" : True },
         "os_metrics" : { "enabled" : True },
         "homeassistant" : { "enabled" : False },

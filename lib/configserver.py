@@ -95,6 +95,12 @@ class configserverClassPlugin(PluginSuperClass):
             for modulename,module in globalState.stateDict["_moduleDict"].items():
                     self.config[modulename]=module.pluginConfig
             return True
+        
+        def handle(self):
+            try:
+                super().handle()
+            except ConnectionResetError:
+                pass
             
         def do_OPTIONS(self):
             self.send_response(200)
@@ -103,6 +109,11 @@ class configserverClassPlugin(PluginSuperClass):
             if globalState.stateDict["app_version"]=="0.0" or globalState.stateDict["app_version"]=="main" :
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.send_header("Access-Control-Allow-Headers","*")
+            self.end_headers()
+
+        def do_HEAD(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
             self.end_headers()
 
         def do_GET(self):

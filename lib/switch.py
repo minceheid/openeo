@@ -41,9 +41,6 @@ class switchClassPlugin(PluginSuperClass):
             # on startup, so change mode to "switch", and ensure that the switch is off 
             _LOGGER.info("Resetting power state to OFF, as per retain_state_on_startup setting")
             print("Resetting power state to OFF, as per retain_state_on_startup setting")
-            globalState.configDB.set("chargeroptions","mode","manual")
-            globalState.configDB.set("scheduler","enabled",False)
-            globalState.configDB.set("switch","enabled",True)
             globalState.configDB.set("switch","on",False)
 
 
