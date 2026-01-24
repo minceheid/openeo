@@ -172,6 +172,7 @@ def download_and_extract(url: str, destdir: str):
 
             if curl_proc.wait() == 0 and tar_proc.returncode == 0:
                 print("Download and extraction successful.")
+                subprocess.run(['chown', '-R', 'pi:pi', destdir], check=True)
                 return
             else:
                 # If curl fails, check if it was 403

@@ -18,7 +18,7 @@ else
 	nmcli conn del openeo-AP 2>/dev/null
 	echo "Add and configure new connection"
 	nmcli radio wifi on
-	nmcli con add type wifi ifname wlan1 mode ap con-name openeo-AP ssid openeo autoconnect false
+	nmcli con add type wifi ifname wlan1 mode ap con-name openeo-AP ssid OpenEO autoconnect false
 	nmcli connection modify openeo-AP remove wifi-sec
 	nmcli con modify openeo-AP ipv6.method disabled
 	nmcli con modify openeo-AP ipv4.method manual ipv4.address 192.168.4.1/24
