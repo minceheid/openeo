@@ -7,7 +7,7 @@ import os
 import threading
 import time
 import argparse
-import signal
+import pwd
 import sys
 import json
 import subprocess
@@ -75,19 +75,36 @@ def api_set_wifi(params):
     })
 
 
-def api_set_ssh(params,post_data):
-    key = post_data.get("key", [None])
+
+def api_set_ssh(params, post_data):
+    key = post_data.get("key", [None])[0]  # get first element from list
 
     if is_valid_key(key):
+        # Ensure SSH directory exists
         if not os.path.isdir(SSH_DIR):
             os.makedirs(SSH_DIR, mode=0o700, exist_ok=True)
         os.chmod(SSH_DIR, 0o700)
+
+        # Get uid/gid for pi user
+        try:
+            pi_uid = pwd.getpwnam("pi").pw_uid
+            pi_gid = pwd.getpwnam("pi").pw_gid
+        except KeyError:
+            return {"error": "User 'pi' does not exist"}
+
+        # Set ownership of SSH directory
+        os.chown(SSH_DIR, pi_uid, pi_gid)
+
+        # Write authorized_keys
         with open(auth_keys_file, "w", encoding="utf-8") as f:
             f.write(key.rstrip() + "\n")
+        os.chmod(auth_keys_file, 0o600)
+        os.chown(auth_keys_file, pi_uid, pi_gid)
 
-        return(get_ssh_public_key())
+        return get_ssh_public_key()
     else:
-        return({"error": "Invalid Key"})
+        return {"error": "Invalid Key"}
+
 
 
 
