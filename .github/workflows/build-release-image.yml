@@ -25,6 +25,8 @@ jobs:
             gzip \
             xz-utils \
             coreutils \
+            qemu-user-static \
+            binfmt-support \
             gh
 
       - name: Build SD card image
