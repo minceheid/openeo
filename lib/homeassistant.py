@@ -676,6 +676,7 @@ class homeassistantClassPlugin(PluginSuperClass):
             "schedule_amps": self._get_schedule_field("amps"),
             "serial_errors": globalState.stateDict.get("eo_serial_errors", 0),
             "app_version": globalState.stateDict.get("app_version", "unknown"),
+            "openeo_latest_version": globalState.stateDict.get("openeo_latest_version", "unknown"),
             "timestamp": int(time.time())
         }
         

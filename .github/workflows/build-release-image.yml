@@ -85,6 +85,8 @@ jobs:
 
 
       - name: Upload images and checksums to release
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
