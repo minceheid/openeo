@@ -26,7 +26,7 @@ class schedulerClassPlugin(PluginSuperClass):
     PRETTY_NAME = "Scheduler"
     CORE_PLUGIN = True  
     pluginParamSpec={ "enabled":      {"type": "bool","default": True},
-			"schedule": {"type": "json","default":'[{"start": "2200", "end": "0400", "amps": 32}]'},
+			"schedule": {"type": "json","default":'[{"start": "0030", "end": "0530", "amps": 32}]'},
             "scheduler_granularity": {"type": "int","default": 5}}
     parsedSchedule = []
 
