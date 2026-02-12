@@ -13,8 +13,7 @@ else
 
 	echo "Creating virtual network interface"
 	
-	#iw dev wlan0 interface add wlan1 type __ap
-	#nmcli con add type wifi ifname wlan1 mode ap ...
+	iw dev wlan0 interface add wlan1 type __ap
 
 	echo "NM Connections"
 	nmcli conn del openeo-AP 2>/dev/null
