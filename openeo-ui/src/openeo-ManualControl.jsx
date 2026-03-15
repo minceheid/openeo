@@ -1,14 +1,21 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import AmpSlider from "./openeo-AmpSlider";
 import Toggle from "./openeo-Toggle";
+import HelpModal from "./openeo-HelpModal";
 
 export default function ManualControl({ schedule, onChange, onCommit,setTimersActive,active }) {
 
   return (
 <div className="flex flex-col items-center p-5 gap-3 w-fit justify-center">
 
+
+  <HelpModal title="Manual Control">
+    <p>Manual Control lets you directly manage EV charging behaviour.</p>
+    <p><b>Timers Enabled</b> allows or prevents scheduled charging periods to run automatically.</p>
+    <p><b>Charging Enabled</b> immediately allows manual override of charging, regardless of whether a timer schedule is active.</p>
+    <p>Use the <b>amp slider</b> to control the maximum charging current.</p>
+  </HelpModal>
   <div className="absolute top-0  items-center justify-center text-white/80 text-3xl font-semibold unselectable mt-5">
-  
     Manual Control
   </div>
 

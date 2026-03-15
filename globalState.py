@@ -73,6 +73,12 @@ stateDict={
     "eo_power_requested_solar":0,
     "eo_power_requested_site_limit":0,
 
+
+    # Solar State
+    "eo_solar_active": False,
+    "eo_solar_reservation": 0,
+    "eo_solar_charge_current": 0,
+
     # Voltage
     "eo_live_voltage": 0,
 

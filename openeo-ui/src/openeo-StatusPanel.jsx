@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
-
+import { Sun, CloudSun } from "lucide-react";
 
 export default function StatusPanel() {
   const [status, setStatus] = useState(null);
@@ -50,7 +50,7 @@ export default function StatusPanel() {
     const isVite = !!import.meta.env.DEV;
     let URL="getstatus";
     // This is just for dev/test
-    if (isVite) { URL="http://192.168.123.28/"+URL }
+    if (isVite) { URL="http://192.168.123.50/"+URL }
     const fetchStatus = async () => {
       try {
         const res = await fetch(URL); // your URL
@@ -89,29 +89,43 @@ export default function StatusPanel() {
 
       {!status ? ( <p>Loading…</p> ) : (
       <>
-        <div className="status-info" id="statusInfo">
-            
-          {
-            !status.eo_connected_to_controller ? (
-              <span className="status-item" id="statusWhatDoing">Waiting..</span>
-            ) : (
-              <span
-                className={`status-item ${FriendlyState(status) === "Charging" ? "status-charging" : "status-other"}`}
-                id="statusWhatDoing"
-              >         
-              {FriendlyState(status)}</span>
-            )
-          }
-          <span className="status-break"></span> 
-          <span className="status-item" id="statusChargeCurrent">{Math.round(status.eo_current_vehicle, 0) + "/" + Math.round(status.eo_amps_requested, 0) + "A"}</span>
-          <span className="status-break"></span>
-          <span className="status-item" id="statusChargeVolt">{Math.round(status.eo_live_voltage, 0) + "V"}</span>
-          <span className="status-break"></span>
-          <span className="status-item" id="statusChargePower">{Number(status.eo_power_delivered).toFixed(2) + "kW"}</span>
-          <span className="status-break"></span>
-          <span className="status-item" id="statusChargeSession">{Number(status.eo_session_kwh).toFixed(2) + "kWh"}</span>
-          <span className="status-break"></span>
-          <span className="status-item" id="statusLocaltime">{status.eo_localtime}</span>
+        <div className="status-info">
+
+          {!status.eo_connected_to_controller ? (
+            <span className="status-item">Waiting..</span>
+          ) : (
+            <span
+              className={`status-item flex items-center gap-1 ${
+                FriendlyState(status) === "Charging" ? "status-charging" : "status-other"
+              }`}
+            >
+              {FriendlyState(status)}
+              {status.eo_solar_active}
+              <div className="relative group inline-block">
+              {status.eo_solar_active == true && status.eo_solar_charge_current > 0 && (<CloudSun size={18} className="text-yellow-400 cursor-help" />)}
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 
+                   w-max max-w-xs bg-gray-800 text-white text-xs rounded px-2 py-1
+                   opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                Solar charging active
+                </span>
+              </div>
+
+              <div className="relative group inline-block">
+              {status.eo_solar_active == true && status.eo_solar_charge_current == 0 && (<CloudSun size={18} className="text-yellow-500 cursor-help" />)}
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 
+                   w-max max-w-xs bg-gray-800 text-white text-xs rounded px-2 py-1
+                   opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                Solar Charging enabled, but generated output not sufficient - check charging statistics page.
+                </span>
+              </div>
+            </span>
+          )}
+
+          <span className="status-item">{Math.round(status.eo_current_vehicle)}/{Math.round(status.eo_amps_requested)}A</span>
+          <span className="status-item">{Math.round(status.eo_live_voltage)}V</span>
+          <span className="status-item">{Number(status.eo_power_delivered).toFixed(2)}kW</span>
+          <span className="status-item">{Number(status.eo_session_kwh).toFixed(2)}kWh</span>
+          <span className="status-item">{status.eo_localtime}</span>
         </div>
         <div id="version-info" className="version-info">
           {status.openeo_latest_version === undefined || status.app_version === status.openeo_latest_version ? (
