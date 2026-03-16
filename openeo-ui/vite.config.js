@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import { dirname, resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import tailwindcss from "@tailwindcss/vite";
 
@@ -11,9 +12,13 @@ export default defineConfig({
     port: 5173,
     strictPort: true
   },
-  rollupOptions: {
-              output: {
-                  dir: 'dist/assets',
-                  entryFileNames: 'ui.js',
-                  assetFileNames: 'ui.css',
-              }}})
+  build: {
+    rollupOptions: {
+ //     input: {
+ //       main: './index.html',
+ //     },
+    },
+  },
+})
+
+

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 
-export default function AmpSlider({ value, min = 6, max = 32, onChange, onCommit,active }) {
+export default function AmpSlider({ value, label="", min = 6, max = 32, onChange, onCommit,active }) {
   const trackRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const activePointer = useRef(null); // tracks active touch/mouse
@@ -87,7 +87,7 @@ export default function AmpSlider({ value, min = 6, max = 32, onChange, onCommit
 
       {/* Value display */}
       <div className="w-full max-width container text-center text-white text-3xl font-semibold mt-0">
-        {value}A
+        {value}A {label}
       </div>
     </div>
   );

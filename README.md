@@ -12,6 +12,11 @@ EO Charging announced in July 2025 that their EO Smart Home app is being discont
 <img src="https://github.com/user-attachments/assets/72bbf639-530b-4743-a0a7-431bfc92eaa2" />
 </p>
 
+## NEW: Solar Improvements
+The solar charging integration has been improved! - previously the solar charging facility was always on when enabled. We have introduced the concept of solar timers, allowing OpenEO to selectively charge your car during specific hours of the day. This might be useful if you need to run multiple loads from your solar generation (e.g. hot water heater), and need to schedule/prioritise.
+
+Additionally, we now show the status of your solar charging on the Status Panel of the homepage. If solar is active, a yeallow icon will be shown.
+
 ## NEW: Donate to support the development
 Several folks have asked about how they might be able to contribute, to thank and to support. The primary method that I'd encourage is for them to subscribe to the OpenEO cloud service. This will give those who wish to contribute an additional service. However - for those that would prefer not to subscribe to the cloud service, here is a payment link that should allow a similar donation. Any payment is entirely voluntary and very much appreciated.
 
@@ -169,7 +174,20 @@ Full visualisation of the chargers operations is available by selecting the "Sta
 </p>
 
 ## Solar Integration
-Where there is a CT clamp measuring solar generation, openeo can control vehicle charge, based on the solar generation. To enable this feature, select the "Solar Charging Enabled" options in the settings. Additionally, you can optionally set a solar reservation value. As an example, if your CT clamp is reporting 10A of solar generation, and your Solar Reservation is set at 3A, then your vehicle will charge at 7A. This may allow you to reduce grid consumption for power requirements elsewhere in your home. The operation of solar charging **does not** require the manual override or a schedule to be active for it to charge the vehicle. To ensure that you make the most of solar generation, it is permanently active when this setting is enabled.
+Where there is a CT clamp measuring solar generation, openeo can control vehicle charge, based on the solar generation. To enable this feature, select the "Solar Charging Enabled" options in the settings. 
+
+With Solar enabled, you have the option of creating a "Solar Timer" on the home page. A "Solar Timer" allows you to schedule hours that solar charging is active. In the following example, the solar charging facility will be active from 11:00 to 16:30, and will operate with a 3A reservation. For example - if your CT clamp is reporting 10A of solar generation, and your Solar Reservation is set at 3A, then your vehicle will charge at 7A. This may allow you to reduce grid consumption for power requirements elsewhere in your home
+
+<p align="center">
+<img src="https://github.com/user-attachments/assets/55ec3fd4-405a-4253-8d5e-32bb0b3d41d3" style="width:25%; height:auto;"/>
+</p>
+You can define more than one solar timer. If you have *NO* solar timers defined, then solar will be active at all times.
+
+If Solar Charging is enabled and active, a yellow icon will be shown on the Status Bar at the bottom of the home page.
+<p align="center">
+<img  src="https://github.com/user-attachments/assets/a3d75cb3-9722-4384-89bb-4f34ad93d9c4" style="width:33%; height:auto;"/>
+</p>
+If the solar generated current is insuffient to charge the car, then a cloudy icon will be shown. When the generated power by your solar array allows the car to begin charging, a bright sun will be shown.
 
 If you are using solar, then you probably also need to be aware that the EO hardware is not capable of measuring the difference between export and import. Due to hardware design choices made by EO - this functionality is not possible. For more information - refer to the article by Ryan Walmsley here https://walmsley.tech/eo-mini-pro-2-review/ - in particular, see the section "Technical Deep Dive".
 

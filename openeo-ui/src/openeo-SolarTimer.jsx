@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import AmpSlider from "./openeo-AmpSlider";
 import HelpModal from "./openeo-HelpModal";
 
-
 function hexToRgb(hex) {
   const clean = hex.replace("#", "");
   const bigint = parseInt(clean, 16);
@@ -24,9 +23,12 @@ function gradientArcSegments(cx, cy, r, startMin, endMin, steps = 120) {
   const segs = [];
   const total = (endMin - startMin + 1440) % 1440;
 
-  const colorStart = hexToRgb("#4dabf7");
-  const colorEnd = hexToRgb("#f74d4d");
+  //const colorStart = hexToRgb("#4dabf7");
+  //const colorEnd = hexToRgb("#f74d4d");
 
+  const colorStart = hexToRgb("#fde047"); // yellow
+  const colorEnd = hexToRgb("#f59e0b");   // amber
+  
   for (let i = 0; i < steps; i++) {
     const t0 = i / steps;
     const t1 = (i + 1) / steps;
@@ -82,8 +84,8 @@ function arcPath(cx, cy, r, startMin, endMin) {
   return `M ${sx} ${sy} A ${r} ${r} 0 ${largeArc} ${sweep} ${ex} ${ey}`;
 }
 
-// --- ClockFace component ---
-export default function ClockFace({
+// --- SolarTimer component ---
+export default function SolarTimer({
   schedule,
   onChange,
   onCommit,
@@ -152,18 +154,20 @@ export default function ClockFace({
   const pathD = arcPath(cx, cy, radius, schedule.start, schedule.end);
 
   return (
-
+  
     <div className="flex flex-col items-center p-5 gap-3 w-fit justify-start">
 
   <div className="absolute top-0 right-0 z-50">
-    <HelpModal title="Charge Timer">
-      <p>Timers allow charging to be scheduled during the day. Multiple timers can be defined, each with their own power limit.</p> 
-        
-      </HelpModal>
+    <HelpModal title="Solar Timer">
+      <p>Solar Timers are shown when <b>Solar</b> is enabled in the settings page. It allows the Solar EV Charging facilities to be enabled on a schedule</p>
+      <p>When Solar Charging is active, and you are generating &gt;6A, OpenEO will automatically begin to charge your car.</p>
+      <p><b>Reservation</b> allows the OpenEO to hold some power in reserve for the rest of your house, rather than using <b>all</b> generated power for charging your car.</p>
+    </HelpModal>
   </div>
     <div className="absolute top-0  items-center justify-center text-white/80 text-3xl font-semibold unselectable mt-5">
-        Charge Timer
+        Solar Timer
     </div>
+
       { !timersActive ? (<h1>INACTIVE</h1>) : (<></>)}
       <svg
         ref={svgRef}
@@ -174,9 +178,9 @@ export default function ClockFace({
       >
         <defs>
           <radialGradient id="glow" r="60%">
-            <stop offset="60%" stopColor="#ffffff11" />
-            <stop offset="100%" stopColor="#ffffff00" />
-          </radialGradient>
+            <stop offset="60%" stopColor="#fde04733" />
+            <stop offset="100%" stopColor="#fde04700" />
+        </radialGradient>
 
         </defs>
 
@@ -200,7 +204,7 @@ export default function ClockFace({
       }
     : {})}
 >
-          <circle cx={startPos.x} cy={startPos.y} r={handleRadius} fill="#4dabf7" />
+          <circle cx={startPos.x} cy={startPos.y} r={handleRadius} fill="#fde047" />
         </g>
 
         {/* end handle */}
@@ -214,7 +218,7 @@ export default function ClockFace({
       }
     : {})}
 >
-          <circle cx={endPos.x} cy={endPos.y} r={handleRadius} fill="#f74d4d" />
+          <circle cx={endPos.x} cy={endPos.y} r={handleRadius} fill="#f59e0b" />
         </g>
 
         {/* center text */}
@@ -232,8 +236,9 @@ export default function ClockFace({
      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] mb-[5px]">
         <AmpSlider
         value={schedule.amps}
-        min={6}
-        max={32}
+        label="reservation"
+        min={0}
+        max={8}
         onChange={(v) => onChange({ ...schedule, amps: v })}
         onCommit={onCommit}
         active={active}

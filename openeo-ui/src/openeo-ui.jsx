@@ -2,7 +2,12 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import StatusPanel from "./openeo-StatusPanel";
 import ManualControl from "./openeo-ManualControl";
 import ClockFace from "./openeo-ClockFace";
+import SolarTimer from "./openeo-SolarTimer";
 
+// Define constants for Carousel types, to also allow correct sorting
+const SWITCH_TYPE=0;
+const TIMER_TYPE=1;
+const SOLAR_TYPE=2;
 
 /////////////////////////////////
 // On mobile phones, disable left/right swipe, if we can
@@ -35,6 +40,7 @@ export default function ScheduleCarousel() {
   const [config, setConfig] = useState(null);
   const [active, setActive] = useState(0);
   const [timersActive, setTimersActive] = useState(0);
+  const [solarActive, setSolarActive] = useState(0);
   const [snapStep, setSnapStep] = useState(0);
 
 
@@ -78,7 +84,7 @@ export default function ScheduleCarousel() {
     // This is just for dev/test
     if (isVite) { 
       console.log("UI dev mode enabled",isVite);
-      URL="http://192.168.123.28/"+URL;
+      URL="http://192.168.123.50/"+URL;
     }
     const fetchConfig = async () => {
       try {
@@ -89,22 +95,42 @@ export default function ScheduleCarousel() {
         if (!cancelled) {
           setConfig(data);
           setError(null);
-          let schedules=data.scheduler.schedule
 
-          let mySchedule=[{id:"switch", type: "switch", amps: data.switch.amps, enabled:data.switch.on,scheduler_enabled:data.scheduler.enabled}]
+          let mySchedule=[{id:"switch", type: SWITCH_TYPE, amps: data.switch.amps, enabled:data.switch.on,scheduler_enabled:data.scheduler.enabled}]
+          let schedules=[];
 
+
+          // Standard timers
+          schedules=data.scheduler.schedule
           schedules.forEach((x,i) => {
             let obj={ 
-              type:"scheduler",
+              type:TIMER_TYPE,
               id:uuid(), 
               start:TimeStringToMinutes(x.start), 
               end:TimeStringToMinutes(x.end), 
               amps:x.amps,}
-              mySchedule.push(obj)
+            mySchedule.push(obj)
           });
-        
+
+          if (data.loadmanagement.solar_enable) {
+
+              // Solar control
+            schedules=data.loadmanagement.schedule
+
+            schedules.forEach((x,i) => {
+              let obj={ 
+                type:SOLAR_TYPE,
+                id:uuid(), 
+                start:TimeStringToMinutes(x.start), 
+                end:TimeStringToMinutes(x.end), 
+                amps:x.amps,}
+              mySchedule.push(obj)
+            });
+          }
+          
           setSchedules(mySchedule); // update state -> triggers re-render
           setTimersActive(data.scheduler.enabled); // update state -> triggers re-render
+          setSolarActive(data.loadmanagement.solar_enable); // update state -> triggers re-render
           setSnapStep(data.scheduler.scheduler_granularity);
         }
       } catch (err) {
@@ -149,23 +175,29 @@ function debounce(func, delay) {
 
     let obj={}
     let schedulelist=[]
+    let schedulelist_solar=[]
 
     updatedSchedules.forEach((x,i) => {
-      if (x.id=="switch") {
+      console.log(x);
+      if (x.type==SWITCH_TYPE) {
         obj["switch:on"]=x.enabled;
         obj["switch:amps"]=x.amps;
         obj["scheduler:enabled"]=x.scheduler_enabled;
+      } else if (x.type==SOLAR_TYPE) {
+          schedulelist_solar.push({start:MinutesToTimeString(x.start),end:MinutesToTimeString(x.end),amps:x.amps})
+
       } else {
           schedulelist.push({start:MinutesToTimeString(x.start),end:MinutesToTimeString(x.end),amps:x.amps})
       }
     })
     obj["scheduler:schedule"]=JSON.stringify(schedulelist);
-
+    obj["loadmanagement:schedule"]=JSON.stringify(schedulelist_solar);
+    console.log(obj);
   try {
     const isVite = !!import.meta.env.DEV;
     let URL="setsettings";
     // This is just for dev/test
-    if (isVite) { URL="http://192.168.123.28/"+URL }
+    if (isVite) { URL="http://192.168.123.50/"+URL }
 
     const res = await fetch(URL, {
       method: "POST",
@@ -203,7 +235,19 @@ const addSchedule = () => {
   setSchedules((prev) => {
     const updated = [
       ...prev,
-      { id: uuid(), start: 8 * 60, end: 17 * 60, amps: 16,type:"scheduler" },
+      { id: uuid(), start: 8 * 60, end: 17 * 60, amps: 16,type:TIMER_TYPE },
+    ];
+    setActive(updated.length - 1);
+    debouncedPostSchedule(updated);
+    return updated;
+  });
+};
+
+const addSchedule_solar = () => {
+  setSchedules((prev) => {
+    const updated = [
+      ...prev,
+      { id: uuid(), start: 0 * 60, end: 23 * 60 + 59, amps: 0,type:SOLAR_TYPE },
     ];
     setActive(updated.length - 1);
     debouncedPostSchedule(updated);
@@ -252,7 +296,7 @@ function StatusMessage({ status }) {
 }
 
 const visibleSchedules = schedules.filter(
-  sch => !(sch.type === "scheduler" && !timersActive)
+  sch => !(sch.type === TIMER_TYPE && !timersActive)
 );
 
 
@@ -266,6 +310,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
 
 
   return (
+    
     <div className="min-h-screen w-full bg-[#1e242b] text-white flex justify-center p-6 " id="mainDiv">
 
       <div className="w-full max-w-5xl">
@@ -279,7 +324,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
             <div key={sch.id} 
                 className={`flex items-center justify-center max-width shrink-0 w-[340px] sm:w-[380px] min-h-[442px] rounded-3xl bg-[#2b3139] ring-1 ring-white/10 p-5 backdrop-blur shadow-lg transition-all duration-500 ${i === active ? "scale-100 opacity-100" : "scale-90 brightness-60"}`}
             >
-                {sch.type === "switch" ? (
+                {sch.type === SWITCH_TYPE ? (
                 <ManualControl
                     schedule={sch}
                     onChange={(next) => updateSchedule(i, next)}
@@ -287,8 +332,18 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
                     setTimersActive={setTimersActive}
                     active={i === active}
                 />
-                ) : sch.type === "scheduler" ? (
+                ) : sch.type === TIMER_TYPE ? (
                   <ClockFace
+                      schedule={sch}
+                      onChange={(next) => updateSchedule(i, next)}
+                      onCommit={() => debouncedPostSchedule(schedules)} // only POST on commit
+                      snapStep={snapStep}
+                      timersActive={timersActive}
+                      active={i === active}
+
+                  />
+                ) : sch.type === SOLAR_TYPE ? (
+                  <SolarTimer
                       schedule={sch}
                       onChange={(next) => updateSchedule(i, next)}
                       onCommit={() => debouncedPostSchedule(schedules)} // only POST on commit
@@ -344,16 +399,26 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
 
         <div className="mt-1 flex items-center justify-center gap-2 h-auto">
 
+
 { timersActive && (
           <button
             onClick={addSchedule}
             className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-fuchsia-500 text-white font-semibold shadow-lg hover:opacity-95 active:scale-98"
           >
-            + New Timer
+            + New Charge Timer
           </button>
 )}
 
-{ schedules[active]?.type !== "switch" && (
+{ solarActive && (
+          <button
+            onClick={addSchedule_solar}
+            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-semibold shadow-lg hover:opacity-95 active:scale-98"
+          >
+            + New Solar Timer
+          </button>
+)}
+
+{ schedules[active]?.type !== SWITCH_TYPE  && (
 
             <button
             onClick={removeActive}

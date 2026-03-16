@@ -201,7 +201,7 @@ a {
 	background-color: #aa00003f;
 }
 
-/* Flexbox for objects at the bottom */
+
 .statusPanelDiv {
 	position: absolute;
 	left: 0;
@@ -220,7 +220,7 @@ a {
 	text-align: center;
 	color: #888888;
 }
-
+/*
 .version-info {
 	text-align: center;
 	color: #444444;
@@ -250,7 +250,7 @@ a {
 	color: #a6a6a6;
 	font-weight: bold;
 }
-
+*/
 
 .eoButton {
   border-radius: 12px;

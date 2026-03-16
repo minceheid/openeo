@@ -186,18 +186,16 @@ class openeoChargerClass:
 
             # Inject simulated values, for testing purposes
             if "loadmanagement" in globalState.stateDict["_moduleDict"]:
-                simulate_ct_site=globalState.stateDict["_moduleDict"]["loadmanagement"].pluginConfig.get("simulate_ct_site",0)
 
-                if simulate_ct_site>0:
-                    self.current_site=simulate_ct_site
-
-                simulate_ct_solar=globalState.stateDict["_moduleDict"]["loadmanagement"].pluginConfig.get("simulate_ct_solar",0)
+                simulate_ct_solar=0
+                #simulate_ct_solar=32
 
                 if simulate_ct_solar>0:
                     # generate a sine wave simulation, rectified to postive values only
                     # and with an amplitude equal to the simulate_ct_solar value
-                    seconds=(int(time.time()) % 60)
+                    seconds=(int(time.time()) % 180)
                     self.current_solar=int(simulate_ct_solar*abs(math.sin(math.radians(seconds*3))))
+                    self.current_raw_solar=self.current_solar
 
 
             return True
