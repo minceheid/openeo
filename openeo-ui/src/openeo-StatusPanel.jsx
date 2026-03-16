@@ -83,14 +83,15 @@ export default function StatusPanel() {
     };
   }, []);
 
+  //console.log("blah",status.eo_solar_charge_current);
   return (
     <>
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
 
       {!status ? ( <p>Loading…</p> ) : (
+
       <>
         <div className="status-info">
-
           {!status.eo_connected_to_controller ? (
             <span className="status-item">Waiting..</span>
           ) : (
@@ -102,7 +103,7 @@ export default function StatusPanel() {
               {FriendlyState(status)}
               {status.eo_solar_active}
               <div className="relative group inline-block">
-              {status.eo_solar_active == true && status.eo_solar_charge_current > 0 && (<CloudSun size={18} className="text-yellow-400 cursor-help" />)}
+              {status.eo_solar_active == true && status.eo_solar_charge_current > 0 && (<Sun size={18} className="text-yellow-400 cursor-help" />)}
                 <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 
                    w-max max-w-xs bg-gray-800 text-white text-xs rounded px-2 py-1
                    opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">

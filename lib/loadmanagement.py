@@ -23,8 +23,6 @@ class loadmanagementClassPlugin(PluginSuperClass):
             "enabled":	{"type": "bool","default": True},
 			"solar_enable":	{"type": "bool", "default":False},
 			"site_limit_current":	{"type": "int", "default": 60},
-            "simulate_ct_solar":    {"type": "float", "default": 0.0},
-            "simulate_ct_site":     {"type": "float", "default": 0.0},
             "ct_calibration_site":   {"type": "float", "default": 1.0},
             "ct_calibration_vehicle":{"type": "float", "default": 1.0},
             "ct_calibration_solar":  {"type": "float", "default": 1.0},
@@ -86,9 +84,10 @@ class loadmanagementClassPlugin(PluginSuperClass):
 
         if (self.pluginConfig.get("solar_enable",False)):
 
-            if solar_reservation_current:
+            if solar_reservation_current is not None:
                 # Solar schedule is active
-                solar_current=int(statistics.mean(self.solar_ct_readings) - solar_reservation_current)
+                ct_reading=int(statistics.mean(self.solar_ct_readings))
+                solar_current=ct_reading - solar_reservation_current
                 if self.solar_active:
                     if solar_current>=6:
                         return_value=solar_current

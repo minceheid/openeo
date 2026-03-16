@@ -11,9 +11,9 @@ export default function ManualControl({ schedule, onChange, onCommit,setTimersAc
 
   <HelpModal title="Manual Control">
     <p>Manual Control lets you directly manage EV charging behaviour.</p>
-    <p><b>Timers Enabled</b> allows or prevents scheduled charging periods to run automatically.</p>
-    <p><b>Charging Enabled</b> immediately allows manual override of charging, regardless of whether a timer schedule is active.</p>
-    <p>Use the <b>amp slider</b> to control the maximum charging current.</p>
+    <p><b>Timers Enabled/Disabled</b> allows or prevents scheduled charging periods to run automatically.</p>
+    <p><b>Charging Enabled/Disabled</b> When set to "Enabled", this will immediately enable charging, regardless of any timed schedules defined.</p>
+    <p>Use the <b>amp slider</b> to control the maximum charging current when manually charging.</p>
   </HelpModal>
   <div className="absolute top-0  items-center justify-center text-white/80 text-3xl font-semibold unselectable mt-5">
     Manual Control

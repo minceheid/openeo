@@ -156,13 +156,13 @@ export default function ClockFace({
     <div className="flex flex-col items-center p-5 gap-3 w-fit justify-start">
 
   <div className="absolute top-0 right-0 z-50">
-    <HelpModal title="Schedule Timer">
+    <HelpModal title="Charge Timer">
       <p>Timers allow charging to be scheduled during the day. Multiple timers can be defined, each with their own power limit.</p> 
         
       </HelpModal>
   </div>
     <div className="absolute top-0  items-center justify-center text-white/80 text-3xl font-semibold unselectable mt-5">
-        Schedule Timer
+        Charge Timer
     </div>
       { !timersActive ? (<h1>INACTIVE</h1>) : (<></>)}
       <svg
