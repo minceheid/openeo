@@ -17,7 +17,7 @@ The solar charging integration has been improved! - previously the solar chargin
 
 Additionally, we now show the status of your solar charging on the Status Panel of the homepage. If solar is active, a yellow icon will be shown.
 
-See more in the Solar section, below.
+See more in the [Solar Integration]([url](#solar-integration)) section, below.
 
 ## NEW: Donate to support the development
 Several folks have asked about how they might be able to contribute, to thank and to support. The primary method that I'd encourage is for them to subscribe to the OpenEO cloud service. This will give those who wish to contribute an additional service. However - for those that would prefer not to subscribe to the cloud service, here is a payment link that should allow a similar donation. Any payment is entirely voluntary and very much appreciated.
