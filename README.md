@@ -15,7 +15,9 @@ EO Charging announced in July 2025 that their EO Smart Home app is being discont
 ## NEW: Solar Improvements
 The solar charging integration has been improved! - previously the solar charging facility was always on when enabled. We have introduced the concept of solar timers, allowing OpenEO to selectively charge your car during specific hours of the day. This might be useful if you need to run multiple loads from your solar generation (e.g. hot water heater), and need to schedule/prioritise.
 
-Additionally, we now show the status of your solar charging on the Status Panel of the homepage. If solar is active, a yeallow icon will be shown.
+Additionally, we now show the status of your solar charging on the Status Panel of the homepage. If solar is active, a yellow icon will be shown.
+
+See more in the Solar section, below.
 
 ## NEW: Donate to support the development
 Several folks have asked about how they might be able to contribute, to thank and to support. The primary method that I'd encourage is for them to subscribe to the OpenEO cloud service. This will give those who wish to contribute an additional service. However - for those that would prefer not to subscribe to the cloud service, here is a payment link that should allow a similar donation. Any payment is entirely voluntary and very much appreciated.
