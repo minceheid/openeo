@@ -117,4 +117,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: openeo_sdcard_image
-          path: /tmp/openeo.img.xz
+          path: /tmp/openeo_latest.img.xz
