@@ -23,12 +23,13 @@ import sys
 import time
 from datetime import datetime, timezone
 from urllib.error import URLError, HTTPError
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 from pwd import getpwnam
 from grp import getgrnam
 
 GITHUB_REPO = "minceheid/openeo"
 RELEASEDIR = "/home/pi/releases"
+GH_TOKEN = os.environ.get("GH_TOKEN", "")
 
 # ---------------------------
 # Utility & Error Handling
@@ -54,10 +55,18 @@ def run_command(cmd: list[str], check: bool = True) -> int:
 
 
 
+def _make_request(url: str) -> Request:
+    """Create a request, adding GitHub auth header if GH_TOKEN is available."""
+    req = Request(url)
+    if GH_TOKEN:
+        req.add_header("Authorization", f"token {GH_TOKEN}")
+    return req
+
+
 def fetch_json(url: str) -> dict:
     """Fetch and parse JSON from a URL."""
     try:
-        with urlopen(url) as response:
+        with urlopen(_make_request(url)) as response:
             return json.load(response)
     except HTTPError as e:
         raise DeploymentError(f"HTTP error fetching {url}: {e}")
@@ -70,7 +79,7 @@ def fetch_json(url: str) -> dict:
 def fetch_url(url: str) -> bytes:
     """Fetch raw content from a URL."""
     try:
-        with urlopen(url) as response:
+        with urlopen(_make_request(url)) as response:
             return response.read()
     except HTTPError as e:
         raise DeploymentError(f"HTTP error fetching {url}: {e}")

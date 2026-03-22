@@ -51,7 +51,11 @@ sudo cp -r $MYDIR/../config/* $MOUNT_DIR/
 sudo cp -p $MYDIR/../../openeo_download.py $MOUNT_DIR/
 
 echo ">> Running chroot setup..."
-sudo chroot "$MOUNT_DIR" /bin/bash <<'EOF_chroot'
+# Pass GH_TOKEN into the chroot if available, to avoid GitHub API rate limits
+# during the openeo_download.py fetch. The token is a short-lived GITHUB_TOKEN
+# that expires when the workflow ends, and the chroot is thrown away after the
+# build. No risk there.
+sudo chroot "$MOUNT_DIR" /usr/bin/env ${GH_TOKEN:+GH_TOKEN="$GH_TOKEN"} /bin/bash <<'EOF_chroot'
 
 echo ">> Configuring locale"
 
