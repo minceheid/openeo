@@ -114,6 +114,11 @@ class loadmanagementClassPlugin(PluginSuperClass):
             range=(1,100), default=60, value_unit="A")
         return settings
 
+    def get_user_settings_v2(self):
+        return [{"type": "boolean", "name": "solar_enable",       "label": "Solar Charging Enabled",   "default":self.pluginConfig.get("solar_enable",False),     "note":"This setting will allow openeo to charge, regardless of whether the manual or schedule mode is enabled"},
+                {"type": "slider",  "name": "site_limit_current", "label": "Maximum Site Consumption", "default":self.pluginConfig.get("site_limit_current",60),  "range": [1,100], "value_unit":"A", "note":"When a current sensor is installed on the site electrical feed, setting this value may restrict charger output if electricity consumption measured at the sensor is high."}];
+
+
     def configure(self,configParam):
         super().configure(configParam)
         self.parsedSchedule=[]

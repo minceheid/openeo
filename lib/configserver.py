@@ -26,18 +26,6 @@ import os.path
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
 
-from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
-env = Environment(
-    loader=FileSystemLoader("lib/configserver/templates"),
-    autoescape=select_autoescape()
-)
-
-template_to_name = {
-    "home": "Charger Control",
-    "settings" : "Settings",
-    "stats" : "Statistics"
-}
-
 class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     """This child class allows us to set the REUSEADDR and REUSEPORT options on the socket
     which means the Python task can be started and stopped without breaking the config server
@@ -238,6 +226,9 @@ class configserverClassPlugin(PluginSuperClass):
             if re.search("^/getchartdata",self.path):
                 # Only respond if the logger is active
                 if "_dataLog" in globalState.stateDict:
+
+
+
                     query_components = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                     query_type = query_components.get('type', [''])[0]  # Default to empty string if not found
                     query_since = query_components.get('since', [''])[0]  # Default to empty string if not found
@@ -257,6 +248,8 @@ class configserverClassPlugin(PluginSuperClass):
 
                     self.send_response(200)
                     self.send_header("Content-type", "application/json")
+                    if globalState.stateDict["app_version"]=="0.0" or globalState.stateDict["app_version"]=="main" :
+                        self.send_header("Access-Control-Allow-Origin", "*")
                     self.end_headers()
 
                     if (query_type=="plotly"):
@@ -292,7 +285,33 @@ class configserverClassPlugin(PluginSuperClass):
                 self.end_headers()
                 self.wfile.write(json.dumps(status).encode("utf-8"))
                 return
-            
+            ###################################################################
+            ## expose the module settings options
+            if self.path == "/get_user_settings":
+                user_settings = {}
+                for modulename,module in globalState.stateDict["_moduleDict"].items():
+                    print(f"Checking module {modulename} for settings")
+                    if hasattr(module, "get_user_settings_v2"):
+                        try:
+                            user_settings[modulename]={
+                                "name": module.PRETTY_NAME ,
+                                "fields": module.get_user_settings_v2()
+                                };
+                            
+                        except Exception as e:
+                            _LOGGER.error("Exception getting options for %r: %r" % (module, e))
+
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+
+                # required for development and testing only
+                if globalState.stateDict["app_version"]=="0.0" or globalState.stateDict["app_version"]=="main" :
+                    self.send_header("Access-Control-Allow-Origin", "*")
+
+                self.end_headers()
+                self.wfile.write(json.dumps(user_settings).encode("utf-8"))
+                return
+                        
             ###################################################################
             ## get session data
             if self.path == "/getsessiondata":
@@ -302,6 +321,10 @@ class configserverClassPlugin(PluginSuperClass):
                     
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
+                # required for development and testing only
+                if globalState.stateDict["app_version"]=="0.0" or globalState.stateDict["app_version"]=="main" :
+                    self.send_header("Access-Control-Allow-Origin", "*")
+
                 self.end_headers()
                 self.wfile.write(json.dumps(sessiondata).encode("utf-8"))
                 return
@@ -322,7 +345,7 @@ class configserverClassPlugin(PluginSuperClass):
             # Handle root request
             req_path = path_components.path
             if req_path == "/" or req_path == "":
-                req_path = "/home.html"
+                req_path = "/static/index.html"
             
             file_path  = 'lib/configserver' + req_path
             _LOGGER.debug("serving: " + file_path)
@@ -339,31 +362,29 @@ class configserverClassPlugin(PluginSuperClass):
                     self.send_response(200)
                     self.send_header("Content-type", "text/html")
                     self.end_headers()
-                    #print(f"<h1{file_path}</h1>")
-                    #self.wfile.write(str(f"<h1>{file_path}</h1>").encode("utf-8"))
                     with open(file_path, mode='rb') as read_file:
                         while rBytes := read_file.read(1024):
                             self.wfile.write(rBytes)
                     return
 
-                else:
-                    # Setup the context according to the config (only for templated files)
-                    if base in template_to_name:
-                        self.selected_page = template_to_name[base]
-                    self.load_config()
-                    self.set_context()
-                    
-                    try:
-                        template = env.get_template(base + ".tpl")
-                        self.send_response(200)
-                        self.send_header("Content-type", "text/html")
-                        self.end_headers()
-                        self.wfile.write(template.render(self._context).encode("utf-8"))
-                        return
-                    except TemplateNotFound as e:
-                        _LOGGER.error("Failed to load template '%s': %r" % (base, e))
-                        self.send_error(404, "Template Not Found")
-                        return
+#                else:
+#                    # Setup the context according to the config (only for templated files)
+#                    if base in template_to_name:
+#                        self.selected_page = template_to_name[base]
+#                    self.load_config()
+#                    self.set_context()
+#                    
+#                    try:
+#                        template = env.get_template(base + ".tpl")
+#                        self.send_response(200)
+#                        self.send_header("Content-type", "text/html")
+#                        self.end_headers()
+#                        self.wfile.write(template.render(self._context).encode("utf-8"))
+#                        return
+#                    except TemplateNotFound as e:
+#                        _LOGGER.error("Failed to load template '%s': %r" % (base, e))
+#                        self.send_error(404, "Template Not Found")
+#                        return
             
             extension_to_mime_enc = {
                 'ico' : ('image/icon', None),
@@ -392,10 +413,13 @@ class configserverClassPlugin(PluginSuperClass):
                             return
                     except FileNotFoundError:
                         self.send_error(404, "Not Found")
+                        _LOGGER.error("404 - file %s ext %s" % (file, ext))
+
                         return
             
             # If we fell through, then no file was found
             self.send_error(404, "Not Found")
+            _LOGGER.error("404 catchall - file %s ext %s" % (file, ext))
             return
         
 
@@ -414,6 +438,9 @@ class configserverClassPlugin(PluginSuperClass):
 
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
+                # required for development and testing only
+                if globalState.stateDict["app_version"]=="0.0" or globalState.stateDict["app_version"]=="main" :
+                    self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 self.wfile.write(json.dumps(lib.configserver_updater.OpenEO_updater(action)).encode("utf-8"))
                 return 

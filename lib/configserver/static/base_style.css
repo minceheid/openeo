@@ -6,15 +6,9 @@ body {
 	background-color: #282c34;
 	font-family: Arial, sans-serif;
 	color: white;
-	overflow-x: hidden;
-	overflow-y: hidden;
+	/*overflow-x: hidden;*/
+	/*overflow-y: scroll;*/
 }
-
-html, body {
-  touch-action: pan-y;
-  /*overflow-x: hidden;*/
-}
-
 
 button {
 	margin-top: 10px;
@@ -25,124 +19,6 @@ a {
 	color: #ffffff;
 	text-decoration: none;
 	font-weight: bold;
-}
-
-/* Flexbox for most objects at the top */
-.top-objects-flex {
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 100%;
-	display: flex;
-	flex-direction: column;
-}
-
-.top-icons-logo {
-	padding-top: 1em;
-	width: 100%;
-	display: flex;
-	flex-direction: row;
-	justify-content: space-between;
-	align-items: flex-start;
-}
-
-.top-status {
-	width: 100%;
-	margin-top: -1em;
-}
-
-.logo {
-	width: 40%;
-	align-self: flex-end;
-}
-
-.logo-inner {
-	margin-left: auto;
-	margin-right: 1em;
-	float: right;
-	white-space: nowrap;        /* prevents line breaks */
-	display: inline-flex;       /* keeps children on same line */
-}
-
-.logo-inner a {
-	font-weight: normal;
-	white-space: nowrap;        /* prevents line breaks */
-	display: inline-flex;       /* keeps children on same line */
-}
-
-.logo img {
-	vertical-align: middle;
-	width: 2em;
-	height: 2em;
-}
-
-.logo-text {
-	padding: 0.2em;
-	vertical-align: middle;
-	font-size: 16pt;
-	font-family: Calibri, Arial, sans-serif; /* @TODO: fix font and store as local resource */
-}
-
-.burger-box {
-	width: 10%;
-	pointer-events: all;
-	z-index: 2000;
-	box-sizing: content-box;
-}
-
-.burger-list {
-	position: absolute;
-	z-index: 2000;
-	top: 2.5em;
-	left: 0;
-	padding: 0;
-	margin: 0;
-	display: none;
-	box-sizing: content-box;
-
-}
-
-.burger-list li {
-	list-style-type: none;
-	background-color: #333333;
-	display: flex;
-	justify-content: left;
-	align-items: center;    
-	box-sizing: content-box;
- 
-}
-
-.burger-list li a {
-	padding: 1em;
-	margin: 0;
-	height: 1em;
-	width: 12em;
-	box-sizing: content-box;
-
-}
-
-.burger-list li:hover {
-	background-color: #ffffff;
-	color: #000000;
-}
-
-.burger-list li:hover a {
-	color: #000000;
-}
-
-.burger-icon {
-	content: "☰";
-	margin-left: 0.5em;
-	padding-left: 0.5em;
-	padding-right: 0.5em;
-	padding-bottom: 0.5em;
-	font-size: 1em;
-	width: 1em;
-	text-align: center;
-}
-
-.burger-icon-selected {
-	background-color: #333333;
 }
 
 .minimal-status {
@@ -172,34 +48,6 @@ a {
 	font-size: 5pt;
 }
 
-
-/* Notification messages that appear above everything else */
-.toast-msg-container {
-	width: 50%;
-	margin: auto;
-	z-index: 2000;
-	position: absolute;
-	bottom: 5em;
-	visibility: hidden;
-	justify-content: center;
-	position: absolute;
-	transform: translate(-50%, 0%);
- 	left: 50%;
-}
-
-.toast-msg {
-	border: 2px solid #888888;
-	margin-left: 2em;
-	margin-right: 2em;
-	padding: 15px;
-	text-align: center;
-	background-color: #aaaaaa3f;
-}
-
-.toast-msg-error {
-	border: 2px solid #880000;
-	background-color: #aa00003f;
-}
 
 
 .statusPanelDiv {
@@ -392,5 +240,4 @@ a {
 		transform: none;
 	}
 }
-
 

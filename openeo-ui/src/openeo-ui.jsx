@@ -3,19 +3,19 @@ import StatusPanel from "./openeo-StatusPanel";
 import ManualControl from "./openeo-ManualControl";
 import ClockFace from "./openeo-ClockFace";
 import SolarTimer from "./openeo-SolarTimer";
+import { useToastContext } from "./openeo-Toast";
+import { buildUrl } from './utils/funcs';
 
 // Define constants for Carousel types, to also allow correct sorting
 const SWITCH_TYPE=0;
 const TIMER_TYPE=1;
 const SOLAR_TYPE=2;
 
-/////////////////////////////////
-// On mobile phones, disable left/right swipe, if we can
-document.addEventListener('touchmove', e => {
-  if (Math.abs(e.touches[0].clientX) > 10) {
-    e.preventDefault();
-  }
-}, { passive: false });
+// Define constants for Carousel types, to also allow correct sorting
+const SWITCH_TYPE=0;
+const TIMER_TYPE=1;
+const SOLAR_TYPE=2;
+
 
 
 // Draw Page
@@ -35,6 +35,8 @@ function uuid() {
 
 // --- Carousel wrapper ---
 export default function ScheduleCarousel() {
+  const addToast = useToastContext();
+
   const [schedules, setSchedules] = useState(() => []);
   const [error, setError] = useState(null);
   const [config, setConfig] = useState(null);
@@ -43,6 +45,23 @@ export default function ScheduleCarousel() {
   const [solarActive, setSolarActive] = useState(0);
   const [snapStep, setSnapStep] = useState(0);
 
+
+
+
+  useEffect(() => {
+    const handleTouchMove = (e) => {
+      if (Math.abs(e.touches[0].clientX) > 10) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    // Cleanup: runs when component unmounts (or before effect re-runs)
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMove, { passive: false });
+    };
+  }, []); // Empty array = run once on mount, clean up on unmount
 
 
   //
@@ -79,16 +98,9 @@ export default function ScheduleCarousel() {
   
   useEffect(() => {
     let cancelled = false;
-    const isVite = !!import.meta.env.DEV;
-    let URL="getconfig";
-    // This is just for dev/test
-    if (isVite) { 
-      console.log("UI dev mode enabled",isVite);
-      URL="http://192.168.123.50/"+URL;
-    }
     const fetchConfig = async () => {
       try {
-        const res = await fetch(URL); // your URL
+        const res = await fetch(buildUrl("getconfig")); // your URL
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
@@ -194,37 +206,25 @@ function debounce(func, delay) {
     obj["loadmanagement:schedule"]=JSON.stringify(schedulelist_solar);
     console.log(obj);
   try {
-    const isVite = !!import.meta.env.DEV;
-    let URL="setsettings";
-    // This is just for dev/test
-    if (isVite) { URL="http://192.168.123.50/"+URL }
 
-    const res = await fetch(URL, {
+    const res = await fetch(buildUrl("setsettings"), {
       method: "POST",
 		  headers: {'Content-Type': 'application/json'},
       body: new URLSearchParams(obj),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    makeToastExt("Schedule Saved");
+    addToast({ type: "success", title: "Success", message: "Schedule Saved" });
+
   } catch (err) {
-    makeToastExt("Save Error: "+err);
+    addToast({ type: "error", title: "Failure", message: "Save Error: "+err });
+
     console.error("Failed to save schedule:", err);
     setError(err.message);
   }
 };
-  const debouncedPostSchedule = debounce(postSchedule, 1000); // 500ms delay
+const debouncedPostSchedule = debounce(postSchedule, 1000); // 500ms delay
 
-  // Functions
-function makeToastExt(msg) {
-  if (typeof makeToast==="function") {
-    /* function is defined, so let's use it */
-    makeToast(msg);
-  } else {
-    console.log("makeToast external function not defined");
-    console.log(msg);
-  }
-}
 
 const updateSchedule = (idx, next) => {
     setSchedules(prev => prev.map((s, i) => i === idx ? next : s));
