@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Sun, CloudSun } from "lucide-react";
+import { buildUrl } from './utils/funcs';
 
 export default function StatusPanel() {
   const [status, setStatus] = useState(null);
@@ -47,13 +48,10 @@ export default function StatusPanel() {
 
   useEffect(() => {
     let cancelled = false;
-    const isVite = !!import.meta.env.DEV;
-    let URL="getstatus";
-    // This is just for dev/test
-    if (isVite) { URL="http://192.168.123.50/"+URL }
+
     const fetchStatus = async () => {
       try {
-        const res = await fetch(URL); // your URL
+        const res = await fetch(buildUrl("getstatus")); // your URL
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 

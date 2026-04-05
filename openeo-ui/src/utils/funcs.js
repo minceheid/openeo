@@ -10,6 +10,8 @@ export function buildUrl(path) {
   if (isVite) {
     console.log("UI dev mode enabled",isVite,path);
     return `http://192.168.123.50/${path}`;
+  } else {
+    console.log("URL:",path);
   }
   
   return path;

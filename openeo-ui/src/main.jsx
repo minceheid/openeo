@@ -51,7 +51,7 @@ function AppContent() {
     <>
       <AppMenu
         links={[
-          { label: "Dashboard",           href: "/"                },
+          { label: "Dashboard",           href: "?r=main"                },
           { label: "Settings",            href: "?r=settings"      },
           { label: "Charging Statistics", href: "?r=statistics"    },
           { label: "Charger Statistics",  href: "?r=statistics_os" },
