@@ -54,7 +54,7 @@ $SUDO setcap CAP_NET_BIND_SERVICE=+eip $(realpath $(which python3))
 # Ensure that we are in the right groups
 # spi & gpio for communications with the EO control board
 # video gives access to pi temperature
-$SUDO usermod -a -G spi,gpio,video $(whoami)
+$SUDO usermod -a -G spi,gpio,video,dialout $(whoami)
 $SUDO chmod 666 /dev/vcio
 
 # Config file deployment, replacing all previous file copy statements

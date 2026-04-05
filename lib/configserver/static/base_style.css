@@ -68,6 +68,49 @@ a {
 	text-align: center;
 	color: #888888;
 }
+/*
+.version-info {
+	text-align: center;
+	color: #444444;
+}
+
+.status-break::after {
+	content: "•";
+}
+
+@keyframes charge-pulse {
+  0%   {color: #33cc33;}
+  50%  {color: #99cc99;}
+  100% {color: #33cc33;}
+}
+
+.status-charging {
+	color: #33cc33;
+	font-weight: bold;
+	animation-name: charge-pulse;
+	animation-timing-function: ease-in-out;
+	animation-fill-mode: both;
+	animation-duration: 2s;
+	animation-iteration-count: infinite;
+}
+
+.status-idle {
+	color: #a6a6a6;
+	font-weight: bold;
+}
+*/
+
+.eoButton {
+  border-radius: 12px;
+  z-index: 1000;
+  transition-duration: 0.4s;
+  justify-content: center;
+  align-items: center;
+}
+.eoButton:hover {
+  background-color: #04AA6D; /* Green */
+  color: white;
+}
 
 /* Landscape phone tweaks */
 @media (orientation: landscape) and (max-height: 500px) {

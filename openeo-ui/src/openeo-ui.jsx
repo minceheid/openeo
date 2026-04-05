@@ -11,6 +11,10 @@ const SWITCH_TYPE=0;
 const TIMER_TYPE=1;
 const SOLAR_TYPE=2;
 
+// Define constants for Carousel types, to also allow correct sorting
+const SWITCH_TYPE=0;
+const TIMER_TYPE=1;
+const SOLAR_TYPE=2;
 
 
 
@@ -193,6 +197,7 @@ function debounce(func, delay) {
         obj["scheduler:enabled"]=x.scheduler_enabled;
       } else if (x.type==SOLAR_TYPE) {
           schedulelist_solar.push({start:MinutesToTimeString(x.start),end:MinutesToTimeString(x.end),amps:x.amps})
+
       } else {
           schedulelist.push({start:MinutesToTimeString(x.start),end:MinutesToTimeString(x.end),amps:x.amps})
       }
