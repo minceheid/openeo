@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from "react";
+import { buildUrl } from './utils/funcs';
+import { globalCss,styles } from './utils/styles';
 
-export default function ChartCDN() {
+export default function Statistics() {
   const chartRef = useRef(null);
   const timerRef = useRef(null);
   const chartDataRef = useRef([]);
@@ -21,7 +23,7 @@ export default function ChartCDN() {
     y3: { rangemode: "tozero" },
   };
 
-  const legends = ["legend", "legend2", "legend3"];
+  const legends = ["legend1", "legend2", "legend3"];
   legends.forEach((x, i) => {
     layout[x] = {
       y: (legends.length - i) * (1 / legends.length) - 0.03,
@@ -86,7 +88,7 @@ export default function ChartCDN() {
 
     const maxTime = chartData[0].x[chartData[0].x.length - 1];
 
-    fetch(url + "&since=" + maxTime)
+    fetch(buildUrl(url + "&since=" + maxTime), { method: "GET" })
       .then((r) => r.json())
       .then((data) => {
         data.forEach((series, i) => {
@@ -118,8 +120,7 @@ export default function ChartCDN() {
     script.onload = () => {
       plotlyRef.current = window.Plotly; // Plotly is global
 
-      // Initial fetch & render
-      fetch(url)
+      fetch(buildUrl(url), { method: "GET" })
         .then((r) => r.json())
         .then((data) => {
           processData(data);
@@ -142,7 +143,12 @@ export default function ChartCDN() {
     };
   }, []);
 
-  return <div className="displaycolumn">
-    <div ref={chartRef} style={{ height: "90vh", width: "100%" }} />
-  </div>;
-}
+  return (
+    <div style={styles.page}>
+    <style>{globalCss}</style>
+    <div style={styles.pageTitle}>// Charging Statistics</div>
+      <div ref={chartRef} style={{ height: "90vh", width: "100%" }} />
+    </div>
+  );
+  }
+

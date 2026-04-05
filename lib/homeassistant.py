@@ -716,7 +716,6 @@ class homeassistantClassPlugin(PluginSuperClass):
 
         util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_host",), 'MQTT Broker Host', note='MQTT Broker Host.')
         util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_port",), 'MQTT Broker Port', note='MQTT Broker Port.')
-
         util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_username",), 'MQTT Username (optional)', note='MQTT Username (optional)')
         util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_password",), 'MQTT Password (optional)', note='MQTT Password (optional)')
         util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_discovery_prefix",), 'HA Discovery Prefix', note='HA Discovery Prefix')
@@ -727,6 +726,17 @@ class homeassistantClassPlugin(PluginSuperClass):
             range=(5,3600), default=300, step=5, value_unit="s")
         
         return settings
+
+    def get_user_settings_v2(self):
+        return [{"type": "textinput", "name": "mqtt_host", "label": "MQTT Broker Host", "default":self.pluginConfig.get("mqtt_host",""), "note":"MQTT Broker Host."},
+                {"type": "textinput", "name": "mqtt_port", "label": "MQTT Broker Port", "default":self.pluginConfig.get("mqtt_port",""), "note":"MQTT Broker Port."},
+                {"type": "textinput", "name": "mqtt_username",  "default":self.pluginConfig.get("mqtt_username",""), "label": "MQTT Username (optional)"},
+                {"type": "textinput", "name": "mqtt_password",  "default":self.pluginConfig.get("mqtt_password",""), "label": "MQTT Password (optional)"},
+                {"type": "textinput", "name": "mqtt_discovery_prefix", "label": "HA Discovery Prefix", "default":self.pluginConfig.get("mqtt_discovery_prefix","")},
+                {"type": "textinput", "name": "device_name", "label": "Device Name in HA", "default":self.pluginConfig.get("device_name","")},
+                {"type": "textinput", "name": "device_id", "label": "Device ID", "default":self.pluginConfig.get("device_id","")},
+                {"type": "slider", "name": "publish_interval", "label": "Publish Interval (seconds)",  "default":self.pluginConfig.get("publish_interval","300"), "range": [5,3600], "step":5, "value_unit":"s"}
+                ];
 
     
     def __del__(self):

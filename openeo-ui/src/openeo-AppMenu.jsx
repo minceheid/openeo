@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 export default function AppMenu({ links = [] }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -36,7 +37,7 @@ export default function AppMenu({ links = [] }) {
       {/* Drawer */}
       <div
         className={`fixed top-0 left-0 h-full w-64 bg-[#2b3139] shadow-2xl z-50 transform transition-transform duration-300 ${
-          menuOpen ? "translate-x-0" : "-translate-x-full"
+          menuOpen ? "translate-x-0" : "-translate-x-full  pointer-events-none"
         }`}
       >
         <div className="p-6 border-b border-white/10 flex justify-between items-center">
@@ -52,14 +53,9 @@ export default function AppMenu({ links = [] }) {
 
         <nav className="flex flex-col">
           {links.map((link, i) => (
-            <a
-              key={i}
-              href={link.href}
-              className="px-6 py-4 hover:bg-white/10 transition"
-              onClick={() => setMenuOpen(false)}
-            >
+            <Link to={link.href} key={i} className="px-6 py-4 hover:bg-white/10 transition" onClick={() => setMenuOpen(false)}>
               {link.label}
-            </a>
+            </Link> 
           ))}
         </nav>
       </div>

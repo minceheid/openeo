@@ -49,3 +49,6 @@ class switchClassPlugin(PluginSuperClass):
         util.add_simple_setting(self.pluginConfig, settings, 'boolean', "switch", ("retain_state_on_startup",), 'Retain state on restart', \
             note="If set to false, this will ensure that no power is delivered after a restart, until explicitly re-enabled", default=True)
         return settings
+
+    def get_user_settings_v2(self):
+        return [{"type": "boolean", "name": "retain_state_on_startup", "label": "Retain state on restart", "default":self.pluginConfig.get("retain_state_on_startup",True), "note":"If set to false, this will ensure that no power is delivered after a restart, until explicitly re-enabled"},];
