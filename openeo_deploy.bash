@@ -28,7 +28,7 @@ fi
 
 # Install prereq packages
 $SUDO apt-get update
-$SUDO apt-get install -y python3-serial python3-websockets python3-jsonschema python3-jinja2 python3-psutil python3-paho-mqtt dnsmasq iptables
+$SUDO apt-get install -y python3-serial python3-websockets python3-jsonschema python3-psutil python3-paho-mqtt dnsmasq iptables
 
 if [ $? -ne 0 ] ; then
 	echo >&2 "ERROR: Package Install failed - Deploy Aborted"
@@ -59,14 +59,6 @@ $SUDO chmod 666 /dev/vcio
 
 # Config file deployment, replacing all previous file copy statements
 $SUDO cp -rp $MYDIR/config/* /
-
-#############
-# Redundant - for future removal
-#$SUDO cp $MYDIR/etc/openeo.service /etc/systemd/system/
-#$SUDO cp $MYDIR/etc/rc.local /etc/rc.local
-#$SUDO mkdir -p /etc/systemd/journald.conf.d
-#$SUDO cp $MYDIR/etc/99-permanent-journal.conf /etc/systemd/journald.conf.d
-#############
 
 
 #############
