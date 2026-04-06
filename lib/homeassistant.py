@@ -710,24 +710,24 @@ class homeassistantClassPlugin(PluginSuperClass):
         # Return 0 - this plugin doesn't control charging
         return 0
     
-    def get_user_settings(self):
-        """Return configuration options for web interface"""
-        settings = []
+    # def get_user_settings(self):
+    #     """Return configuration options for web interface"""
+    #     settings = []
 
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_host",), 'MQTT Broker Host', note='MQTT Broker Host.')
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_port",), 'MQTT Broker Port', note='MQTT Broker Port.')
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_username",), 'MQTT Username (optional)', note='MQTT Username (optional)')
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_password",), 'MQTT Password (optional)', note='MQTT Password (optional)')
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_discovery_prefix",), 'HA Discovery Prefix', note='HA Discovery Prefix')
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("device_name",), 'Device Name in HA', note='Device Name in HA')
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("device_id",), 'Device ID', note='Device ID')
-        util.add_simple_setting(self.pluginConfig, settings, 'slider', "homeassistant", ("publish_interval",), 'Publish Interval (seconds)', \
-            note="Publish Interval (seconds)", \
-            range=(5,3600), default=300, step=5, value_unit="s")
+    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_host",), 'MQTT Broker Host', note='MQTT Broker Host.')
+    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_port",), 'MQTT Broker Port', note='MQTT Broker Port.')
+    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_username",), 'MQTT Username (optional)', note='MQTT Username (optional)')
+    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_password",), 'MQTT Password (optional)', note='MQTT Password (optional)')
+    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_discovery_prefix",), 'HA Discovery Prefix', note='HA Discovery Prefix')
+    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("device_name",), 'Device Name in HA', note='Device Name in HA')
+    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("device_id",), 'Device ID', note='Device ID')
+    #     util.add_simple_setting(self.pluginConfig, settings, 'slider', "homeassistant", ("publish_interval",), 'Publish Interval (seconds)', \
+    #         note="Publish Interval (seconds)", \
+    #         range=(5,3600), default=300, step=5, value_unit="s")
         
-        return settings
+    #     return settings
 
-    def get_user_settings_v2(self):
+    def get_user_settings(self):
         return [{"type": "textinput", "name": "mqtt_host", "label": "MQTT Broker Host", "default":self.pluginConfig.get("mqtt_host",""), "note":"MQTT Broker Host."},
                 {"type": "textinput", "name": "mqtt_port", "label": "MQTT Broker Port", "default":self.pluginConfig.get("mqtt_port",""), "note":"MQTT Broker Port."},
                 {"type": "textinput", "name": "mqtt_username",  "default":self.pluginConfig.get("mqtt_username",""), "label": "MQTT Username (optional)"},

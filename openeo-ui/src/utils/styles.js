@@ -46,20 +46,22 @@ export const styles = {
   page: {
     background: "#1a1d23",
     color: "#c8cdd6",
-    /*minHeight: "100vh",*/
     padding: "24px",
     fontSize: "14px",
-    maxWidth: "900px",
     margin: "0 auto",
+    width: "100vw",
     },
   pageTitle: {
     fontSize: "11px",
     letterSpacing: "0.15em",
     textTransform: "uppercase",
     color: "#5a8fcc",
+    marginLeft: "48px",
     marginBottom: "24px",
     paddingBottom: "12px",
     borderBottom: "1px solid #2a2f3a",
+    width: "100vw-48px",
+
   },
   section: {
     flex: 1,
@@ -67,6 +69,7 @@ export const styles = {
     border: "1px solid #2e3340",
     borderRadius: "6px",
     marginBottom: "16px",
+    width: "100%",
     /*overflow: "hidden",*/
   },
   sectionHeader: {
@@ -82,7 +85,7 @@ export const styles = {
   fieldRow: {
     display: "flex",
     alignItems: "center",
-    padding: "0 20px",
+    padding: "0 5px",
     minHeight: "52px",
     borderBottom: "1px solid #2a2f3a",
     transition: "background 0.15s",
@@ -91,17 +94,22 @@ export const styles = {
     background: "#252930",
   },
   fieldLabel: {
-    flex: 1,
     fontWeight: 400,
     color: "#b0b8c8",
     fontSize: "13.5px",
-    paddingRight: "20px",
+    //border: "1px solid #15f315",
+    maxWidth: "calc(100vw - 230px)",
+    width:    "calc(100vw - 230px)",
+    minWidth: "calc(100vw - 230px)",
+
   },
   fieldNote: {
     fontSize: "11px",
     color: "#5a6275",
     marginTop: "2px",
     fontStyle: "italic",
+    //border: "1px solid #eaebef",
+
   },
   fieldControl: {
     display: "flex",
@@ -116,7 +124,7 @@ export const styles = {
     color: "#c8cdd6",
     fontSize: "12px",
     padding: "5px 10px",
-    width: "200px",
+    minWidth: "115px",
     outline: "none",
     transition: "border-color 0.15s",
   },
@@ -145,18 +153,46 @@ export const styles = {
     borderColor: "#884444",
     color: "#cc7777",
   },
-  sliderWrap: {
+  sliderWrap_calibration: {
+    justifyContent: "initial",
     display: "flex",
+    flexDirection: 'column',   
     alignItems: "center",
     gap: "10px",
+//    maxWidth: "125px",
+//    width: "70px",
+    paddingLeft: "10px",
+    paddingRight: "10px",
+    paddingBottom: "10px",
+
   },
-  sliderValue: {
+  sliderValue_calibration: {
+    fontSize: "12px",
+    color: "#7ab8f0",
+  //  minWidth: "55px",
+    textAlign: "center",
+    
+  },
+  rangeInput_calibration: {
+    cursor: "pointer",
+    width: "100%",
+  },
+  ////////////////////////////////////
+
+  sliderWrap_settings: {
+    justifyContent: "initial",
+    display: "flex",
+    flexDirection: 'column',   
+    alignItems: 'center',      
+    gap: "10px",
+  },
+  sliderValue_settings: {
     fontSize: "12px",
     color: "#7ab8f0",
     minWidth: "55px",
-    textAlign: "right",
+    textAlign: "center",   
   },
-  rangeInput: {
+  rangeInput_settings: {
     cursor: "pointer",
   },
   statusBox: {
@@ -187,7 +223,7 @@ export const styles = {
     cursor: "pointer",
     fontSize: "12px",
     letterSpacing: "0.08em",
-    padding: "9px 28px",
+    padding: "9px 14px",
     textTransform: "uppercase",
     transition: "all 0.15s",
   },

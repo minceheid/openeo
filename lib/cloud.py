@@ -192,10 +192,10 @@ class cloudClassPlugin(PluginSuperClass):
         returnval["bodylen"]=len(returnval["body"])
         return(returnval)
 
-    def get_user_settings(self):
-        settings = []
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "cloud", ("authtoken",), f'Authorisation Code (Charger ID: {globalState.stateDict["eo_serial_number"]})',pattern='([A-Za-z0-9]{5})')
-        return settings
+    # def get_user_settings(self):
+    #     settings = []
+    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "cloud", ("authtoken",), f'Authorisation Code (Charger ID: {globalState.stateDict["eo_serial_number"]})',pattern='([A-Za-z0-9]{5})')
+    #     return settings
 
-    def get_user_settings_v2(self):
+    def get_user_settings(self):
         return [{"type": "textinput", "name": "authtoken", "label": f'Authorisation Code (Charger ID: {globalState.stateDict["eo_serial_number"]})', "default":self.pluginConfig.get("authtoken",False), "pattern":'([A-Za-z0-9]{5})', "note":""}];

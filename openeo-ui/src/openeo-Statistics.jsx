@@ -147,7 +147,7 @@ export default function Statistics() {
     <div style={styles.page}>
     <style>{globalCss}</style>
     <div style={styles.pageTitle}>// Charging Statistics</div>
-      <div ref={chartRef} style={{ height: "90vh", width: "100%" }} />
+      <div ref={chartRef} style={{ marginTop: "20px" }} />
     </div>
   );
   }

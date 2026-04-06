@@ -34,18 +34,18 @@ class chargeroptionsClassPlugin(PluginSuperClass):
         globalState.stateDict["charger_name"] = self.pluginConfig["charger_name"]
         globalState.stateDict["charger_id"] = self.pluginConfig["charger_id"]
 
+    # def get_user_settings(self):
+    #     settings = []
+    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "chargeroptions", ("charger_name",), 'Charger Name', note='Friendly name for your charger, used by APIs and the home screen.')
+    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "chargeroptions", ("charger_id",), 'Charger ID', note='For some APIs like OCPP.  Alphanumeric plus underscore only.',
+    #         pattern='([A-Za-z0-9_])+')
+    #     util.add_simple_setting(self.pluginConfig, settings, 'slider', "chargeroptions", ("overall_limit_current",), 'Overall Current Limit', \
+    #         note="Does not override the PCB current limit setting.  This will prevent higher current limits from being used from e.g. the home screen and remote plugins.", \
+    #         range=(globalState.MIN_CHARGING_CURRENT, globalState.MAX_CHARGING_CURRENT), default=globalState.MAX_CHARGING_CURRENT, value_unit="A")
+
+    #     return settings
+
     def get_user_settings(self):
-        settings = []
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "chargeroptions", ("charger_name",), 'Charger Name', note='Friendly name for your charger, used by APIs and the home screen.')
-        util.add_simple_setting(self.pluginConfig, settings, 'textinput', "chargeroptions", ("charger_id",), 'Charger ID', note='For some APIs like OCPP.  Alphanumeric plus underscore only.',
-            pattern='([A-Za-z0-9_])+')
-        util.add_simple_setting(self.pluginConfig, settings, 'slider', "chargeroptions", ("overall_limit_current",), 'Overall Current Limit', \
-            note="Does not override the PCB current limit setting.  This will prevent higher current limits from being used from e.g. the home screen and remote plugins.", \
-            range=(globalState.MIN_CHARGING_CURRENT, globalState.MAX_CHARGING_CURRENT), default=globalState.MAX_CHARGING_CURRENT, value_unit="A")
-
-        return settings
-
-    def get_user_settings_v2(self):
         return [{"type": "textinput", "name": "charger_name", "label": "Charger Name", "default":self.pluginConfig.get("charger_name",False), "note":"Friendly name for your charger, used by APIs and the home screen."},
                 {"type": "textinput", "name": "charger_id", "label": "Charger ID", "default":self.pluginConfig.get("charger_id",False), "note":"For some APIs like OCPP.  Alphanumeric plus underscore only.","pattern":'([A-Za-z0-9_])+'},
                 {"type": "slider", "name": "overall_limit_current", "label": "Overall Current Limit", "default":self.pluginConfig.get("overall_limit_current",False), "range": [globalState.MIN_CHARGING_CURRENT, globalState.MAX_CHARGING_CURRENT], "value_unit":"A", "note":"Does not override the PCB current limit setting.  This will prevent higher current limits from being used from e.g. the home screen and remote plugins."}];

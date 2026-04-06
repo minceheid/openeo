@@ -291,15 +291,19 @@ class configserverClassPlugin(PluginSuperClass):
                 user_settings = {}
                 for modulename,module in globalState.stateDict["_moduleDict"].items():
                     print(f"Checking module {modulename} for settings")
-                    if hasattr(module, "get_user_settings_v2"):
+                    if hasattr(module, "get_user_settings"):
                         try:
-                            user_settings[modulename]={
-                                "name": module.PRETTY_NAME ,
-                                "fields": module.get_user_settings_v2()
-                                };
+                            fields = module.get_user_settings()
+                            if isinstance(fields, list) and len(fields) > 0:      
+                                user_settings[modulename]={
+                                    "name": module.PRETTY_NAME ,
+                                    "fields": fields
+                                    };
                             
                         except Exception as e:
                             _LOGGER.error("Exception getting options for %r: %r" % (module, e))
+
+                        
 
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")

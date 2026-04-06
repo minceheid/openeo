@@ -202,10 +202,6 @@ class openeoChargerClass:
         
         return None
 
-
-
-
-
     #################################################################################
     # Constructor methods
     def __init__(self):
@@ -213,10 +209,15 @@ class openeoChargerClass:
         # Check hardware type, and initialise the correct object class for communications
         # At this time there is only two hardware types that we are supporting, so this
         # is easy, but extensible, if we find more.
-        if MiniPro2.identify_hardware():
-            self.rs485=MiniPro2()
-        else:
-            self.rs485=HomeHub()
+        try:
+            if MiniPro2.identify_hardware():
+                self.rs485 = MiniPro2()
+            else:
+                self.rs485 = HomeHub()
+        except Exception as e:
+            _LOGGER.error(f"Error: Unable to initialise RS485 interface: {e}")
+            print(f"Error: Unable to initialise RS485 interface: {e}\nIs OpenEO already running? Only one copy can run at any one time.")
+            exit(1)
 
         GPIO.setmode(GPIO.BCM)
         self.connect()

@@ -102,8 +102,8 @@ function SliderInput({ field, value, onChange }) {
   }, [handleTouchMove]);
  
   return (
-    <div style={styles.sliderWrap}>
-      <span style={styles.sliderValue}>
+    <div style={styles.sliderWrap_settings}>
+      <span style={styles.sliderValue_settings}>
         {value}
         {field.value_unit ? ` ${field.value_unit}` : ""}
       </span>
@@ -117,7 +117,7 @@ function SliderInput({ field, value, onChange }) {
         value={value}
         onChange={(e) => onChange(field.name, Number(e.target.value))}
         onTouchStart={handleTouchStart}
-        style={styles.rangeInput}
+        style={styles.rangeInput_settings}
       />
     </div>
   );
@@ -146,7 +146,16 @@ function FieldRow({ field, value, onChange }) {
         <span>{field.label}</span>
         {field.note && <div style={styles.fieldNote}>{field.note}</div>}
       </div>
-      <div style={styles.fieldControl}>{control}</div>
+    <div
+      id="controldiv"
+      style={{
+        display: "flex",
+        justifyContent: "center",  // horizontal centering
+        alignItems: "center",      // vertical centering (optional)
+        flex: 1,  
+      }}>        
+        <div style={styles.fieldControl}>{control}</div>
+      </div>
     </div>
   );
 }

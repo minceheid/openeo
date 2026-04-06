@@ -266,7 +266,7 @@ export default function Calibration() {
     <div style={styles.page}>
       <style>{globalCss}</style>
       <div style={styles.pageTitle}>// CT Calibration</div>
-      <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', width: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', width: '95vw - 48px' }}>
       {Object.entries(seriesMap).map(([key, label]) => (
         <div style={styles.section} key={label} >
           <div style={styles.sectionHeader}>{label}</div>
@@ -362,8 +362,8 @@ function SliderInput({ field, value, onChange }) {
   }, [handleTouchMove]);
  
   return (
-    <div style={styles.sliderWrap}>
-      <span style={styles.sliderValue}>
+    <div style={styles.sliderWrap_calibration}>
+      <span style={styles.sliderValue_calibration}>
         {value}
         {field.value_unit ? ` ${field.value_unit}` : ""}
       </span>
@@ -376,7 +376,7 @@ function SliderInput({ field, value, onChange }) {
         value={value}
         onChange={(e) => onChange(field.name, Number(e.target.value))}
         onTouchStart={handleTouchStart}
-        style={styles.rangeInput}
+        style={styles.rangeInput_calibration}
       />
     </div>
   );

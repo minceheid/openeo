@@ -1,13 +1,10 @@
 body {
-	/*display: flex;*/
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
 	background-color: #282c34;
 	font-family: Arial, sans-serif;
 	color: white;
-	/*overflow-x: hidden;*/
-	/*overflow-y: scroll;*/
 }
 
 button {
@@ -68,49 +65,7 @@ a {
 	text-align: center;
 	color: #888888;
 }
-/*
-.version-info {
-	text-align: center;
-	color: #444444;
-}
 
-.status-break::after {
-	content: "•";
-}
-
-@keyframes charge-pulse {
-  0%   {color: #33cc33;}
-  50%  {color: #99cc99;}
-  100% {color: #33cc33;}
-}
-
-.status-charging {
-	color: #33cc33;
-	font-weight: bold;
-	animation-name: charge-pulse;
-	animation-timing-function: ease-in-out;
-	animation-fill-mode: both;
-	animation-duration: 2s;
-	animation-iteration-count: infinite;
-}
-
-.status-idle {
-	color: #a6a6a6;
-	font-weight: bold;
-}
-*/
-
-.eoButton {
-  border-radius: 12px;
-  z-index: 1000;
-  transition-duration: 0.4s;
-  justify-content: center;
-  align-items: center;
-}
-.eoButton:hover {
-  background-color: #04AA6D; /* Green */
-  color: white;
-}
 
 /* Landscape phone tweaks */
 @media (orientation: landscape) and (max-height: 500px) {
@@ -125,10 +80,6 @@ a {
 		margin-top: -2.5em; /* There's probably a better way... */
 	}
 	
-	.toast-msg-container {
-		width: 75%;
-		bottom: 1em;
-	}
 	
 	/* Hacky */ 
 	.inner-display-container {
@@ -188,10 +139,7 @@ a {
 
 /* Portrait phone tweaks */
 @media (orientation: portrait) and (max-width: 768px) /*and (pointer: coarse)*/ {
-	.toast-msg-container {
-		width: 100%;
-		margin-top: 100%;
-	}
+
 	
 	/* Make the logo text smaller on a small screen. */
 	.logo-text {
@@ -201,7 +149,6 @@ a {
 	}
 	
 	.version-info { visibility: hidden; }
-	.top-status { visibility: hidden; }
 
 	.statusPanelDiv {
 		height: auto;
@@ -225,19 +172,5 @@ a {
 		padding-right:0;
 		padding-bottom: max(2px, env(safe-area-inset-bottom));
 	}
-	.toast-msg-container {
-		width: 100%;
-		z-index: 2000;
-		position: absolute;
-		visibility: hidden;
-		justify-content: center;
-		left: 0;
-		bottom: 0;
-		margin-top:0;
-		margin-left:0;
-		margin-right:0;
-		margin-bottom: max(2px, env(safe-area-inset-bottom));
-		transform: none;
-	}
-}
 
+}
