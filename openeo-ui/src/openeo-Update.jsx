@@ -79,7 +79,7 @@ export default function Update({ status = {} }) {
   return (
     <div style={styles.page}>
     <style>{globalCss}</style>
-    <div style={styles.pageTitle}>// Update Software</div>
+    <div style={styles.pageTitle}>// Update OpenEO</div>
 
     {/* Toolbar */}
     <div style={styles.buttonRow}>

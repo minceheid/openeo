@@ -11,6 +11,8 @@ import Calibration from "./openeo-Calibration";
 import ChargerSession from "./openeo-ChargerSession";
 import Update from "./openeo-Update";
 import { ToastProvider } from "./openeo-Toast";
+import FloatingLogo from "./openeo-Logo";
+
 
 import "./index.css";
 
@@ -49,6 +51,7 @@ function AppContent() {
 
   return (
     <>
+      <FloatingLogo />
       <AppMenu
         links={[
           { label: "Dashboard",           href: "?r=main"                },

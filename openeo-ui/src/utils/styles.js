@@ -52,7 +52,7 @@ export const styles = {
     width: "100vw",
     },
   pageTitle: {
-    fontSize: "11px",
+    fontSize: "17px",
     letterSpacing: "0.15em",
     textTransform: "uppercase",
     color: "#5a8fcc",

@@ -231,7 +231,7 @@ export default function SettingsForm() {
   return (
     <div style={styles.page}>
       <style>{globalCss}</style>
-      <div style={styles.pageTitle}>// Device Configuration</div>
+      <div style={styles.pageTitle}>// Settings</div>
 
       {status === "loading" && (
         <div style={styles.statusBox}>

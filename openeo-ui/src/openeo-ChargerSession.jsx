@@ -364,7 +364,7 @@ export default function ChargerSession() {
   return (
     <div style={styles.page}>
       <style>{globalCss}</style>
-      <div style={styles.pageTitle}>// Session Log</div>
+      <div style={styles.pageTitle}>// Charging Log</div>
 
       {/* Toolbar */}
       <div style={styles.buttonRow}>
