@@ -73,6 +73,11 @@ const styles = `
       padding: 8px;
       border-radius: 10px;
     }
+
+    .logo-img {
+      width: 35px;
+      height: 35px;
+    }
   }
 `;
 
