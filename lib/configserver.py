@@ -475,7 +475,6 @@ class configserverClassPlugin(PluginSuperClass):
                     module.configure(globalState.configDB.get(modulename))
                     newconfig[modulename]=module.pluginConfig
 
-                self.set_context()
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 if globalState.stateDict["app_version"]=="0.0" or globalState.stateDict["app_version"]=="main" :
@@ -489,49 +488,51 @@ class configserverClassPlugin(PluginSuperClass):
                 self.send_error(404, "Not Found")
                 return
 
-        def switch_modules(self, state):
-            """Enable or disable all modules except reserved ones."""
-            reserved = ["configserver", "webserver"]  # Future, this needs to come from the module parameters
-            for key, item in self.config.items():
-                if key not in reserved and not key.startswith("_"):
-                    try:
-                        _LOGGER.info("Trying to disable '%s'" % key)
-                        self.config[key]["enabled"] = 0
-                    except Exception as e:
-                        _LOGGER.warning("Unable to toggle module '%s'" % key)
+
+        # No longer relevant 06/04/2026- MMS
+        # def switch_modules(self, state):
+        #     """Enable or disable all modules except reserved ones."""
+        #     reserved = ["configserver", "webserver"]  # Future, this needs to come from the module parameters
+        #     for key, item in self.config.items():
+        #         if key not in reserved and not key.startswith("_"):
+        #             try:
+        #                 _LOGGER.info("Trying to disable '%s'" % key)
+        #                 self.config[key]["enabled"] = 0
+        #             except Exception as e:
+        #                 _LOGGER.warning("Unable to toggle module '%s'" % key)
         
-        def get_user_settings(self):
-            """Called from the set_context method to update user settings."""
-            settings = []
-            util.add_simple_setting(settings, 'number', "configserver", ("port",), 'Port',
-                note='Recommended port 80.  Changing the port number requires a restart of openeo.  Changing to an inaccessible or unsupported port may render the openeo interface unusable, so take care.', \
-                range=(1,65535), step=1, default=80)
-            return settings
+        # def get_user_settings(self):
+        #     """Called from the set_context method to update user settings."""
+        #     settings = []
+        #     util.add_simple_setting(settings, 'number', "configserver", ("port",), 'Port',
+        #         note='Recommended port 80.  Changing the port number requires a restart of openeo.  Changing to an inaccessible or unsupported port may render the openeo interface unusable, so take care.', \
+        #         range=(1,65535), step=1, default=80)
+        #     return settings
             
-        def set_context(self):
-            """Update the jinja context according to the system state.  
-            @TODO this should be cached as called on every load currently."""
-            self._context = {
-                "openeo_cfg" : self.config,
-                "status" : globalState.stateDict,
-                "settings" : [],
-                "title" : self.selected_page
-            } 
-            # If a module supports exposing settings, add each.
-            if "_moduleDict" in globalState.stateDict:
-                for modulename, module in globalState.stateDict["_moduleDict"].items():
-                    try:
-                        mod_settings = []
-                        if not module.CORE_PLUGIN:
-                            util.add_simple_setting(self.config[modulename], mod_settings, 'boolean', module.myName, ("enabled",), 'Enable Module')
-                        if hasattr(module, "get_user_settings"):
-                            sets = module.get_user_settings()
-                            if isinstance(sets, list) and len(sets) > 0:  # Might return None or some other garbage value.
-                                mod_settings += sets
-                                util.add_category_exit(mod_settings)
-                        if len(mod_settings) > 0:
-                            util.add_header_setting(self._context["settings"], module.PRETTY_NAME)
-                            self._context["settings"] += mod_settings
-                            #print(self._context["settings"])
-                    except Exception as e:
-                        _LOGGER.error("Exception generating settings for %r: %r" % (module, e))
+        # def set_context(self):
+        #     """Update the jinja context according to the system state.  
+        #     @TODO this should be cached as called on every load currently."""
+        #     self._context = {
+        #         "openeo_cfg" : self.config,
+        #         "status" : globalState.stateDict,
+        #         "settings" : [],
+        #         "title" : self.selected_page
+        #     } 
+        #     # If a module supports exposing settings, add each.
+        #     if "_moduleDict" in globalState.stateDict:
+        #         for modulename, module in globalState.stateDict["_moduleDict"].items():
+        #             try:
+        #                 mod_settings = []
+        #                 if not module.CORE_PLUGIN:
+        #                     util.add_simple_setting(self.config[modulename], mod_settings, 'boolean', module.myName, ("enabled",), 'Enable Module')
+        #                 if hasattr(module, "get_user_settings"):
+        #                     sets = module.get_user_settings()
+        #                     if isinstance(sets, list) and len(sets) > 0:  # Might return None or some other garbage value.
+        #                         mod_settings += sets
+        #                         util.add_category_exit(mod_settings)
+        #                 if len(mod_settings) > 0:
+        #                     util.add_header_setting(self._context["settings"], module.PRETTY_NAME)
+        #                     self._context["settings"] += mod_settings
+        #                     #print(self._context["settings"])
+        #             except Exception as e:
+        #                 _LOGGER.error("Exception generating settings for %r: %r" % (module, e))
