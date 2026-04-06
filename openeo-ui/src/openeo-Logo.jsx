@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@700&display=swap');
 
   .floating-logo-wrapper {
     position: fixed;
@@ -52,7 +51,6 @@ const styles = `
   }
 
   .logo-text {
-    font-family: 'Space Mono', monospace;
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.04em;
