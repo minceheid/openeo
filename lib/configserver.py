@@ -296,7 +296,7 @@ class configserverClassPlugin(PluginSuperClass):
                             fields = module.get_user_settings()
 
                             if not module.CORE_PLUGIN:
-                                fields.insert(0,{"type":'boolean', "name":"enabled", "label": 'Enable Module'})
+                                fields.insert(0,{"type":'boolean', "name":"enabled", "label": 'Enable Module', "default": module.pluginConfig["enabled"]})
 
                             
                             if isinstance(fields, list) and len(fields) > 0:      
