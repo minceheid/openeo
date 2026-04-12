@@ -317,7 +317,8 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
                 
             {visibleSchedules.map((sch, i) => (
             <div key={sch.id} 
-                className={`flex items-center justify-center max-width shrink-0 w-[340px] sm:w-[380px] min-h-[442px] rounded-3xl bg-[#2b3139] ring-1 ring-white/10 p-5 backdrop-blur shadow-lg transition-all duration-500 ${i === active ? "scale-100 opacity-100" : "scale-90 brightness-60"}`}
+                className={`flex items-center justify-center max-width shrink-0 w-[340px] sm:w-[380px] min-h-[442px] rounded-3xl bg-[#2b3139] ring-1 ring-white/10 p-5 backdrop-blur shadow-lg transition-all duration-500 ${i === active ? "scale-100 opacity-100" : "scale-90 brightness-60 cursor-pointer"}`}
+                onClick={() => { if (i !== active) setActive(i); }}
             >
                 {sch.type === SWITCH_TYPE ? (
                 <ManualControl
