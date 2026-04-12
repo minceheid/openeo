@@ -3,7 +3,13 @@
 
 export const globalCss = `
   * { box-sizing: border-box; }
-  body { margin: 0; background: #1a1d23; }
+
+  body { 
+    margin: 0; 
+    background: #1a1d23; 
+    color: white;
+    font-family: Arial, sans-serif;
+}
 
   input[type="range"] {
     -webkit-appearance: none;
@@ -228,3 +234,129 @@ export const styles = {
     transition: "all 0.15s",
   },
 };
+
+
+//////////////
+// UI
+export const uiCss = `
+
+body {
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	background-color: #282c34;
+	font-family: Arial, sans-serif;
+	color: white;
+}
+
+button {
+	margin-top: 10px;
+	padding: 10px;
+}
+
+.statusPanelDiv {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: 100%;
+	height: 15%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.status-info {
+	border: 1px solid #444444;
+	margin: 1em;
+	padding: 1em;
+	text-align: center;
+	color: #888888;
+}
+
+
+/* Landscape phone tweaks */
+@media (orientation: landscape) and (max-height: 500px) {
+	body {
+		display: flex;
+		flex-direction: row;
+	}
+
+	
+	/* Flexbox moves to the RHS */
+	.statusPanelDiv {
+		position: absolute;
+		right: 0;
+		top: 0;
+		width: 25%;
+		margin-left: auto;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+	}
+	
+	.status-info {
+		/* width: 30%; */
+		margin-left: auto;
+		margin-right: auto;
+		padding-top: 4px;
+		padding-bottom: 4px;
+	}
+
+	.status-break::after {
+		content: '\a';
+		white-space: pre;
+	}
+	
+	.status-item {
+		line-height: 1.5;
+	}
+
+	.version-info { visibility: hidden; }
+
+	.statusPanelDiv {
+		height: 7%;
+	}
+	.statusPanelDiv .status-info {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	margin-left:0vh;
+	margin-right:0vh;
+	margin-bottom:0vh;
+	}
+
+}
+
+/* Portrait phone tweaks */
+@media (orientation: portrait) and (max-width: 768px) /*and (pointer: coarse)*/ {
+
+	
+	.version-info { visibility: hidden; }
+
+	.statusPanelDiv {
+		height: auto;
+	}
+
+	.statusPanelDiv .status-info {
+		position: absolute;
+		left: 0;
+		bottom: 0;
+		margin-top:0;
+		margin-left:0;
+		margin-right:0;
+		margin-bottom: max(2px, env(safe-area-inset-bottom));
+		width: 100%;
+		font-size: 0.8rem;
+	}
+
+	#mainDiv {
+		padding-top:0;
+		padding-left:0;
+		padding-right:0;
+		padding-bottom: max(2px, env(safe-area-inset-bottom));
+	}
+
+}
+`;

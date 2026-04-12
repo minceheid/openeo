@@ -89,7 +89,7 @@ export default function StatusPanel() {
       {!status ? ( <p>Loading…</p> ) : (
 
       <>
-        <div className="status-info">
+        <div className="status-info flex justify-center items-center">
           {!status.eo_connected_to_controller ? (
             <span className="status-item">Waiting..</span>
           ) : (
