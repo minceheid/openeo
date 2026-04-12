@@ -294,6 +294,11 @@ class configserverClassPlugin(PluginSuperClass):
                     if hasattr(module, "get_user_settings"):
                         try:
                             fields = module.get_user_settings()
+
+                            if not module.CORE_PLUGIN:
+                                fields.insert(0,{"type":'boolean', "name":"enabled", "label": 'Enable Module'})
+
+                            
                             if isinstance(fields, list) and len(fields) > 0:      
                                 user_settings[modulename]={
                                     "name": module.PRETTY_NAME ,
