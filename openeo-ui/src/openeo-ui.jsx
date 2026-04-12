@@ -5,6 +5,8 @@ import ClockFace from "./openeo-ClockFace";
 import SolarTimer from "./openeo-SolarTimer";
 import { useToastContext } from "./openeo-Toast";
 import { buildUrl } from './utils/funcs';
+import { uiCss,globalCss,styles } from './utils/styles';
+
 
 // Define constants for Carousel types, to also allow correct sorting
 const SWITCH_TYPE=0;
@@ -305,7 +307,8 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
 
 
   return (
-    
+    <>
+    <style>{uiCss}</style>
     <div className="min-h-screen w-full bg-[#1e242b] text-white flex justify-center p-6 " id="mainDiv">
 
       <div className="w-full max-w-5xl">
@@ -433,6 +436,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
         <StatusPanel></StatusPanel>
       </div>
   </div>
+  </>
 
     
   );

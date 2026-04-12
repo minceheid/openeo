@@ -9,26 +9,6 @@
 	align-items: center;
 }
 
-/*
-.status-info {
-	border: 1px solid #444444;
-	margin: 1em;
-	padding: 1em;
-	text-align: center;
-	color: #888888;
-}
-.status-break::after {
-    content: "•";
-    white-space: pre;
-    margin-left: 3px;
-    margin-right: 3px;
-}
-
-.version-info {
-	text-align: center;
-	color: #444444;
-}
-*/
 
 .unselectable {
   -webkit-user-select: none; /* Safari */

@@ -163,10 +163,17 @@ function FieldRow({ field, value, onChange }) {
 function Section({ sectionKey, sectionName, fields, formData, onChange }) {
   const label = sectionName || sectionKey;
   const updatedFields = fields.map(item => ({ ...item, name: sectionKey+":"+item.name }));
+
+  const enableField = updatedFields.find(f => f.label === "Enable Module");
+  const isEnabled = enableField ? formData[enableField.name] !== false : true;
+  const visibleFields = enableField && !isEnabled
+    ? updatedFields.filter(f => f.label === "Enable Module")
+    : updatedFields;
+
   return (
     <div style={styles.section}>
       <div style={styles.sectionHeader}>{label}</div>
-      {updatedFields.map((field) => (
+      {visibleFields.map((field) => (
         <FieldRow
           key={field.name}
           field={field}
