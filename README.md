@@ -83,8 +83,9 @@ https://github.com/minceheid/openeo/releases/latest/download/openeo_latest.img.x
 </td></tr></table>
 
 6. Close the EO enclosure, and apply power to it. The Raspberry Pi should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take about five minutes to fully boot before it is seen on the network. Be patient - it's only a small pi and it takes some time to set itself up.
-
-7. Once the pi fully boots, whilst standing close to your charger, you should have a wireless network called "OpenEO", use your phone or tablet to join this wireless network. Once joined, use your browser which will redirect to the wifi configuration interface, allowing you to set your charger to your home network. If you need command-line access to your charger, then here is also where you'd set a public SSH key. For security purposes, the OpenEO network is only available for 30 minutes after the charger starts, after which time it disables itself.
+7. Once the pi fully boots, whilst standing close to your charger, you should have a wireless network called "OpenEO", use your phone or tablet to join this wireless network.
+8. Once joined, use your browser which will redirect to the wifi configuration interface, if it doesn't auto-redirect, then launch a browser and type the following into the address bar: 192.168.1.1
+9. This control panel will allow you to set your charger to your home network. If you need command-line access to your charger, then here is also where you'd set a public SSH key. For security purposes, the OpenEO network is only available for 30 minutes after the charger starts, after which time it disables itself.
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/555814d8-eca1-49d2-9529-177a6713aa9d" style="width:25%; height:auto; "/>
