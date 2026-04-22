@@ -160,7 +160,7 @@ class databufferClass:
                             "stackgroup": None,
                             "x": myData["time"],
                             "y": value,
-                            "textposition":"top center",
+                            "textposition":"top right",
                             "text": text,
                             "legend" : f"legend1" if subplot_index is None else f"legend{subplot_index}",
                             "legendgroup" : "1" if subplot_index is None else f"{subplot_index}",

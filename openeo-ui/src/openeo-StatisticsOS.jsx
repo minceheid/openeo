@@ -17,10 +17,14 @@ export default function StatisticsOS() {
     paper_bgcolor: "#282c34",
     plot_bgcolor: "#282c34",
     font: { color: "#eee" },
-    y1: { rangemode: "tozero" },
-    y2: { rangemode: "tozero" },
-    y3: { rangemode: "tozero" },
-    y4: { rangemode: "tozero" },
+    yaxis1: { rangemode: "tozero" },
+    yaxis2: { rangemode: "tozero" },
+    yaxis3: { rangemode: "tozero" },
+    yaxis4: { rangemode: "tozero" },
+    xaxis1: {},
+    xaxis2: { matches: "x" },
+    xaxis3: { matches: "x" },
+    xaxis4: { matches: "x" },
   };
 
   const legends = ["legend1", "legend2", "legend3","legend4"];
