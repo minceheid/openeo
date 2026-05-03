@@ -1,18 +1,19 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import StatusPanel from "./openeo-StatusPanel";
-import ManualControl from "./openeo-ManualControl";
-import ClockFace from "./openeo-ClockFace";
-import SolarTimer from "./openeo-SolarTimer";
+import ManualControl from "./Carousel/openeo-ManualControl";
+import ClockFace from "./Carousel/openeo-ClockFace";
+import SolarTimer from "./Carousel/openeo-SolarTimer";
+import EVChargerStatus from "./Carousel/openeo-Status";
 import { useToastContext } from "./openeo-Toast";
 import { buildUrl } from './utils/funcs';
 import { uiCss,globalCss,styles } from './utils/styles';
 
 
 // Define constants for Carousel types, to also allow correct sorting
-const SWITCH_TYPE=0;
-const TIMER_TYPE=1;
-const SOLAR_TYPE=2;
-
+const STATUS_TYPE=0;
+const SWITCH_TYPE=1;
+const TIMER_TYPE=2;
+const SOLAR_TYPE=3;
 
 
 
@@ -42,9 +43,44 @@ export default function ScheduleCarousel() {
   const [timersActive, setTimersActive] = useState(0);
   const [solarActive, setSolarActive] = useState(0);
   const [snapStep, setSnapStep] = useState(0);
+  const [status, setStatus] = useState(null);
 
 
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch(buildUrl("getstatus")); // your URL
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        if (!cancelled) {
+          setStatus(data);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      }
+    };
+
+    // Initial fetch
+    fetchStatus();
+
+    let pollinterval=1000 // 1 second
+    if (typeof(statusUpdateInterval)!='undefined') {
+      pollinterval=statusUpdateInterval
+    }
+    console.log("Status Update interval",pollinterval);
+    const intervalId = setInterval(fetchStatus, pollinterval);
+
+    // Cleanup on unmount
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     const handleTouchMove = (e) => {
@@ -106,7 +142,7 @@ export default function ScheduleCarousel() {
           setConfig(data);
           setError(null);
 
-          let mySchedule=[{id:"switch", type: SWITCH_TYPE, amps: data.switch.amps, enabled:data.switch.on,scheduler_enabled:data.scheduler.enabled}]
+          let mySchedule=[{id:"status",type: STATUS_TYPE},{id:"switch", type: SWITCH_TYPE, amps: data.switch.amps, enabled:data.switch.on,scheduler_enabled:data.scheduler.enabled}]
           let schedules=[];
 
 
@@ -189,7 +225,9 @@ function debounce(func, delay) {
 
     updatedSchedules.forEach((x,i) => {
       console.log(x);
-      if (x.type==SWITCH_TYPE) {
+      if (x.type==STATUS_TYPE) {
+        // do nothing
+      } else  if (x.type==SWITCH_TYPE) {
         obj["switch:on"]=x.enabled;
         obj["switch:amps"]=x.amps;
         obj["scheduler:enabled"]=x.scheduler_enabled;
@@ -323,7 +361,11 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
                 className={`flex items-center justify-center max-width shrink-0 w-[340px] sm:w-[380px] min-h-[442px] rounded-3xl bg-[#2b3139] ring-1 ring-white/10 p-5 backdrop-blur shadow-lg transition-all duration-500 ${i === active ? "scale-100 opacity-100" : "scale-90 brightness-60 cursor-pointer"}`}
                 onClick={() => { if (i !== active) setActive(i); }}
             >
-                {sch.type === SWITCH_TYPE ? (
+                {sch.type === STATUS_TYPE ? (
+                  <EVChargerStatus
+                    status={status}
+                  />
+                ) : sch.type === SWITCH_TYPE ? (
                 <ManualControl
                     schedule={sch}
                     onChange={(next) => updateSchedule(i, next)}
@@ -433,7 +475,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
       </div>
 
       <div className="statusPanelDiv">
-        <StatusPanel></StatusPanel>
+        <StatusPanel status={status}></StatusPanel>
       </div>
   </div>
   </>
