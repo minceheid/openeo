@@ -47,7 +47,8 @@ class openeoChargerClass:
         14: "charge-complete",
         15: "charge-suspended-start",
         16: "charge-suspended",
-        18: "charge-paused"
+        18: "charge-paused",
+        99: "charge-simulated"
     }
 
     EO_COMMAND = {
@@ -191,11 +192,15 @@ class openeoChargerClass:
                 #simulate_ct_solar=32
 
                 if simulate_ct_solar>0:
-                    # generate a sine wave simulation, rectified to postive values only
+                    # generate a sine wave simulation of solar production, with a period of 3 minutes (180 seconds)
                     # and with an amplitude equal to the simulate_ct_solar value
-                    seconds=(int(time.time()) % 180)
-                    self.current_solar=int(simulate_ct_solar*abs(math.sin(math.radians(seconds*3))))
+                    seconds=(int(time.time()) % 180)*2
+                    self.current_solar=int((simulate_ct_solar)*(1+math.sin(math.radians(seconds)))/2)
                     self.current_raw_solar=self.current_solar
+                    self.charger_state=hex(99) # Set charger state to 99, to indicate we're simulating values
+                    self.current_vehicle=32
+                    self.current_raw_vehicle=32
+                    
 
 
             return True

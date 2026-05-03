@@ -2,8 +2,9 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Sun, CloudSun } from "lucide-react";
 import { buildUrl } from './utils/funcs';
 
-export default function StatusPanel() {
-  const [status, setStatus] = useState(null);
+export default function StatusPanel(
+  {status}
+) {
   const [error, setError] = useState(null);
 
 
@@ -40,48 +41,14 @@ export default function StatusPanel() {
       state = "Charging";
     } else if (state == 'charging' || state == 'charge-complete' || state == 'charge-suspended' || state== 'charge-paused') {
       state = "Paused";
+    } else if (state == 'charge-simulated'){
+      state = "Simulated";
     } else {
       state = "Unknown";
     }
     return state;
   }
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchStatus = async () => {
-      try {
-        const res = await fetch(buildUrl("getstatus")); // your URL
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        if (!cancelled) {
-          setStatus(data);
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) setError(err.message);
-      }
-    };
-
-    // Initial fetch
-    fetchStatus();
-
-    let pollinterval=1000 // 1 second
-    if (typeof(statusUpdateInterval)!='undefined') {
-      pollinterval=statusUpdateInterval
-    }
-    console.log("Status Update interval",pollinterval);
-    const intervalId = setInterval(fetchStatus, pollinterval);
-
-    // Cleanup on unmount
-    return () => {
-      cancelled = true;
-      clearInterval(intervalId);
-    };
-  }, []);
-
-  //console.log("blah",status.eo_solar_charge_current);
   return (
     <>
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
