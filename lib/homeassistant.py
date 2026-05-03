@@ -518,6 +518,17 @@ class homeassistantClassPlugin(PluginSuperClass):
             },
             {
                 "component": "binary_sensor",
+                "object_id": "cable_connected",
+                "name": "Cable Connected",
+                "state_topic": f"openeo/{device_id}/state",
+                "value_template": "{{ value_json.cable_connected }}",
+                "payload_on": "true",
+                "payload_off": "false",
+                "device_class": "connectivity",
+                "icon": "mdi:car-connected"
+            },
+            {
+                "component": "binary_sensor",
                 "object_id": "charging_active", 
                 "name": "Charging Active",
                 "state_topic": f"openeo/{device_id}/state",
@@ -645,7 +656,8 @@ class homeassistantClassPlugin(PluginSuperClass):
         charger_state_id = globalState.stateDict.get("eo_charger_state_id", 0)
         
         # Vehicle is connected if state indicates plug present, car connected, or charging
-        vehicle_connected = charger_state_id in [7, 8, 9, 10, 11, 12, 13, 14, 15, 16]  # Based on CHARGER_STATES from openeoCharger.py
+        vehicle_connected = charger_state_id in [9, 10, 11, 12, 13, 14, 15, 16]  # Based on CHARGER_STATES from openeoCharger.py
+        cable_connected = charger_state_id in [7, 8, 9, 10, 11, 12, 13, 14, 15, 16]  # Based on CHARGER_STATES from openeoCharger.py
         
         # Charging is active if in charging or charge-complete states
         charging_active = charger_state_id in [11, 12, 13, 14]
@@ -666,6 +678,7 @@ class homeassistantClassPlugin(PluginSuperClass):
             "current_vehicle": globalState.stateDict.get("eo_current_vehicle", 0),
             "current_solar": globalState.stateDict.get("eo_current_solar", 0),
             "vehicle_connected": "true" if vehicle_connected else "false",
+            "cable_connected": "true" if cable_connected else "false",
             "charging_active": "true" if charging_active else "false",
             "mode": current_mode,
             "switch_on": globalState.configDB.get("switch", "on", False),
@@ -710,23 +723,6 @@ class homeassistantClassPlugin(PluginSuperClass):
         # Return 0 - this plugin doesn't control charging
         return 0
     
-    # def get_user_settings(self):
-    #     """Return configuration options for web interface"""
-    #     settings = []
-
-    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_host",), 'MQTT Broker Host', note='MQTT Broker Host.')
-    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_port",), 'MQTT Broker Port', note='MQTT Broker Port.')
-    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_username",), 'MQTT Username (optional)', note='MQTT Username (optional)')
-    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_password",), 'MQTT Password (optional)', note='MQTT Password (optional)')
-    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("mqtt_discovery_prefix",), 'HA Discovery Prefix', note='HA Discovery Prefix')
-    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("device_name",), 'Device Name in HA', note='Device Name in HA')
-    #     util.add_simple_setting(self.pluginConfig, settings, 'textinput', "homeassistant", ("device_id",), 'Device ID', note='Device ID')
-    #     util.add_simple_setting(self.pluginConfig, settings, 'slider', "homeassistant", ("publish_interval",), 'Publish Interval (seconds)', \
-    #         note="Publish Interval (seconds)", \
-    #         range=(5,3600), default=300, step=5, value_unit="s")
-        
-    #     return settings
-
     def get_user_settings(self):
         return [{"type": "textinput", "name": "mqtt_host", "label": "MQTT Broker Host", "default":self.pluginConfig.get("mqtt_host",""), "note":"MQTT Broker Host."},
                 {"type": "textinput", "name": "mqtt_port", "label": "MQTT Broker Port", "default":self.pluginConfig.get("mqtt_port",""), "note":"MQTT Broker Port."},
