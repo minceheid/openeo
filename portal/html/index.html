@@ -215,12 +215,13 @@
     	msg.textContent += "Refreshing page..";
       const res = await fetch(`/api/set_wifi?ssid=${encodeURIComponent(selectedSSID)}&password=${encodeURIComponent(password)}`);
       // when network is updated, we lose connection, so we don't get a good response from this fetch
-      // instead, let's reload the page after a 2 second pause and see what the result is..
-    	await new Promise(r => setTimeout(r,2000));
-	    //location.reload();
+      // instead, let's reload the page after a 5 second pause and see what the result is..
+    	await new Promise(r => setTimeout(r,5000));
+	location.reload();
     } catch (err) {
       msg.textContent = "Failed to apply settings ("+err+")";
       msg.style.color = "#f44336";
+      console.log("error:",err);
     }
   };
 
