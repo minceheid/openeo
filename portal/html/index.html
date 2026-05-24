@@ -9,8 +9,8 @@
     body {
       margin: 0;
       font-family: "Segoe UI", sans-serif;
-	background-color: #282c34;
-	color: white;
+      background-color: #282c34;
+      color: white;
       padding: 20px;
     }
     h1, h2 {
@@ -18,10 +18,10 @@
     }
 
     a {
-	color: #ffffff;
-	text-decoration: none;
-	font-weight: bold;
-}
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: bold;
+    }
 
     .header {
       display: flex;
@@ -66,6 +66,7 @@
       color: #e0e0e0;
       border: 1px solid #555;
       border-radius: 4px;
+      box-sizing: border-box;
     }
     button {
       background-color: #2196f3;
@@ -79,7 +80,7 @@
       font-size: 0.9em;
       margin-top: -5px;
     }
-        
+
     .logo {
       width: 40%;
       align-self: flex-end;
@@ -105,10 +106,80 @@
       padding: 0.2em;
       vertical-align: middle;
       font-size: 16pt;
-      font-family: Calibri, Arial, sans-serif; /* @TODO: fix font and store as local resource */
+      font-family: Calibri, Arial, sans-serif;
     }
 
-
+    /* Timezone searchable picker */
+    .tz-picker {
+      position: relative;
+      margin-top: 6px;
+      margin-bottom: 10px;
+    }
+    .tz-picker input {
+      margin: 0;
+      padding-right: 32px; /* room for the clear button */
+    }
+    .tz-picker .tz-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      font-size: 1.1em;
+      width: auto;
+      padding: 0;
+      margin: 0;
+      display: none;
+    }
+    .tz-picker .tz-clear:hover {
+      color: #e0e0e0;
+      background: none;
+    }
+    .tz-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background-color: #1e1e1e;
+      border: 1px solid #2196f3;
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .tz-dropdown.open {
+      display: block;
+    }
+    .tz-option {
+      padding: 9px 12px;
+      cursor: pointer;
+      font-size: 0.95em;
+      color: #e0e0e0;
+    }
+    .tz-option:hover,
+    .tz-option.focused {
+      background-color: #2a2a2a;
+      color: #ffffff;
+    }
+    .tz-option mark {
+      background: none;
+      color: #2196f3;
+      font-weight: bold;
+    }
+    .tz-option.active {
+      color: #4caf50;
+    }
+    .tz-none {
+      padding: 9px 12px;
+      color: #888;
+      font-size: 0.9em;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -119,26 +190,41 @@
       <span id="network-icon">☐</span>
       <span id="network-text">..checking..</span>
     </div>
-      <div class="logo" id="logo">
-        <div class="logo-inner">
-            <span class="logo-text">openeo</span>
-            <img src="static/openeo_vector_glyph_lightmono.svg" width="50" height="50"/>
-        </div>
+    <div class="logo" id="logo">
+      <div class="logo-inner">
+        <span class="logo-text">openeo</span>
+        <img src="static/openeo_vector_glyph_lightmono.svg" width="50" height="50"/>
       </div>
+    </div>
   </div>
 
   <!-- Wi-Fi Section -->
   <div class="section">
     <h2>Wi-Fi Networks</h2>
-    <div id="wifi-list">
-      <!-- Populated dynamically -->
-    </div>
-
+    <div id="wifi-list"></div>
     <div id="wifi-password-section" style="display:none;">
       <input type="text" id="wifi-password" placeholder="Enter Wi-Fi password">
       <button id="apply-wifi">Apply Network Settings</button>
       <div id="wifi-message" class="message"></div>
     </div>
+  </div>
+
+  <!-- Timezone Section -->
+  <div class="section">
+    <h2>Timezone</h2>
+    <div class="tz-picker" id="tz-picker">
+      <input
+        type="text"
+        id="tz-search"
+        placeholder="Loading timezones…"
+        autocomplete="off"
+        disabled
+      >
+      <button class="tz-clear" id="tz-clear" tabindex="-1" aria-label="Clear">✕</button>
+      <div class="tz-dropdown" id="tz-dropdown" role="listbox"></div>
+    </div>
+    <button id="apply-timezone">Apply Timezone</button>
+    <div id="timezone-message" class="message"></div>
   </div>
 
   <!-- SSH Public Key -->
@@ -150,7 +236,7 @@
   </div>
 
   <script>
-  
+
   let selectedSSID = null;
 
   const selectWiFi = (ssid, div) => {
@@ -162,13 +248,13 @@
   };
 
   ////////////////////////////////////
-  // get server side configuration and populate into form
+  // Get server-side configuration and populate form
 
   const loadWiFiNetworks = async () => {
     try {
       const res = await fetch("/api/get_wifi");
       const myData = await res.json();
-      const ssids = await myData["SSID"];
+      const ssids = myData["SSID"];
       const list = document.getElementById("wifi-list");
       list.innerHTML = "";
 
@@ -180,22 +266,155 @@
         list.appendChild(div);
       });
 
-    const ssh=document.getElementById("ssh-key");
-    ssh.textContent=myData["SSH"];
+      const ssh = document.getElementById("ssh-key");
+      ssh.textContent = myData["SSH"];
 
-    online=myData["INTERNET"];
-          const icon = document.getElementById("network-icon");
-          const text = document.getElementById("network-text");
-          icon.textContent = online ? "✅" : "❌";
-          icon.className = online ? "green" : "red";
-          text.textContent = online ? "Internet Online ("+myData["IP"]+")" : "Internet Offline";
-    
-          // Only show software update section if we are connected to the internet
-          if (online) {
-            document.getElementById("update-div").style.display='Block';
-          }
+      const online = myData["INTERNET"];
+      const icon = document.getElementById("network-icon");
+      const text = document.getElementById("network-text");
+      icon.textContent = online ? "✅" : "❌";
+      icon.className = online ? "green" : "red";
+      text.textContent = online ? "Internet Online (" + myData["IP"] + ")" : "Internet Offline";
+
+      if (online) {
+        document.getElementById("update-div").style.display = 'Block';
+      }
     } catch (err) {
       console.error("Wi-Fi scan failed:", err);
+    }
+  };
+
+  ////////////////////////////////////
+  // Searchable timezone picker
+
+  let allTimezones = [];
+  let selectedTimezone = null;
+  let focusedIndex = -1;
+
+  const tzSearch   = document.getElementById("tz-search");
+  const tzDropdown = document.getElementById("tz-dropdown");
+  const tzClear    = document.getElementById("tz-clear");
+
+  // Highlight matching substring inside a timezone string
+  const highlight = (tz, query) => {
+    if (!query) return tz;
+    const idx = tz.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return tz;
+    return (
+      tz.slice(0, idx) +
+      `<mark>${tz.slice(idx, idx + query.length)}</mark>` +
+      tz.slice(idx + query.length)
+    );
+  };
+
+  const renderDropdown = (query) => {
+    const filtered = query
+      ? allTimezones.filter(tz => tz.toLowerCase().includes(query.toLowerCase()))
+      : allTimezones;
+
+    focusedIndex = -1;
+    tzDropdown.innerHTML = "";
+
+    if (filtered.length === 0) {
+      tzDropdown.innerHTML = `<div class="tz-none">No matches for "${query}"</div>`;
+    } else {
+      filtered.forEach((tz, i) => {
+        const div = document.createElement("div");
+        div.className = "tz-option" + (tz === selectedTimezone ? " active" : "");
+        div.setAttribute("role", "option");
+        div.dataset.tz = tz;
+        div.innerHTML = highlight(tz, query);
+        div.onmousedown = (e) => {
+          // mousedown fires before blur; prevent blur from closing before click registers
+          e.preventDefault();
+          commitSelection(tz);
+        };
+        tzDropdown.appendChild(div);
+      });
+    }
+
+    tzDropdown.classList.add("open");
+  };
+
+  const commitSelection = (tz) => {
+    selectedTimezone = tz;
+    tzSearch.value = tz;
+    tzDropdown.classList.remove("open");
+    tzClear.style.display = "inline";
+    document.getElementById("timezone-message").textContent = "";
+  };
+
+  const clearSelection = () => {
+    selectedTimezone = null;
+    tzSearch.value = "";
+    tzClear.style.display = "none";
+    tzSearch.focus();
+  };
+
+  tzSearch.addEventListener("focus", () => {
+    if (allTimezones.length) renderDropdown(tzSearch.value);
+  });
+
+  tzSearch.addEventListener("input", () => {
+    tzClear.style.display = tzSearch.value ? "inline" : "none";
+    renderDropdown(tzSearch.value);
+  });
+
+  tzSearch.addEventListener("blur", () => {
+    // Small delay so mousedown on an option can fire first
+    setTimeout(() => tzDropdown.classList.remove("open"), 150);
+  });
+
+  tzSearch.addEventListener("keydown", (e) => {
+    const items = tzDropdown.querySelectorAll(".tz-option");
+    if (!items.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      focusedIndex = Math.min(focusedIndex + 1, items.length - 1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      focusedIndex = Math.max(focusedIndex - 1, 0);
+    } else if (e.key === "Enter" && focusedIndex >= 0) {
+      e.preventDefault();
+      commitSelection(items[focusedIndex].dataset.tz);
+      return;
+    } else if (e.key === "Escape") {
+      tzDropdown.classList.remove("open");
+      return;
+    }
+
+    items.forEach((el, i) => el.classList.toggle("focused", i === focusedIndex));
+    if (focusedIndex >= 0) {
+      items[focusedIndex].scrollIntoView({ block: "nearest" });
+    }
+  });
+
+  tzClear.addEventListener("click", clearSelection);
+
+  const loadTimezones = async () => {
+    const msg = document.getElementById("timezone-message");
+    try {
+      const res = await fetch("/api/get_timezones");
+      const data = await res.json();
+
+      if (data.error) {
+        msg.textContent = "Failed to load timezones: " + data.error;
+        msg.style.color = "#f44336";
+        return;
+      }
+
+      allTimezones = data.timezones;
+      tzSearch.placeholder = "Search timezones…";
+      tzSearch.disabled = false;
+
+      if (data.current) {
+        commitSelection(data.current);
+      }
+    } catch (err) {
+      msg.textContent = "Failed to load timezones.";
+      msg.style.color = "#f44336";
+      console.error("Timezone load failed:", err);
     }
   };
 
@@ -210,21 +429,48 @@
       msg.style.color = "#f44336";
       return;
     }
-    msg.textContent = "Connecting..";
+    msg.textContent = "Connecting.. Refreshing page..";
     try {
-    	msg.textContent += "Refreshing page..";
-      const res = await fetch(`/api/set_wifi?ssid=${encodeURIComponent(selectedSSID)}&password=${encodeURIComponent(password)}`);
-      // when network is updated, we lose connection, so we don't get a good response from this fetch
-      // instead, let's reload the page after a 5 second pause and see what the result is..
-    	await new Promise(r => setTimeout(r,5000));
-	location.reload();
+      await fetch(`/api/set_wifi?ssid=${encodeURIComponent(selectedSSID)}&password=${encodeURIComponent(password)}`);
+      await new Promise(r => setTimeout(r, 5000));
+      location.reload();
     } catch (err) {
-      msg.textContent = "Failed to apply settings ("+err+")";
+      msg.textContent = "Failed to apply settings (" + err + ")";
       msg.style.color = "#f44336";
-      console.log("error:",err);
     }
   };
 
+  ////////////////////////////////////
+  // Apply selected timezone
+
+  document.getElementById("apply-timezone").onclick = async () => {
+    const msg = document.getElementById("timezone-message");
+
+    if (!selectedTimezone) {
+      msg.textContent = "Please select a timezone.";
+      msg.style.color = "#f44336";
+      return;
+    }
+
+    msg.textContent = "Applying...";
+    msg.style.color = "#e0e0e0";
+
+    try {
+      const res = await fetch(`/api/set_timezone?timezone=${encodeURIComponent(selectedTimezone)}`);
+      const result = await res.json();
+
+      if (result.error) {
+        msg.textContent = "Error: " + result.error;
+        msg.style.color = "#f44336";
+      } else {
+        msg.textContent = "Timezone set to " + result.timezone;
+        msg.style.color = "#4caf50";
+      }
+    } catch (err) {
+      msg.textContent = "Failed to apply timezone.";
+      msg.style.color = "#f44336";
+    }
+  };
 
   ////////////////////////////////////
   // Update SSH Authorized_keys
@@ -244,17 +490,17 @@
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ key })
       });
-      const result = await res;
-      msg.textContent = result.status==200 ? "SSH key applied." : "Update Error - Invalid Key?";
-      msg.style.color = result.status==200 ? "#4caf50" : "#f44336";
+      msg.textContent = res.status == 200 ? "SSH key applied." : "Update Error - Invalid Key?";
+      msg.style.color = res.status == 200 ? "#4caf50" : "#f44336";
     } catch (err) {
       msg.textContent = "Failed to apply SSH key.";
       msg.style.color = "#f44336";
-    	console.log(err);
+      console.log(err);
     }
   };
 
   loadWiFiNetworks();
+  loadTimezones();
   </script>
 
 </body>

@@ -106,12 +106,90 @@ def api_set_ssh(params, post_data):
         return {"error": "Invalid Key"}
 
 
+def api_get_timezones(params):
+    """Return the list of valid timezones and the currently active one."""
+    try:
+        result = subprocess.run(
+            ['timedatectl', 'list-timezones'],
+            capture_output=True, text=True, check=True
+        )
+        timezones = [tz for tz in result.stdout.splitlines() if tz.strip()]
+        return {
+            "timezones": timezones,
+            "current": get_current_timezone()
+        }
+    except subprocess.CalledProcessError as e:
+        return {"error": f"Failed to list timezones: {e.stderr.strip()}"}
+    except Exception as e:
+        return {"error": str(e)}
 
+
+def api_set_timezone(params):
+    """Set the system timezone. Expects ?timezone=Region/City in the query string."""
+    timezone = params.get("timezone", None)
+
+    if not timezone or not isinstance(timezone, str):
+        return {"error": "Missing or invalid 'timezone' parameter"}
+
+    if not is_valid_timezone(timezone):
+        return {"error": f"Unknown timezone: '{timezone}'"}
+
+    try:
+        if DRYRUN:
+            print(f"api_set_timezone {timezone} - dryrun - not executed")
+            return {"timezone": timezone, "dryrun": True}
+
+        result=subprocess.run(['sudo', 'rm', '-f', '/etc/localtime'])
+        if result.returncode != 0:
+            return {"error": f"rm error: {result.stderr.strip()}"}
+        result=subprocess.run(
+            ["sudo", "tee", "/etc/timezone"],
+            input=timezone + "\n",
+            text=True,
+            check=True
+        )
+        if result.returncode != 0:
+            return {"error": f"tee error: {result.stderr.strip()}"}
+
+        result = subprocess.run(
+            ['sudo', 'dpkg-reconfigure', '-f', 'noninteractive', 'tzdata'],
+            capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            return {"error": f"timedatectl error: {result.stderr.strip()}"}
+
+        return {"timezone": get_current_timezone()}
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
 # =========================
 # API supporting functions
 # =========================
+
+def get_current_timezone():
+    """Return the currently configured timezone string, or None on failure."""
+    try:
+        with open("/etc/timezone", "r") as f:
+            timezone = f.read().strip()
+        return timezone if timezone else None
+    except Exception:
+        return None
+
+
+def is_valid_timezone(timezone):
+    """Check that the given string is present in timedatectl's timezone list."""
+    try:
+        result = subprocess.run(
+            ['timedatectl', 'list-timezones'],
+            capture_output=True, text=True, check=True
+        )
+        valid_timezones = set(result.stdout.splitlines())
+        return timezone in valid_timezones
+    except Exception:
+        return False
+
 
 def get_ip_address(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -242,7 +320,8 @@ def is_valid_key(key):
 API_HANDLERS_GET = {
     "get_wifi": api_get_wifi,
     "set_wifi": api_set_wifi,
-
+    "get_timezones": api_get_timezones,
+    "set_timezone": api_set_timezone,
 }
 API_HANDLERS_POST = {
     "set_ssh": api_set_ssh,
@@ -343,6 +422,7 @@ def main():
     args = parser.parse_args()
 
     os.chdir(args.dir)
+    print(f"Serving directory: {args.dir}")
     on_startup()
 
     serverthread = threading.Thread(target=webserver, name='serverthread', daemon=True)

@@ -28,7 +28,7 @@ fi
 
 # Install prereq packages
 $SUDO apt-get update
-$SUDO apt-get install -y python3-serial python3-websockets python3-jsonschema python3-psutil python3-paho-mqtt dnsmasq iptables
+$SUDO apt-get install -y python3-serial python3-websockets python3-jsonschema python3-psutil python3-paho-mqtt dnsmasq iptables tzdata-legacy
 
 if [ $? -ne 0 ] ; then
 	echo >&2 "ERROR: Package Install failed - Deploy Aborted"
