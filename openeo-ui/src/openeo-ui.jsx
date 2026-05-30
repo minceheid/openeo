@@ -404,8 +404,6 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
 
           {/* Prev/Next controls */}
           <div className="absolute inset-y-0 -left-3 flex items-center">
-{ timersActive && (
-
             <button
               onClick={() => go(-1)}
               className={`h-12 w-12 rounded-full grid place-items-center bg-white/10 hover:bg-white/20 transition ${hasPrev ? '' : 'opacity-40 pointer-events-none'}`}
@@ -413,12 +411,8 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
             >
               ‹
             </button>
-)}
-
           </div>
           <div className="absolute inset-y-0 -right-3 flex items-center">
-{ timersActive && (
-
             <button
               onClick={() => go(1)}
               className={`h-12 w-12 rounded-full grid place-items-center bg-white/10 hover:bg-white/20 transition ${hasNext ? '' : 'opacity-40 pointer-events-none'}`}
@@ -426,12 +420,12 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
             >
               ›
             </button>
-)}
         </div>
 
         {/* Dots */}
         <div className="mt-1 flex justify-center gap-2 h-auto">
-          {timersActive && visibleSchedules.map((_, i) => (
+          
+          { visibleSchedules.map((_, i) => (
             <button key={i} onClick={() => setActive(i)} className={`h-2.5 w-2.5 rounded-full ${i === active ? 'bg-white' : 'bg-white/30 hover:bg-white/50'}`} />
           ))}
         </div>
