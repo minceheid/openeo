@@ -90,11 +90,7 @@ export default function Update({ status = {} }) {
   }, [log]);
 
   const versionPanelStyle = {
-    display: "inline-block",  // ← add this
-
-    //position: "fixed",
-    //top: "12px",
-    //left: "12px",
+    display: "inline-block", 
     background: "#0d1f33",
     border: "1px solid #2a4a6e",
     borderRadius: "6px",
@@ -102,8 +98,7 @@ export default function Update({ status = {} }) {
     fontSize: "11px",
     color: "#7ab8f0",
     lineHeight: "1.7",
-    zIndex: 1000,
-    //minWidth: "180px",
+
   };
 
   const versionLabelStyle = {
