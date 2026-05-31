@@ -81,7 +81,7 @@ export const styles = {
   sectionHeader: {
     background: "#1e2229",
     borderBottom: "1px solid #2e3340",
-    padding: "10px 20px",
+    padding: "10px 15px",
     fontSize: "11px",
     letterSpacing: "0.12em",
     textTransform: "uppercase",
@@ -90,8 +90,8 @@ export const styles = {
   },
   fieldRow: {
     display: "flex",
-    alignItems: "center",
-    padding: "0 5px",
+    justifyContent: "flex-start",
+    padding: "2px 20px",
     minHeight: "52px",
     borderBottom: "1px solid #2a2f3a",
     transition: "background 0.15s",
@@ -103,11 +103,7 @@ export const styles = {
     fontWeight: 400,
     color: "#b0b8c8",
     fontSize: "13.5px",
-    //border: "1px solid #15f315",
     maxWidth: "calc(100vw - 230px)",
-    width:    "calc(100vw - 230px)",
-    minWidth: "calc(100vw - 230px)",
-
   },
   fieldNote: {
     fontSize: "11px",

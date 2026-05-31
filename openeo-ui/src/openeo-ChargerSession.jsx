@@ -1,6 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { buildUrl } from './utils/funcs';
-import { globalCss,styles } from './utils/styles';
+import { buildUrl,getCurrencyConfig } from './utils/funcs';
+import { globalCss, styles } from './utils/styles';
+
+// ── Currency detection ─────────────────────────────────────────────────────
+
+const CURRENCY = getCurrencyConfig();
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat(CURRENCY.locale, {
+    style: "currency",
+    currency: CURRENCY.currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount ?? 0);
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -19,12 +32,12 @@ function getMonth(d) {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-function aggregate(data, keyFunc) {
+function aggregate(data, keyFunc, valueKey = "kwh_number") {
   const totals = {};
   data.forEach((session) => {
     const date = new Date(session.first_timestamp * 1000);
     const key = keyFunc(date);
-    totals[key] = (totals[key] || 0) + session.kwh_number;
+    totals[key] = (totals[key] || 0) + session[valueKey];
   });
   return totals;
 }
@@ -69,6 +82,7 @@ function processSessionData(raw) {
     ...x,
     kwh: Math.round(x.joules / 360000) / 10 + " kWh",
     kwh_number: Math.round(x.joules / 360000) / 10,
+    cost: x.cost ?? 0,
     duration: Math.round(
       (x.last_timestamp - Math.max(x.first_timestamp, x.day_timestamp)) / 60
     ),
@@ -90,6 +104,7 @@ function processSessionData(raw) {
   const tabledata = [];
   let last_entry = null;
   let sessionjoules = 0;
+  let sessioncost = 0;
 
   const annotated = sessiondata.map((x) => ({ ...x }));
 
@@ -98,6 +113,7 @@ function processSessionData(raw) {
       tabledata.push({ ...x });
       last_entry = x.first_timestamp;
       sessionjoules = x.joules;
+      sessioncost = x.cost;
     } else {
       const row = tabledata[tabledata.length - 1];
       row.last_timestamp = x.last_timestamp;
@@ -107,10 +123,14 @@ function processSessionData(raw) {
       row.kwh_number = x.kwh_number;
       row.duration += x.duration;
       row.minutes_charged += x.minutes_charged;
+      row.cost = (row.cost || 0) + (x.cost || 0);
 
-      const next = x.joules;
+      const nextJoules = x.joules;
+      const nextCost = x.cost;
       x.joules -= sessionjoules;
-      sessionjoules = next;
+      x.cost -= sessioncost;
+      sessionjoules = nextJoules;
+      sessioncost = nextCost;
       x.first_timestamp = x.day_timestamp;
     }
   });
@@ -127,12 +147,20 @@ function processSessionData(raw) {
 
 function downloadCSV(tabledata) {
   const rows = [
-    ["From", "To", "Connected Duration (Minutes)", "Power Delivered (kWh)", "Charging Duration (Minutes)", "Average Power (kW)"],
+    [
+      "From",
+      "To",
+      "Connected Duration (Minutes)",
+      "Power Delivered (kWh)",
+      "Charging Duration (Minutes)",
+      "Average Power (kW)",
+      `Cost (${CURRENCY.symbol})`,
+    ],
   ];
   tabledata.forEach((x) => {
     const ap =
       x.minutes_charged > 0
-        ? Math.round((x.joules / 360000) / (x.minutes_charged / 60) * 10) / 10
+        ? Math.round((x.joules / 360000) / (x.minutes_charged / 60)) /10
         : "";
     rows.push([
       x.timestamp,
@@ -141,6 +169,7 @@ function downloadCSV(tabledata) {
       Math.round(x.joules / 360000) / 10,
       x.minutes_charged,
       ap,
+      (x.cost ?? 0).toFixed(2),
     ]);
   });
   const csvContent =
@@ -153,21 +182,91 @@ function downloadCSV(tabledata) {
   document.body.removeChild(link);
 }
 
+// ── Toggle Switch ──────────────────────────────────────────────────────────
+
+function MetricToggle({ showCost, onChange }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{
+        fontSize: "0.75rem",
+        fontWeight: 600,
+        letterSpacing: "0.08em",
+        color: !showCost ? "rgba(64,200,255,0.95)" : "#4a6a80",
+        transition: "color 0.2s",
+        textTransform: "uppercase",
+      }}>
+        kWh
+      </span>
+
+      {/* Track */}
+      <div
+        onClick={() => onChange(!showCost)}
+        style={{
+          position: "relative",
+          width: 44,
+          height: 24,
+          borderRadius: 12,
+          background: showCost
+            ? "rgba(80,240,160,0.25)"
+            : "rgba(64,200,255,0.18)",
+          border: showCost
+            ? "1px solid rgba(80,240,160,0.45)"
+            : "1px solid rgba(64,200,255,0.35)",
+          cursor: "pointer",
+          transition: "background 0.25s, border-color 0.25s",
+          flexShrink: 0,
+        }}
+      >
+        {/* Thumb */}
+        <div style={{
+          position: "absolute",
+          top: 3,
+          left: showCost ? 23 : 3,
+          width: 16,
+          height: 16,
+          borderRadius: "50%",
+          background: showCost
+            ? "rgba(80,240,160,0.95)"
+            : "rgba(64,200,255,0.95)",
+          boxShadow: showCost
+            ? "0 0 6px rgba(80,240,160,0.6)"
+            : "0 0 6px rgba(64,200,255,0.6)",
+          transition: "left 0.22s cubic-bezier(0.4,0,0.2,1), background 0.25s, box-shadow 0.25s",
+        }} />
+      </div>
+
+      <span style={{
+        fontSize: "0.75rem",
+        fontWeight: 600,
+        letterSpacing: "0.08em",
+        color: showCost ? "rgba(80,240,160,0.95)" : "#4a6a80",
+        transition: "color 0.2s",
+        textTransform: "uppercase",
+      }}>
+        {CURRENCY.symbol} Cost
+      </span>
+    </div>
+  );
+}
+
 // ── Chart component (Plotly via CDN) ───────────────────────────────────────
 
-function ChargingChart({ sessiondata }) {
+function ChargingChart({ sessiondata, showCost }) {
   const chartRef = useRef(null);
   const plotlyReady = useRef(false);
 
   const renderChart = useCallback(() => {
     if (!chartRef.current || !window.Plotly || !sessiondata.length) return;
 
-    const dailyTotals = aggregate(sessiondata, getDate);
-    const weeklyTotals = aggregate(sessiondata, getWeekCommencing);
-    const monthlyTotals = aggregate(sessiondata, getMonth);
+    const valueKey = showCost ? "cost" : "kwh_number";
+    const yLabel = showCost ? CURRENCY.symbol : "kWh";
 
-    const last7Days = lastN(dailyTotals, 7, "daily");
-    const last4Weeks = lastN(weeklyTotals, 4, "weekly");
+    const dailyTotals   = aggregate(sessiondata, getDate,           valueKey);
+    const weeklyTotals  = aggregate(sessiondata, getWeekCommencing, valueKey);
+    const monthlyTotals = aggregate(sessiondata, getMonth,          valueKey);
+
+    const last7Days   = lastN(dailyTotals,   7, "daily");
+    const last4Weeks  = lastN(weeklyTotals,  4, "weekly");
     const last4Months = lastN(monthlyTotals, 4, "monthly");
 
     const w = window.innerWidth;
@@ -177,12 +276,28 @@ function ChargingChart({ sessiondata }) {
       w >= 768 ? 11 : w < 375 ? 6 : 6 + ((11 - 6) * (w - 375)) / (768 - 375);
 
     const BAR_OPACITY = 0.85;
+    const colors = showCost
+      ? [
+          `rgba(255,185,50,${BAR_OPACITY})`,
+          `rgba(255,130,60,${BAR_OPACITY})`,
+          `rgba(255,210,80,${BAR_OPACITY})`,
+        ]
+      : [
+          `rgba(64,200,255,${BAR_OPACITY})`,
+          `rgba(80,240,160,${BAR_OPACITY})`,
+          `rgba(200,100,255,${BAR_OPACITY})`,
+        ];
+
+    const annotationColors = showCost
+      ? ["rgba(255,185,50,0.9)", "rgba(255,130,60,0.9)", "rgba(255,210,80,0.9)"]
+      : ["rgba(64,200,255,0.9)",  "rgba(80,240,160,0.9)", "rgba(200,100,255,0.9)"];
+
     const traces = [
       {
         x: last7Days.labels,
         y: last7Days.values,
         type: "bar",
-        marker: { color: `rgba(64,200,255,${BAR_OPACITY})`, line: { width: 0 } },
+        marker: { color: colors[0], line: { width: 0 } },
         name: "Daily",
         legendgroup: "1",
       },
@@ -190,7 +305,7 @@ function ChargingChart({ sessiondata }) {
         x: last4Weeks.labels,
         y: last4Weeks.values,
         type: "bar",
-        marker: { color: `rgba(80,240,160,${BAR_OPACITY})`, line: { width: 0 } },
+        marker: { color: colors[1], line: { width: 0 } },
         name: "Weekly",
         legendgroup: "2",
         xaxis: "x2",
@@ -200,7 +315,7 @@ function ChargingChart({ sessiondata }) {
         x: last4Months.labels,
         y: last4Months.values,
         type: "bar",
-        marker: { color: `rgba(200,100,255,${BAR_OPACITY})`, line: { width: 0 } },
+        marker: { color: colors[2], line: { width: 0 } },
         name: "Monthly",
         legendgroup: "3",
         xaxis: "x3",
@@ -222,16 +337,16 @@ function ChargingChart({ sessiondata }) {
       plot_bgcolor: "rgba(0,0,0,0)",
       showlegend: false,
       grid: { rows: 1, columns: 3, pattern: "independent" },
-      xaxis: { ...axisBase, type: "category", tickangle: -45, title: "" },
+      xaxis:  { ...axisBase, type: "category", tickangle: -45, title: "" },
       xaxis2: { ...axisBase, type: "category", tickangle: -45, title: "" },
       xaxis3: { ...axisBase, type: "category", tickangle: -45, title: "" },
-      yaxis: { ...axisBase, title: "kWh", minallowed:0 },
-      yaxis2: { ...axisBase, title: "kWh", minallowed:0 },
-      yaxis3: { ...axisBase, title: "kWh", minallowed:0 },
+      yaxis:  { ...axisBase, title: yLabel, minallowed: 0 },
+      yaxis2: { ...axisBase, title: yLabel, minallowed: 0 },
+      yaxis3: { ...axisBase, title: yLabel, minallowed: 0 },
       annotations: [
-        { text: "DAILY", font: { size: titlefont, color: "rgba(64,200,255,0.9)" }, showarrow: false, x: 0.115, y: 1.18, xref: "paper", yref: "paper", align: "center" },
-        { text: "WEEKLY", font: { size: titlefont, color: "rgba(80,240,160,0.9)" }, showarrow: false, x: 0.5, y: 1.18, xref: "paper", yref: "paper", align: "center" },
-        { text: "MONTHLY", font: { size: titlefont, color: "rgba(200,100,255,0.9)" }, showarrow: false, x: 0.895, y: 1.18, xref: "paper", yref: "paper", align: "center" },
+        { text: "DAILY",   font: { size: titlefont, color: annotationColors[0] }, showarrow: false, x: 0.115, y: 1.18, xref: "paper", yref: "paper", align: "center" },
+        { text: "WEEKLY",  font: { size: titlefont, color: annotationColors[1] }, showarrow: false, x: 0.5,   y: 1.18, xref: "paper", yref: "paper", align: "center" },
+        { text: "MONTHLY", font: { size: titlefont, color: annotationColors[2] }, showarrow: false, x: 0.895, y: 1.18, xref: "paper", yref: "paper", align: "center" },
       ],
     };
 
@@ -239,7 +354,7 @@ function ChargingChart({ sessiondata }) {
       displayModeBar: false,
       responsive: true,
     });
-  }, [sessiondata]);
+  }, [sessiondata, showCost]);
 
   // Load Plotly from CDN once
   useEffect(() => {
@@ -276,7 +391,7 @@ function SessionTable({ tabledata, narrow }) {
 
   return (
     <div style={{ overflowX: "auto", width: "100%" }}>
-      <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 2px", fontSize: "0.78rem"}}>
+      <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 2px", fontSize: "0.78rem" }}>
         <thead>
           <tr>
             <Th>From</Th>
@@ -285,6 +400,7 @@ function SessionTable({ tabledata, narrow }) {
             <Th>Delivered</Th>
             <Th>Charging<br />(min)</Th>
             {!narrow && <Th>Avg Power</Th>}
+            <Th>Cost</Th>
           </tr>
         </thead>
         <tbody>
@@ -296,6 +412,9 @@ function SessionTable({ tabledata, narrow }) {
               <Td style={{ color: "rgba(64,200,255,0.9)", fontWeight: 600 }}>{row.kwh}</Td>
               <Td>{row.minutes_charged}</Td>
               {!narrow && <Td style={{ color: "rgba(80,240,160,0.85)" }}>{row.average_power}</Td>}
+              <Td style={{ color: "rgba(255,185,50,0.95)", fontWeight: 600 }}>
+                {formatCurrency(row.cost)}
+              </Td>
             </tr>
           ))}
         </tbody>
@@ -336,6 +455,7 @@ export default function ChargerSession() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [narrow, setNarrow] = useState(window.innerWidth < 460);
+  const [showCost, setShowCost] = useState(false);
 
   useEffect(() => {
     const onResize = () => setNarrow(window.innerWidth < 460);
@@ -368,7 +488,8 @@ export default function ChargerSession() {
 
       {/* Toolbar */}
       <div style={styles.buttonRow}>
-        <button style={styles.Btn} 
+        <button
+          style={styles.Btn}
           onClick={() => downloadCSV(tabledata)}
           disabled={!tabledata.length}
           onMouseEnter={(e) => {
@@ -384,11 +505,14 @@ export default function ChargerSession() {
         </button>
       </div>
 
-
       {/* Chart */}
-
       <div style={styles.section}>
-        <div style={styles.sectionHeader}>Energy Delivered</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 4 }}>
+          <div style={styles.sectionHeader}>Energy Delivered</div>
+          {!loading && !error && sessiondata.length > 0 && (
+            <MetricToggle showCost={showCost} onChange={setShowCost} />
+          )}
+        </div>
         {loading ? (
           <StatusMessage icon="⚡" title="Fetching session data…" />
         ) : error ? (
@@ -396,7 +520,7 @@ export default function ChargerSession() {
         ) : sessiondata.length === 0 ? (
           <StatusMessage icon="🔌" title="No sessions recorded yet" />
         ) : (
-          <ChargingChart sessiondata={sessiondata} />
+          <ChargingChart sessiondata={sessiondata} showCost={showCost} />
         )}
       </div>
 
