@@ -16,3 +16,34 @@ export function buildUrl(path) {
   
   return path;
 }
+
+export function getCurrencyConfig() {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+
+  if (tz.startsWith("Pacific/Auckland") || tz.startsWith("NZ"))
+    return { locale: "en-NZ", currency: "NZD", symbol: "NZ$" };
+
+  if (tz.startsWith("Australia/"))
+    return { locale: "en-AU", currency: "AUD", symbol: "A$" };
+
+  const ukZones = [
+    "Europe/London", "Europe/Belfast", "Europe/Jersey",
+    "Europe/Guernsey", "Europe/Isle_of_Man",
+  ];
+
+  if (ukZones.includes(tz))
+    return { locale: "en-GB", currency: "GBP", symbol: "£" };
+
+  if (tz.startsWith("Europe/"))
+    return { locale: "de-DE", currency: "EUR", symbol: "€" };
+
+  if (
+    tz.startsWith("America/") ||
+    tz.startsWith("US/") ||
+    ["EST", "PST", "CST", "MST"].includes(tz)
+  )
+    return { locale: "en-US", currency: "USD", symbol: "$" };
+
+  // Fallback → GBP
+  return { locale: "en-GB", currency: "GBP", symbol: "£" };
+}

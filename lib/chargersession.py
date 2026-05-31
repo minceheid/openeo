@@ -20,7 +20,11 @@ _LOGGER = logging.getLogger(__name__)
 class chargersessionClassPlugin(PluginSuperClass):
     PRETTY_NAME = "Session"
     CORE_PLUGIN = True  
-    pluginParamSpec={}
+    pluginParamSpec={ "enabled": {"type": "bool","default": True},
+			"tariff": {
+                "type": "json",
+                "default":'[{"start": "0000", "end": "0029", "cost": 0.27048},{"start": "0030", "end": "0529", "cost": 0.04998},{"start": "0530", "end": "2359", "cost": 0.27048}]'}}
+            
     lastloop=datetime.datetime.now()
 
     SESSION_DB_FILE="/home/pi/etc/session.db"
@@ -33,6 +37,7 @@ class chargersessionClassPlugin(PluginSuperClass):
     SESSION_TABLE="session"
     SESSION_TABLE_2="session2"
     SESSION_TABLE_3="session_v3"
+    SESSION_TABLE_4="session_v4"
         
     def poll(self):
         # If charger state indicates that the car might be disconnected, then
@@ -42,7 +47,9 @@ class chargersessionClassPlugin(PluginSuperClass):
         # Test flag used for development testing. Set to False for production use
         # When set to True, then there will be repeated (fictonal) sessions generated
         # for the purpose of testing the logging mechanism
+        
         TEST=False
+        #TEST=True
         def testfunc():
             return ((int((datetime.datetime.now()).hour-1)/2)-1) % 2 == 0
         
@@ -54,11 +61,12 @@ class chargersessionClassPlugin(PluginSuperClass):
             globalState.stateDict["eo_session_joules"]=0
             globalState.stateDict["eo_session_kwh"]=0
             globalState.stateDict["eo_session_seconds_charged"]=0
+            globalState.stateDict["eo_session_cost"]=0
             globalState.stateDict["eo_session_timestamp"]=int(time.time())
 
             if (TEST==True):
                 # Debug logging
-                globalState.configDB.logwrite(f"Sessionlog resetting {globalState.stateDict['eo_session_timestamp']}")
+                print(f"Sessionlog resetting {globalState.stateDict['eo_session_timestamp']}")
 
         else:
             secondsSinceLastLoop=(thisloop-self.lastloop).total_seconds()
@@ -66,18 +74,39 @@ class chargersessionClassPlugin(PluginSuperClass):
             #print(f"secondsSinceLastLoop={secondsSinceLastLoop} thisloop={thisloop} lastloop={self.lastloop}")
             #print(f"eo_session_seconds_charged={globalState.stateDict['eo_session_seconds_charged']}")
             #print(f"eo_current_vehicle={globalState.stateDict['eo_current_vehicle']}")
+            # Get Tariff for this loop
+            tariff=0.0
+            current_hhmm=self.timestamp_hhmm(int(time.time()))
+
+            for x in self.pluginConfig["tariff"]:
+                if x["start"]<=current_hhmm<=x["end"]:
+                    tariff=x["cost"]
+                    break
 
             if (TEST==True):
                 ## Test Routine
-                globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * 32 * secondsSinceLastLoop) ## TEST
-                globalState.stateDict["eo_session_seconds_charged"]+=secondsSinceLastLoop
+
+                joulesThisLoop = int(globalState.stateDict["eo_live_voltage"] * 32 * secondsSinceLastLoop)
+                kWhThisLoop = joulesThisLoop / 3600000
+                costThisLoop = kWhThisLoop * tariff
+
+                globalState.stateDict["eo_session_joules"]+= joulesThisLoop ## LIVE
+                globalState.stateDict["eo_session_cost"]+= costThisLoop ## LIVE
                 # Debug Logging
-                globalState.configDB.logwrite(f"Sessionlog accumulating {globalState.stateDict['eo_session_joules']}j {globalState.stateDict['eo_session_seconds_charged']}s")
+                print(f"Sessionlog accumulating {globalState.stateDict['eo_session_joules']}j {globalState.stateDict['eo_session_seconds_charged']}s £{globalState.stateDict['eo_session_cost']}")
 
             else:
                 ## Production Routine
                 # 1J = 1Ws = 1 x V * A * s
-                globalState.stateDict["eo_session_joules"]+= int(globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"] * secondsSinceLastLoop) ## LIVE
+                # 1kWh = 3.6 million joules
+
+                joulesThisLoop = int(globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"] * secondsSinceLastLoop)
+                kWhThisLoop = joulesThisLoop / 3600000
+                costThisLoop = kWhThisLoop * tariff
+
+                globalState.stateDict["eo_session_joules"]+= joulesThisLoop ## LIVE
+                globalState.stateDict["eo_session_cost"]+= costThisLoop ## LIVE
+
                 # If eo_current_vehicle is >=2, then the last cycle is counted against the number of seconds that this session has been actively trying to charge
                 if globalState.stateDict["eo_current_vehicle"]>=2:
                     globalState.stateDict["eo_session_seconds_charged"]+=secondsSinceLastLoop
@@ -88,7 +117,7 @@ class chargersessionClassPlugin(PluginSuperClass):
 
             # Once a minute, we should write the current session information to the persistent log
             if (thisloop.minute>self.lastloop.minute):
-                self.writesessionlog(globalState.stateDict["eo_session_timestamp"],globalState.stateDict["eo_session_joules"],globalState.stateDict["eo_session_seconds_charged"])
+                self.writesessionlog(globalState.stateDict["eo_session_timestamp"],globalState.stateDict["eo_session_joules"],globalState.stateDict["eo_session_seconds_charged"],globalState.stateDict["eo_session_cost"])
 
         # Reset the time counter for next time.
         self.lastloop=thisloop
@@ -103,13 +132,17 @@ class chargersessionClassPlugin(PluginSuperClass):
         value = datetime.datetime.fromtimestamp(ts)
         return(f"{value:%Y-%m-%d %H:%M:%S}")
 
+    def timestamp_hhmm(self,ts):
+        value = datetime.datetime.fromtimestamp(ts)
+        return(f"{value:%H%M}")
+
 
     # Write session log to sqlite3 db
-    def writesessionlog(self,timestamp,joules,seconds_charged):
+    def writesessionlog(self,timestamp,joules,seconds_charged,cost=0.0):
         with self.lock:
             now=int(time.time())
-            sql=f'''REPLACE INTO {self.SESSION_TABLE_3} (first_timestamp, last_timestamp, day_timestamp, joules,seconds_charged) \
-VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds_charged})
+            sql=f'''REPLACE INTO {self.SESSION_TABLE_4} (first_timestamp, last_timestamp, day_timestamp, joules,seconds_charged, cost) \
+VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds_charged},{cost})
 -- {self.timestamp_text(timestamp)} {self.timestamp_text(now)} {self.timestamp_text(self.timestamp_start_of_today())}'''
             #print(sql)
             self.cursor.execute(sql)
@@ -122,7 +155,7 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
         six_months_ago=int(time.time()) - 60*60*24*180
         with self.lock:
             # Only retrieve sizeable sessions to remove any noise from short term connections from plug/unplug
-            self.cursor.execute(f"SELECT first_timestamp, last_timestamp, day_timestamp, joules, seconds_charged FROM {self.SESSION_TABLE_3} where joules>1500000 and first_timestamp>{six_months_ago}")
+            self.cursor.execute(f"SELECT first_timestamp, last_timestamp, day_timestamp, joules, seconds_charged, cost FROM {self.SESSION_TABLE_4} where joules>1500000 and first_timestamp>{six_months_ago}")
             rows = self.cursor.fetchall()
 
         data=[]
@@ -131,7 +164,8 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
                "last_timestamp":x[1],
                "day_timestamp":x[2],
                "joules":x[3],
-               "seconds_charged":x[4]}
+               "seconds_charged":x[4],
+               "cost":x[5]}
                )
         
         return data
@@ -155,13 +189,15 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
         self.conn.execute('pragma journal_mode=wal')
 
         self.cursor = self.conn.cursor()
+        
         self.cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS {self.SESSION_TABLE_3} (
+            CREATE TABLE IF NOT EXISTS {self.SESSION_TABLE_4} (
                 first_timestamp INTEGER NOT NULL,
                 day_timestamp INTEGER NOT NULL,
                 last_timestamp INTEGER,
                 joules INTEGER NOT NULL,
                 seconds_charged INTEGER NOT NULL,
+                cost REAL NOT NULL,
                 PRIMARY KEY (first_timestamp, day_timestamp)
             )
         ''')
@@ -171,17 +207,17 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
         #      we migrate the data across to the new table and drop the old table
         with self.lock:
             try:
-                sql=f"SELECT first_timestamp, last_timestamp, day_timestamp, joules FROM {self.SESSION_TABLE_2}"
+                sql=f"SELECT first_timestamp, last_timestamp, day_timestamp, joules, seconds_charged FROM {self.SESSION_TABLE_3}"
                 self.cursor.execute(sql)
                 rows = self.cursor.fetchall()
-                print("Migrating v2 session log data")
+                print("Migrating v3 session log data")
                 for x in rows:
                     now=datetime.datetime.fromtimestamp(x[0]).astimezone()
-                    sql=f"REPLACE INTO {self.SESSION_TABLE_3} (first_timestamp, last_timestamp, day_timestamp, joules,seconds_charged) VALUES ({x[0]}, {x[1]}, {x[2]}, {x[3]},0)"
+                    sql=f"REPLACE INTO {self.SESSION_TABLE_4} (first_timestamp, last_timestamp, day_timestamp, joules,seconds_charged,cost) VALUES ({x[0]}, {x[1]}, {x[2]}, {x[3]}, {x[4]},0.0)"
                     self.cursor.execute(sql)
                     #print(sql)
 
-                self.cursor.execute(f"drop table {self.SESSION_TABLE_2}")
+                self.cursor.execute(f"drop table {self.SESSION_TABLE_3}")
                 self.conn.commit()
             except Exception as err:
                 if re.search("^no such table:",str(err)):
@@ -189,3 +225,6 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
                     pass
                 else:
                     print("Error migrating old session data: ",err)
+
+    def get_user_settings(self):
+        return [{"type": "tariff", "name": "tariff", "label": "Tariff", "default":self.pluginConfig.get("tariff",""),"note":"Set the tariff for your electricity supply. The full 24 hour period must be specified with no gaps. The cost is measured per kWh. This control may be difficult to use on mobile devices - use from a larger screen if difficulty is experienced."}];

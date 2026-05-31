@@ -54,6 +54,7 @@ stateDict={
     "eo_session_kwh":0,
     "eo_session_timestamp":0,
     "eo_session_seconds_charged":0,
+    "eo_session_cost":0.0,
 
     # CT Sensor Current (Amps) - Adjusted figures with CT tuner modifiers applied
     "eo_current_site":0,  #site

@@ -3,6 +3,9 @@ import { buildUrl } from './utils/funcs';
 import { globalCss,styles } from './utils/styles';
 import { useToastContext } from "./openeo-Toast";
 
+import TariffInput from "./SettingsForm/TariffInput";
+
+
 function initFormData(schema) {
   const data = {};
   console.log(schema);
@@ -132,7 +135,8 @@ function FieldRow({ field, value, onChange }) {
     control = <BooleanToggle field={field} value={value} onChange={onChange} />;
   else if (field.type === "slider")
     control = <SliderInput field={field} value={value} onChange={onChange} />;
-
+  else if (field.type === "tariff")
+    control = <TariffInput field={field} value={value} onChange={onChange} />;
   return (
     <div
       style={{
@@ -154,7 +158,8 @@ function FieldRow({ field, value, onChange }) {
         alignItems: "center",      // vertical centering (optional)
         flex: 1,  
       }}>        
-        <div style={styles.fieldControl}>{control}</div>
+      <div style={{ ...styles.fieldControl, flex: 1, justifyContent: "flex-end" }}>{control}</div>
+
       </div>
     </div>
   );
@@ -210,14 +215,20 @@ export default function SettingsForm() {
 
   function handleChange(name, value) {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    //console.log("Changed", name, "to", value);
   }
 
   function handleSave() {
+    // need to serialise the tariff object to a string, as it can contain multiple values and the backend expects a string
+    var   formDataCopy = {...formData};
+    formDataCopy["chargersession:tariff"] = JSON.stringify(formData["chargersession:tariff"]);
+    console.log("Saving settings:", formDataCopy);
+
     const response = fetch(buildUrl("setsettings"),
       {
         method: "POST",
         headers: {"Content-Type": "application/x-www-form-urlencoded"},
-        body: new URLSearchParams(formData).toString(),
+        body: new URLSearchParams(formDataCopy).toString(),
       })
       .then(response => {  
         console.log(response);
