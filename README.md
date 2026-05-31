@@ -12,6 +12,17 @@ EO Charging announced in July 2025 that their EO Smart Home app is being discont
 <img src="https://github.com/user-attachments/assets/72bbf639-530b-4743-a0a7-431bfc92eaa2" />
 </p>
 
+## NEW: Electricity Cost Reporting
+
+The Charging Log page can now report on the cost of the electricity that your EV car uses whilst charging. The charts can additionally be switched between kWh and cost. See the "Session Logs" section, below for more details.
+
+<p align="center">
+<img src="https://github.com/user-attachments/assets/3937d19b-4389-43c6-b4eb-5bc9559911ca" style="width:75%; height:auto;"/>
+</p>
+
+## NEW: Timezone setting
+The timezone of the RPi can now be set in the configuration portal. This is the control panel page that allows you to set the WiFi network and SSH key, and can be accessed for 30 minutes, following a reboot by connecting to the OpenEO WiFi network then pointing a browser at 192.168.1.1, just as you may have done when setting up OpenEO in the first instance. (Alternately, this control panel can also be accessed by visiting http://openeo.local:81 on your usual WiFi network within that first 30 minutes after reboot)
+
 ## NEW: Solar Improvements
 The solar charging integration has been improved! - previously the solar charging facility was always on when enabled. We have introduced the concept of solar timers, allowing OpenEO to selectively charge your car during specific hours of the day. This might be useful if you need to run multiple loads from your solar generation (e.g. hot water heater), and need to schedule/prioritise.
 
@@ -85,13 +96,15 @@ https://github.com/minceheid/openeo/releases/latest/download/openeo_latest.img.x
 6. Close the EO enclosure, and apply power to it. The Raspberry Pi should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take about five minutes to fully boot before it is seen on the network. Be patient - it's only a small pi and it takes some time to set itself up.
 7. Once the pi fully boots, whilst standing close to your charger, you should have a wireless network called "OpenEO", use your phone or tablet to join this wireless network.
 8. Once joined, use your browser which will redirect to the wifi configuration interface, if it doesn't auto-redirect, then launch a browser and type the following into the address bar: 192.168.1.1
-9. This control panel will allow you to set your charger to your home network. If you need command-line access to your charger, then here is also where you'd set a public SSH key. For security purposes, the OpenEO network is only available for 30 minutes after the charger starts, after which time it disables itself.
+9. This control panel will allow you to set your charger to your home network, and set the timezone that you need for your installation. If you need command-line access to your charger, then here is also where you'd set a public SSH key. For security purposes, the OpenEO network is only available for 30 minutes after the charger starts, after which time it disables itself.
+
+**Note**: this configuration portal is active for 30 minutes after *every* reboot, should you ever need to revisit any of these settings.
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/555814d8-eca1-49d2-9529-177a6713aa9d" style="width:25%; height:auto; "/>
+<img src="https://github.com/user-attachments/assets/f9470a6f-b815-4cda-ac31-8901c7547a36" style="width:25%; height:auto; "/>
 </p>
 
-8. Once the wifi network has been sucessfully configured, you should be able to disconenct from the OpenEO network, reconnect to your home network, and then browse to http://openeo.local/ or the IP address that was allocated by your network to see the full OpenEO interface.
+10. Once the wifi network has been sucessfully configured, you should be able to disconenct from the OpenEO network, reconnect to your home network, and then browse to http://openeo.local/ or the IP address that was allocated by your network to see the full OpenEO interface.
 
 ## Install Instructions - Manual Method
 
@@ -162,10 +175,18 @@ openeo is designed to allow the export of data for visualisation through home au
 * ```/api```: Home Assistant exporter
 
 ## Session Logs
-OpenEO can keep track of your charging, and give you full access to your data. By keeping track of when you connect and disconnect your car, we record the power delivery on each charging session (noting, of course, that the start time is when your car was connected, and not when charging began). The bar charts on this page also give you summaries of how many kWh you charged on each of the last seven days, four weeks, and four months. Also on this page, you can hit the button to download the data as a CSV file if you need to do more analysis in a spreadsheet.
+OpenEO will keep track of your charging, and give you full access to your data. By keeping track of when you connect and disconnect your car, and with knowledge of your electricity tariff we record the power delivery and cost on each charging session. The bar charts on this page also give you summaries of how many kWh you charged on each of the last seven days, four weeks, and four months, and can be switched between showing kWh and the cost of charging.
+
+Also on this page, you can hit the button to download the data as a CSV file if you need to do more analysis in a spreadsheet.
 
 <p align="center">
-<img alt="image" src="https://github.com/user-attachments/assets/f9054552-f6f8-43e3-a22c-59cf88f35689" style="width:50%; height:auto;"/>
+  <img src="https://github.com/user-attachments/assets/721c6756-efaa-4548-bb86-0f258b9ddb57" style="width:50%; height:auto;"/>
+</p>
+
+To configure your electricity tariff, check the "Session" section of the Configuration page. Due to the complexity, this sectioon may be difficult to configure on a small mobile device, and we recommend a large screen where possible. It is recommended that all 24 hours of a day are correctly specified. You can adjust the unit cost (per kWh) of each time segment as necessary. To change the time of a segment, you can only adjust the end time of the last shown time segment. This means that you may need to delete later segments if you wish to change the end time of earlier segments. It's easier than it sounds :-)
+<p align="center">
+
+<img src="https://github.com/user-attachments/assets/ab46eb7a-3565-4121-aadc-99f2e2a5db18"  style="width:50%; height:auto;"/>
 </p>
 
 
