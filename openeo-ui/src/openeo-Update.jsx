@@ -3,6 +3,8 @@ import { buildUrl } from './utils/funcs';
 import { globalCss,styles } from './utils/styles';
 import { useToastContext } from "./openeo-Toast";
 
+
+
 export default function Update({ status = {} }) {
   const addToast = useToastContext();
 
@@ -11,7 +13,14 @@ export default function Update({ status = {} }) {
   const [versionInfo, setVersionInfo] = useState(null);
   const timerRef = useRef(null);
   const outputRef = useRef(null);
+  
+  const ALLOWED_OS_VERSIONS = ["Raspbian GNU/Linux 13 (trixie)"];
 
+  const osVersionAllowed =
+    versionInfo?.os_version != null &&
+    ALLOWED_OS_VERSIONS.includes(versionInfo.os_version);
+
+    
   const fetchVersionInfo = () => {
     fetch(buildUrl("getstatus"))
       .then((r) => r.json())
@@ -20,6 +29,7 @@ export default function Update({ status = {} }) {
           current: data["app_version"] ?? "Unknown",
           latest: data["openeo_latest_version"] ?? null,
           lastCheck: data["openeo_last_version_check"] ?? null,
+          os_version: data["os_version"] ?? null,
         });
       })
       .catch((err) => console.log("Error fetching version info:", err));
@@ -151,25 +161,70 @@ export default function Update({ status = {} }) {
               {versionInfo.lastCheck ?? "—"}
             </span>
           </div>
+          <div>
+            <span style={versionLabelStyle}>OS:</span>
+            <span style={{ color: "#556b7a", fontFamily: "monospace" }}>
+              {versionInfo.os_version ?? "—"}
+            </span>
+          </div>
         </div>
       )}
 
 
       {/* Toolbar */}
   <div style={{ ...styles.buttonRow, flex: 1, justifyContent: "flex-end" }}>
-        <button style={styles.Btn}
-          onClick={() => beginUpdate("openeo")}
-          onMouseEnter={(e) => {
-            e.target.style.background = "#254870";
-            e.target.style.borderColor = "#7ab8f0";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = "#1e3a5f";
-            e.target.style.borderColor = "#4a7ab8";
-          }}
-        >
-          Update OpenEO
-        </button>
+<div style={{ position: "relative", display: "inline-block" }}>
+  <button
+    style={{
+      ...styles.Btn,
+      ...((!osVersionAllowed) && {
+        opacity: 0.4,
+        cursor: "not-allowed",
+        pointerEvents: "none",
+      }),
+    }}
+    disabled={!osVersionAllowed}
+    onClick={() => beginUpdate("openeo")}
+    onMouseEnter={(e) => {
+      e.target.style.background = "#254870";
+      e.target.style.borderColor = "#7ab8f0";
+    }}
+    onMouseLeave={(e) => {
+      e.target.style.background = "#1e3a5f";
+      e.target.style.borderColor = "#4a7ab8";
+    }}
+  >
+    Update OpenEO
+  </button>
+  {!osVersionAllowed && (
+    <div style={{
+      position: "absolute",
+      bottom: "calc(100% + 6px)",
+      left: "50%",
+      transform: "translateX(-50%)",
+      background: "#1a1a2e",
+      border: "1px solid #f0a07a",
+      color: "#f0a07a",
+      fontSize: "11px",
+      borderRadius: "4px",
+      padding: "5px 9px",
+      whiteSpace: "nowrap",
+      pointerEvents: "none",
+      zIndex: 10,
+    }}>
+      Unsupported OS: {versionInfo?.os_version ?? "unknown"}
+      <div style={{
+        position: "absolute",
+        top: "100%",
+        left: "50%",
+        transform: "translateX(-50%)",
+        borderWidth: "5px",
+        borderStyle: "solid",
+        borderColor: "#f0a07a transparent transparent transparent",
+      }} />
+    </div>
+  )}
+</div>
         <button style={styles.Btn}
           onClick={() => beginUpdate("raspberrypi")}
           onMouseEnter={(e) => {
