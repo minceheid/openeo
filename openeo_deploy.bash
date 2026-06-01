@@ -28,7 +28,14 @@ fi
 
 # Install prereq packages
 $SUDO apt-get update
-$SUDO apt-get install -y python3-serial python3-websockets python3-jsonschema python3-psutil python3-paho-mqtt dnsmasq iptables tzdata-legacy
+$SUDO apt-get install -y python3-serial python3-websockets python3-jsonschema python3-psutil python3-paho-mqtt dnsmasq iptables 
+
+OSVERSION=$(awk -F= '($1=="VERSION_ID") {print $2}' /etc/os-release |sed 's/"//g')
+if [ "$OSVERSION" -ge 12 ]; then
+    $SUDO apt-get install -y tzdata-legacy
+else
+    echo ">> Skipping tzdata-legacy installation, not supported on this OS version"
+fi
 
 if [ $? -ne 0 ] ; then
 	echo >&2 "ERROR: Package Install failed - Deploy Aborted"

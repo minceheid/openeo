@@ -18,6 +18,14 @@ MAX_CHARGING_CURRENT = 32  # Maximum hardware current limit
 
 _LOGGER = logging.getLogger(__name__)
 
+def get_os_name():
+    with open("/etc/os-release") as f:
+        for line in f:
+            key, _, value = line.strip().partition("=")
+            if key == "PRETTY_NAME":
+                return value.strip('"')
+    return None
+
 # Read the application version; if not present, default to 0.0.
 try:
     appVer = open("release.txt", "r").read().strip()
@@ -100,6 +108,7 @@ stateDict={
     
     # Application (openeo) version
     "app_version" : appVer,
+    "os_version" : get_os_name(),
     
     # This confirms the commit id of the branch or version that is running
     "app_deploy_directory" : os.path.basename(os.path.realpath(os.getcwd())),
