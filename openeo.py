@@ -300,5 +300,8 @@ if __name__ == "__main__":
     # logging for use in this module
     _LOGGER = logging.getLogger(__name__)
     
+    _LOGGER.info("Setting bind capability for python")
+    util.ensure_net_bind_capability()
+
     _LOGGER.info("Starting openeo main loop")
     main()  # Run the main program
