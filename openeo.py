@@ -27,6 +27,7 @@ import logging.handlers
 import time, math, datetime
 import importlib
 import psutil
+import sys
 
 import globalState, util
 from openeoCharger import openeoChargerClass
@@ -92,9 +93,12 @@ def main():
                         globalState.stateDict["_moduleDict"][modulename] = mod
                     except ImportError as e:
                         _LOGGER.error("Aborting - Module '%s' defined and enabled in config file but could not be imported - %s" % (modulename, repr(e)))
+                        print("Aborting - Module '%s' defined and enabled in config file but could not be imported - %s" % (modulename, repr(e)),file=sys.stderr)
+                        exit(1)
                     except Exception as e:
                         _LOGGER.error("Aborting - Module '%s' defined and enabled in config file but another error occurred loading  - %s" % (modulename, repr(e)))
-
+                        print("Aborting - Module '%s' defined and enabled in config file but another error occurred loading  - %s" % (modulename, repr(e)),file=sys.stderr)
+                        exit(1)
 
             # Do we have any modules that are currently loaded, but not in the configfile
             # file (for example, perhaps the config file has been updated to remove one)
