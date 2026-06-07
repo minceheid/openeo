@@ -39,6 +39,23 @@ class chargersessionClassPlugin(PluginSuperClass):
     SESSION_TABLE_3="session_v3"
     SESSION_TABLE_4="session_v4"
         
+    def reset_session(self):
+        # Reset all session counters
+        globalState.stateDict["eo_session_joules"]=0
+        globalState.stateDict["eo_session_kwh"]=0
+        globalState.stateDict["eo_session_seconds_charged"]=0
+        globalState.stateDict["eo_session_cost"]=0
+        globalState.stateDict["eo_session_timestamp"]=int(time.time())
+
+        # store tariff data for the session log, so that we can calculate the cost of the session as it progresses.
+        # This is required because the tariff may change during a session, and we need to be able to calculate the
+        # cost of the session accurately. We store this in a list of dicts, with each dict containing the start and 
+        # end time of the tariff, the cost of the tariff, and the number of joules charged during that tariff period. 
+        # This allows us to calculate the cost of the session accurately even if the tariff changes during the session.
+        globalState.stateDict["session_tariff"]=[]
+        for x in self.pluginConfig.get("tariff",[]):
+            globalState.stateDict["session_tariff"].append({"start":x["start"],"end":x["end"],"cost":x["cost"],"joules":0})
+
     def poll(self):
         # If charger state indicates that the car might be disconnected, then
         # we reset the session kWh count, otherwise we calculate how many additional
@@ -57,12 +74,7 @@ class chargersessionClassPlugin(PluginSuperClass):
         if (TEST==True and testfunc==True) or \
             (TEST==False and globalState.stateDict["eo_charger_state_id"]<9): 
 
-            # Reset all session counters
-            globalState.stateDict["eo_session_joules"]=0
-            globalState.stateDict["eo_session_kwh"]=0
-            globalState.stateDict["eo_session_seconds_charged"]=0
-            globalState.stateDict["eo_session_cost"]=0
-            globalState.stateDict["eo_session_timestamp"]=int(time.time())
+            self.reset_session()
 
             if (TEST==True):
                 # Debug logging
@@ -70,50 +82,40 @@ class chargersessionClassPlugin(PluginSuperClass):
 
         else:
             secondsSinceLastLoop=(thisloop-self.lastloop).total_seconds()
-
-            #print(f"secondsSinceLastLoop={secondsSinceLastLoop} thisloop={thisloop} lastloop={self.lastloop}")
-            #print(f"eo_session_seconds_charged={globalState.stateDict['eo_session_seconds_charged']}")
-            #print(f"eo_current_vehicle={globalState.stateDict['eo_current_vehicle']}")
-            # Get Tariff for this loop
-            tariff=0.0
             current_hhmm=self.timestamp_hhmm(int(time.time()))
 
-            for x in self.pluginConfig["tariff"]:
-                if x["start"]<=current_hhmm<=x["end"]:
-                    tariff=x["cost"]
-                    break
+            ## Production Routine
+            # 1J = 1Ws = 1 x V * A * s
+            # 1kWh = 3.6 million joules
 
             if (TEST==True):
-                ## Test Routine
-
                 joulesThisLoop = int(globalState.stateDict["eo_live_voltage"] * 32 * secondsSinceLastLoop)
-                kWhThisLoop = joulesThisLoop / 3600000
-                costThisLoop = kWhThisLoop * tariff
-
-                globalState.stateDict["eo_session_joules"]+= joulesThisLoop ## LIVE
-                globalState.stateDict["eo_session_cost"]+= costThisLoop ## LIVE
-                # Debug Logging
-                print(f"Sessionlog accumulating {globalState.stateDict['eo_session_joules']}j {globalState.stateDict['eo_session_seconds_charged']}s £{globalState.stateDict['eo_session_cost']}")
-
-            else:
-                ## Production Routine
-                # 1J = 1Ws = 1 x V * A * s
-                # 1kWh = 3.6 million joules
-
+            else: 
                 joulesThisLoop = int(globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"] * secondsSinceLastLoop)
-                kWhThisLoop = joulesThisLoop / 3600000
-                costThisLoop = kWhThisLoop * tariff
 
-                globalState.stateDict["eo_session_joules"]+= joulesThisLoop ## LIVE
-                globalState.stateDict["eo_session_cost"]+= costThisLoop ## LIVE
+            globalState.stateDict["eo_session_joules"]+= joulesThisLoop
+            for x in globalState.stateDict["session_tariff"]:
+                if x["start"]<=current_hhmm<=x["end"]:
+                    x["joules"]+=joulesThisLoop
+                    break
 
-                # If eo_current_vehicle is >=2, then the last cycle is counted against the number of seconds that this session has been actively trying to charge
-                if globalState.stateDict["eo_current_vehicle"]>=2:
-                    globalState.stateDict["eo_session_seconds_charged"]+=secondsSinceLastLoop
-                    #print(f"eo_session_seconds_charged2={globalState.stateDict['eo_session_seconds_charged']}")
+            # If eo_current_vehicle is >=2, then the last cycle is counted against the number of seconds that this session has been actively
+            # trying to charge
+            if globalState.stateDict["eo_current_vehicle"]>=2 or TEST==True:
+                globalState.stateDict["eo_session_seconds_charged"]+=secondsSinceLastLoop
 
-            
             globalState.stateDict["eo_session_kwh"]= round(globalState.stateDict["eo_session_joules"] / 3600000,2)
+            # Calculate cost of the session so far, by multiplying the joules charged during each tariff period by the cost of that tariff, 
+            # and summing across all tariff periods.
+            cost=0
+            for x in globalState.stateDict["session_tariff"]:
+                cost+=x["cost"] * (x["joules"] / 3600000)
+
+            globalState.stateDict["eo_session_cost"]=round(cost,2)
+
+            # Debug Logging
+            if (TEST==True):
+                print(f"Sessionlog accumulating {globalState.stateDict['eo_session_joules']}j {globalState.stateDict['eo_session_seconds_charged']}s £{globalState.stateDict['eo_session_cost']}")
 
             # Once a minute, we should write the current session information to the persistent log
             if (thisloop.minute>self.lastloop.minute):
@@ -173,12 +175,10 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
     def __init__(self,configParam):
         super().__init__(configParam)
 
-        # In case we initialse with the charger already connected, we need to have a session timestamp and
-        # other session counters populated. If it's not connected, then no biggie - it'll be reset on the next poll()
-        globalState.stateDict["eo_session_joules"]=0
-        globalState.stateDict["eo_session_kwh"]=0
-        globalState.stateDict["eo_session_seconds_charged"]=0
-        globalState.stateDict["eo_session_timestamp"]=int(time.time())
+        # Reset session counters on startup, to ensure that we start with a clean session. This is important because 
+        # if the software is restarted during a charging session, we don't want to carry over the old session data 
+        # into the new session.
+        self.reset_session()
 
         # Create mutex lock for protecting transactions - noting that the get_sessions() method will be called from
         # another thread in configserver.
