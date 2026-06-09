@@ -18,7 +18,7 @@ function formatCurrency(amount) {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function getDate(d) {
-  return `${d.getUTCFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
 function getWeekCommencing(d) {
@@ -96,6 +96,9 @@ function processSessionData(raw) {
       .toLocaleString()
       .replace(",", ""),
     minutes_charged: Math.round(x.seconds_charged / 60),
+    plugged_in_idle: Math.max(0, Math.round(
+      (x.last_timestamp - Math.max(x.first_timestamp, x.day_timestamp) - x.seconds_charged) / 60
+    )),
   }));
 
   sessiondata.sort((a, b) => b.first_timestamp - a.first_timestamp);
@@ -123,6 +126,7 @@ function processSessionData(raw) {
       row.kwh_number = x.kwh_number;
       row.duration += x.duration;
       row.minutes_charged += x.minutes_charged;
+      row.plugged_in_idle += x.plugged_in_idle;
       row.cost = (row.cost || 0) + (x.cost || 0);
 
       const nextJoules = x.joules;
@@ -143,6 +147,24 @@ function processSessionData(raw) {
   });
 
   return { tabledata, sessiondata: annotated };
+}
+
+function formatMinutes(minutes) {
+  const safeMinutes = Number(minutes) || 0;
+  const hours = Math.floor(safeMinutes / 60);
+  const remainder = safeMinutes % 60;
+  if (!hours) return `${remainder} min`;
+  if (!remainder) return `${hours} h`;
+  return `${hours} h ${remainder} min`;
+}
+
+function formatPower(row) {
+  if (!row.minutes_charged) return "Not available";
+  return row.average_power || "Not available";
+}
+
+function formatJoules(value) {
+  return `${Math.round(value || 0).toLocaleString()} J`;
 }
 
 function downloadCSV(tabledata) {
@@ -384,56 +406,204 @@ function ChargingChart({ sessiondata, showCost }) {
   );
 }
 
-// ── Session table ──────────────────────────────────────────────────────────
+// ── Session list ───────────────────────────────────────────────────────────
 
-function SessionTable({ tabledata, narrow }) {
-  if (!tabledata.length) return null;
+const sessionStyles = {
+  list: {
+    display: "grid",
+    gap: 8,
+    padding: 12,
+  },
+  card: {
+    width: "100%",
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: "8px 12px",
+    alignItems: "center",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: 6,
+    background: "rgba(255,255,255,0.04)",
+    color: "#c8dde8",
+    padding: 12,
+    textAlign: "left",
+    cursor: "pointer",
+  },
+  cardSelected: {
+    borderColor: "rgba(64,200,255,0.65)",
+    background: "rgba(64,200,255,0.1)",
+  },
+  primaryDate: {
+    minWidth: 0,
+    overflowWrap: "anywhere",
+    color: "#dcebf4",
+    fontSize: "0.86rem",
+    fontWeight: 650,
+  },
+  delivered: {
+    color: "rgba(64,200,255,0.95)",
+    fontSize: "0.95rem",
+    fontWeight: 700,
+    whiteSpace: "nowrap",
+  },
+  meta: {
+    gridColumn: "1 / -1",
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 8,
+  },
+  metaItem: {
+    display: "grid",
+    gap: 2,
+    minHeight: 48,
+    padding: "8px 10px",
+    borderRadius: 4,
+    background: "rgba(255,255,255,0.04)",
+  },
+  label: {
+    color: "#8ba3b8",
+    fontSize: "0.68rem",
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+  },
+  value: {
+    color: "#c8dde8",
+    fontSize: "0.82rem",
+    fontWeight: 600,
+    overflowWrap: "anywhere",
+  },
+  detail: {
+    margin: "0 12px 8px",
+    padding: 12,
+    border: "1px solid rgba(80,240,160,0.3)",
+    borderRadius: 6,
+    background: "rgba(80,240,160,0.06)",
+  },
+  detailHead: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 10,
+  },
+  detailTitle: {
+    margin: "2px 0 0",
+    color: "#dcebf4",
+    fontSize: "0.98rem",
+  },
+  closeButton: {
+    border: "1px solid rgba(255,255,255,0.14)",
+    borderRadius: 4,
+    background: "rgba(255,255,255,0.05)",
+    color: "#c8dde8",
+    cursor: "pointer",
+    padding: "7px 10px",
+  },
+  detailGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 8,
+  },
+  detailItem: {
+    display: "grid",
+    gap: 3,
+    minHeight: 58,
+    alignContent: "center",
+    padding: "9px 10px",
+    borderRadius: 4,
+    background: "rgba(255,255,255,0.045)",
+  },
+};
 
+function DetailItem({ label, value, tone }) {
   return (
-    <div style={{ overflowX: "auto", width: "100%" }}>
-      <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 2px", fontSize: "0.78rem" }}>
-        <thead>
-          <tr>
-            <Th>From</Th>
-            {!narrow && <Th>To</Th>}
-            <Th>Connected<br />(min)</Th>
-            <Th>Delivered</Th>
-            <Th>Charging<br />(min)</Th>
-            {!narrow && <Th>Avg Power</Th>}
-            <Th>Cost</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {tabledata.map((row, i) => (
-            <tr key={row.first_timestamp} style={{ background: i % 2 === 0 ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)" }}>
-              <Td>{row.timestamp}</Td>
-              {!narrow && <Td>{row.last_timestamp_str}</Td>}
-              <Td>{row.duration}</Td>
-              <Td style={{ color: "rgba(64,200,255,0.9)", fontWeight: 600 }}>{row.kwh}</Td>
-              <Td>{row.minutes_charged}</Td>
-              {!narrow && <Td style={{ color: "rgba(80,240,160,0.85)" }}>{row.average_power}</Td>}
-              <Td style={{ color: "rgba(255,185,50,0.95)", fontWeight: 600 }}>
-                {formatCurrency(row.cost)}
-              </Td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div style={sessionStyles.detailItem}>
+      <span style={sessionStyles.label}>{label}</span>
+      <strong style={{ ...sessionStyles.value, color: tone || sessionStyles.value.color }}>{value}</strong>
     </div>
   );
 }
 
-const Th = ({ children, style }) => (
-  <th style={{ padding: "10px 8px", textAlign: "center", color: "#8ba3b8", fontWeight: 500, letterSpacing: "0.06em", fontSize: "0.72rem", textTransform: "uppercase", background: "rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.1)", ...style }}>
-    {children}
-  </th>
-);
+function SessionDetail({ row, onClose }) {
+  return (
+    <div style={sessionStyles.detail}>
+      <div style={sessionStyles.detailHead}>
+        <div>
+          <span style={sessionStyles.label}>Session detail</span>
+          <h3 style={sessionStyles.detailTitle}>{row.timestamp}</h3>
+        </div>
+        <button type="button" style={sessionStyles.closeButton} onClick={onClose}>
+          Close
+        </button>
+      </div>
+      <div style={sessionStyles.detailGrid}>
+        <DetailItem label="Energy" value={row.kwh} tone="rgba(64,200,255,0.95)" />
+        <DetailItem label="Cost" value={formatCurrency(row.cost)} tone="rgba(255,185,50,0.95)" />
+        <DetailItem label="Started" value={row.timestamp} />
+        <DetailItem label="Ended" value={row.last_timestamp_str} />
+        <DetailItem label="Connected" value={formatMinutes(row.duration)} />
+        <DetailItem label="Charging" value={formatMinutes(row.minutes_charged)} />
+        <DetailItem label="Plugged-in idle" value={formatMinutes(row.plugged_in_idle)} />
+        <DetailItem label="Average power" value={formatPower(row)} tone="rgba(80,240,160,0.9)" />
+        <DetailItem label="Log day" value={row.day_timestamp_str} />
+        <DetailItem label="Raw energy" value={formatJoules(row.joules)} />
+      </div>
+    </div>
+  );
+}
 
-const Td = ({ children, style }) => (
-  <td style={{ padding: "7px 8px", textAlign: "center", color: "#c8dde8", ...style }}>
-    {children}
-  </td>
-);
+function SessionTable({ tabledata, narrow }) {
+  const [selectedSession, setSelectedSession] = useState(null);
+
+  if (!tabledata.length) return null;
+
+  const activeSession = tabledata.some((row) => row.first_timestamp === selectedSession)
+    ? selectedSession
+    : null;
+
+  return (
+    <div style={sessionStyles.list}>
+      {tabledata.map((row) => {
+        const isSelected = activeSession === row.first_timestamp;
+        return (
+          <div key={row.first_timestamp}>
+            <button
+              type="button"
+              style={{
+                ...sessionStyles.card,
+                ...(isSelected ? sessionStyles.cardSelected : {}),
+              }}
+              onClick={() => setSelectedSession(isSelected ? null : row.first_timestamp)}
+              aria-expanded={isSelected}
+            >
+              <span style={sessionStyles.primaryDate}>{row.timestamp}</span>
+              <strong style={sessionStyles.delivered}>{row.kwh}</strong>
+              <div style={{
+                ...sessionStyles.meta,
+                gridTemplateColumns: narrow ? "1fr" : sessionStyles.meta.gridTemplateColumns,
+              }}>
+                <span style={sessionStyles.metaItem}>
+                  <span style={sessionStyles.label}>Connected</span>
+                  <strong style={sessionStyles.value}>{formatMinutes(row.duration)}</strong>
+                </span>
+                <span style={sessionStyles.metaItem}>
+                  <span style={sessionStyles.label}>Charging</span>
+                  <strong style={sessionStyles.value}>{formatMinutes(row.minutes_charged)}</strong>
+                </span>
+                <span style={sessionStyles.metaItem}>
+                  <span style={sessionStyles.label}>Average</span>
+                  <strong style={{ ...sessionStyles.value, color: "rgba(80,240,160,0.9)" }}>{formatPower(row)}</strong>
+                </span>
+              </div>
+            </button>
+            {isSelected && (
+              <SessionDetail row={row} onClose={() => setSelectedSession(null)} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ── Status / loading states ────────────────────────────────────────────────
 
