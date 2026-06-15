@@ -124,7 +124,6 @@ class homeassistantClassPlugin(PluginSuperClass):
         command_topics = [
             f"openeo/{device_id}/command/switch/set",
             f"openeo/{device_id}/command/current_limit/set",
-            f"openeo/{device_id}/command/mode/set",
             f"openeo/{device_id}/command/enable_plugin/set",
             f"openeo/{device_id}/command/schedule_start/set",
             f"openeo/{device_id}/command/schedule_end/set",
@@ -151,8 +150,6 @@ class homeassistantClassPlugin(PluginSuperClass):
                 self._handle_switch_command(payload)
             elif topic == f"openeo/{device_id}/command/current_limit/set":
                 self._handle_current_limit_command(payload)
-            elif topic == f"openeo/{device_id}/command/mode/set":
-                self._handle_mode_command(payload)
             elif topic == f"openeo/{device_id}/command/enable_plugin/set":
                 self._handle_enable_plugin_command(payload)
             elif topic == f"openeo/{device_id}/command/schedule_start/set":
@@ -213,32 +210,6 @@ class homeassistantClassPlugin(PluginSuperClass):
         except Exception as e:
             _LOGGER.error(f"Error handling current limit command '{payload}': {e}")
     
-    def _handle_mode_command(self, payload):
-        """Handle mode change commands using existing plugin system"""
-        try:
-            mode = payload.lower()
-            
-            # Use existing plugin configuration system
-            if mode == "manual":
-                globalState.configDB.set("switch", "enabled", True)
-                globalState.configDB.set("scheduler", "enabled", False)
-                _LOGGER.info("Switched to manual mode")
-                
-            elif mode == "schedule":
-                globalState.configDB.set("scheduler", "enabled", True)
-                globalState.configDB.set("switch", "enabled", False)
-                _LOGGER.info("Switched to schedule mode")
-                
-            elif mode == "off":
-                globalState.configDB.set("scheduler", "enabled", False)
-                globalState.configDB.set("switch", "enabled", False)
-                _LOGGER.info("All charging modes disabled")
-                
-            else:
-                _LOGGER.error(f"Unknown mode '{mode}'. Valid modes: manual, schedule, off")
-                
-        except Exception as e:
-            _LOGGER.error(f"Error handling mode command '{payload}': {e}")
     
     def _handle_enable_plugin_command(self, payload):
         """Handle plugin enable/disable commands"""
@@ -334,26 +305,6 @@ class homeassistantClassPlugin(PluginSuperClass):
         globalState.configDB.set("scheduler", "schedule", current_schedule)
         globalState.configDB.set("scheduler", "enabled", True)
     
-    def _get_current_limit_setting(self):
-        """Get the configured current limit based on current mode"""
-        current_mode = self._get_current_mode()
-        
-        if current_mode == "manual":
-            # Use switch plugin's configured amps - already type-converted by plugin system
-            switch_module = globalState.stateDict["_moduleDict"].get("switch")
-            if switch_module:
-                return max(globalState.MIN_CHARGING_CURRENT, switch_module.get_config("amps"))
-                
-        elif current_mode == "schedule":
-            # Use scheduler plugin's configured amps - already type-converted by plugin system  
-            scheduler_module = globalState.stateDict["_moduleDict"].get("scheduler")
-            if scheduler_module:
-                schedule = scheduler_module.get_config("schedule")
-                if schedule and len(schedule) > 0:
-                    return max(globalState.MIN_CHARGING_CURRENT, schedule[0].get("amps", globalState.MIN_CHARGING_CURRENT))
-        
-        # Safe fallback
-        return globalState.MIN_CHARGING_CURRENT
     
     def _get_schedule_field(self, field):
         """Get schedule field using plugin system"""
@@ -373,18 +324,6 @@ class homeassistantClassPlugin(PluginSuperClass):
             "amps": globalState.MIN_CHARGING_CURRENT
         }
         return defaults.get(field, "")
-    
-    def _get_current_mode(self):
-        """Helper method to determine current operating mode"""
-        switch_enabled = globalState.configDB.get("switch", "enabled", False)
-        scheduler_enabled = globalState.configDB.get("scheduler", "enabled", False)
-        
-        if switch_enabled and not scheduler_enabled:
-            return "manual"
-        elif scheduler_enabled and not switch_enabled:
-            return "schedule"
-        else:
-            return "off"
     
     def _get_device_info(self):
         """Generate device information for Home Assistant"""
@@ -537,7 +476,27 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "payload_off": "false",
                 "device_class": "battery_charging",
                 "icon": "mdi:battery-charging"
-            }
+            },
+            {
+                "component": "sensor",
+                "object_id": "session_kwh",
+                "name": "Session KWh", 
+                "state_topic": f"openeo/{device_id}/state",
+                "value_template": "{{ value_json.session_kwh }}",
+                "unit_of_measurement": "kWh",
+                "device_class": "energy",
+                "icon": "mdi:home-lightning-bolt"
+            },
+            {
+                "component": "sensor",
+                "object_id": "session_cost",
+                "name": "Session Cost", 
+                "state_topic": f"openeo/{device_id}/state",
+                "value_template": "{{ value_json.session_cost | round(2)}}",
+                "unit_of_measurement": "GBP",
+                "device_class": "monetary",
+                "icon": "mdi:currency-gbp"
+            },
         ]
         
         # Get dynamic current limits
@@ -571,16 +530,6 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "unit_of_measurement": "A",
                 "device_class": "current",
                 "icon": "mdi:current-ac"
-            },
-            {
-                "component": "select",
-                "object_id": "charger_mode",
-                "name": "Charger Mode",
-                "state_topic": f"openeo/{device_id}/state",
-                "command_topic": f"openeo/{device_id}/command/mode/set",
-                "value_template": "{{ 'manual' if value_json.mode == 'manual' else ('schedule' if value_json.mode == 'schedule' else 'off') }}",
-                "options": ["manual", "schedule", "off"],
-                "icon": "mdi:cog"
             },
             {
                 "component": "time",
@@ -662,8 +611,6 @@ class homeassistantClassPlugin(PluginSuperClass):
         # Charging is active if in charging or charge-complete states
         charging_active = charger_state_id in [11, 12, 13, 14]
         
-        # Determine current operating mode
-        current_mode = self._get_current_mode()
         
         state_payload = {
             "charger_state": charger_state,
@@ -680,16 +627,16 @@ class homeassistantClassPlugin(PluginSuperClass):
             "vehicle_connected": "true" if vehicle_connected else "false",
             "cable_connected": "true" if cable_connected else "false",
             "charging_active": "true" if charging_active else "false",
-            "mode": current_mode,
             "switch_on": globalState.configDB.get("switch", "on", False),
             "switch_enabled": globalState.configDB.get("switch", "enabled", False),
-            "current_limit_setting": self._get_current_limit_setting(),
             "schedule_start": self._get_schedule_field("start"),
             "schedule_end": self._get_schedule_field("end"),
             "schedule_amps": self._get_schedule_field("amps"),
             "serial_errors": globalState.stateDict.get("eo_serial_errors", 0),
             "app_version": globalState.stateDict.get("app_version", "unknown"),
             "openeo_latest_version": globalState.stateDict.get("openeo_latest_version", "unknown"),
+            "session_kwh":globalState.stateDict.get("eo_session_kwh", 0.0),
+            "session_cost":globalState.stateDict.get("eo_session_cost", 0.0),
             "timestamp": int(time.time())
         }
         
