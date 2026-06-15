@@ -236,6 +236,10 @@ export default function EVChargerStatus(
     }
   }
 
+  // Make sure amps are rounded to nearest integer for display
+  gridAmps = Math.round(gridAmps);
+  solarAmps = Math.round(solarAmps);
+
 
   const state = CHARGER_STATES[stateIdx];
   const totalAmps = gridAmps + solarAmps;

@@ -89,8 +89,8 @@ export default function StatusPanel(
 
           <span className="status-item">{Math.round(status.eo_current_vehicle)}/{Math.round(status.eo_amps_requested)}A</span>
           <span className="status-item">{Math.round(status.eo_live_voltage)}V</span>
-          <span className="status-item">{Number(status.eo_power_delivered).toFixed(2)}kW</span>
-          <span className="status-item">{Number(status.eo_session_kwh).toFixed(2)}kWh</span>
+          <span className="status-item">{Number(Math.round(10*status.eo_power_delivered)/10).toFixed(1)}kW</span>
+          <span className="status-item">{Number(Math.round(10*status.eo_session_kwh)/10).toFixed(1)}kWh</span>
           <span className="status-item">{status.eo_localtime}</span>
         </div>
         <div id="version-info" className="version-info">
