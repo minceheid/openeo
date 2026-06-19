@@ -7,6 +7,7 @@ import AppMenu from "./openeo-AppMenu";
 import SettingsForm from "./openeo-SettingsForm";
 import Statistics from "./openeo-Statistics";
 import StatisticsOS from "./openeo-StatisticsOS";
+import StatisticsSession from "./openeo-StatisticsSession";
 import Calibration from "./openeo-Calibration";
 import ChargerSession from "./openeo-ChargerSession";
 import Update from "./openeo-Update";
@@ -42,6 +43,7 @@ function AppContent() {
       case "settings":     return <SettingsForm />;
       case "statistics":   return <Statistics />;
       case "statistics_os":return <StatisticsOS />;
+      case "statistics_session":return <StatisticsSession />;
       case "calibration":  return <Calibration />;
       case "chargersession": return <ChargerSession />;
       case "update":       return <Update />;
@@ -58,6 +60,7 @@ function AppContent() {
           { label: "Settings",            href: "?r=settings"      },
           { label: "Charging Statistics", href: "?r=statistics"    },
           { label: "Charger Statistics",  href: "?r=statistics_os" },
+          { label: "Session Statistics",  href: "?r=statistics_session" },
           { label: "CT Calibration",      href: "?r=calibration"   },
           { label: "Charging Log",        href: "?r=chargersession"},
           { label: "Update OpenEO",       href: "?r=update"        },
