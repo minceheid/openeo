@@ -1,6 +1,21 @@
 import React, { useEffect, useRef } from "react";
-import { buildUrl } from './utils/funcs';
+import { buildUrl,getCurrencyConfig } from './utils/funcs';
 import { globalCss,styles } from './utils/styles';
+
+// ── Currency detection ─────────────────────────────────────────────────────
+
+const CURRENCY = getCurrencyConfig();
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat(CURRENCY.locale, {
+    style: "currency",
+    currency: CURRENCY.currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount ?? 0);
+}
+
+// ──────────────────────────────────────────────────────────────────
 
 export default function StatisticsSession() {
   const chartRef = useRef(null);
@@ -38,6 +53,11 @@ export default function StatisticsSession() {
   // Map Plotly styling
   function processData(data) {
     data.forEach((item) => {
+      // Swap any £ in the legend title for the detected currency symbol
+      if (item.name && item.name.includes("£")) {
+        item.name = item.name.split("£").join(CURRENCY.symbol);
+      }
+
       switch (item.key) {
         case "eo_session_current_tariff":
           item.line = { color: "green", dash: "none", width: 4 };
