@@ -441,7 +441,7 @@ function ChargingChart({ sessiondata, showCost }) {
         orientation: "h",
         x: 0.5,
         xanchor: "center",
-        y: -0.22,
+        y: -0.33,
         yanchor: "top",
         font: { size: axisfont + 1, color: "#8ba3b8" },
         bgcolor: "rgba(0,0,0,0)",
