@@ -102,6 +102,9 @@ class loggerClassPlugin(PluginSuperClass):
                                                     "sys_available_memory":"Available Memory (MB)",
                                                     "eo_serial_errors":"Serial Errors",
                                                     "sys_wifi_strength":"WiFi Strength (%)",
+                                                    "eo_session_kwh":"Session Power delivered (kWh)",
+                                                    "eo_session_cost":"Session Cost (£)",
+                                                    "eo_session_current_tariff":"Session Current Tariff (£/kWh)"
                                                     })
 
 

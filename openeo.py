@@ -98,6 +98,8 @@ def main():
                     except Exception as e:
                         _LOGGER.error("Aborting - Module '%s' defined and enabled in config file but another error occurred loading  - %s" % (modulename, repr(e)))
                         print("Aborting - Module '%s' defined and enabled in config file but another error occurred loading  - %s" % (modulename, repr(e)),file=sys.stderr)
+                        import traceback
+                        traceback.print_exc()
                         exit(1)
 
             # Do we have any modules that are currently loaded, but not in the configfile
