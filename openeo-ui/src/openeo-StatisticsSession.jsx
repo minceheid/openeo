@@ -62,6 +62,23 @@ export default function StatisticsSession() {
         case "eo_session_current_tariff":
           item.line = { color: "green", dash: "none", width: 4 };
           item.line.shape="hv";
+
+          // generate inline labels for the current tariff series
+          var text = [];
+          var lastValue = -1;
+          for (var i = 0; i < item.x.length; i++) {
+            if (item.y[i] !== lastValue) {
+              text.push(formatCurrency(item.y[i]));
+              lastValue = item.y[i];
+            } else {
+              text.push("");
+            }
+
+
+          }  
+          item.mode = "lines+text";
+          item.textposition = "bottom right";
+          item.text = text;
           break;
         case "eo_session_kwh":
           item.line = { color: "red", dash: "none", width: 4 };
