@@ -161,6 +161,8 @@ This software can be installed onto a Raspberry OS Lite install.
 
 ~~~~
 curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -
+~~~~
+~~~~
 sudo reboot
 ~~~~
 
