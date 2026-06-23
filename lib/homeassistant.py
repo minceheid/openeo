@@ -362,16 +362,18 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "value_template": "{{ value_json.amps_requested }}",
                 "unit_of_measurement": "A",
                 "device_class": "current",
+                "state_class": "measurement",
                 "icon": "mdi:current-ac"
             },
             {
                 "component": "sensor",
-                "object_id": "amps_limit", 
+                "object_id": "amps_limit",
                 "name": "Amps Limit",
                 "state_topic": f"openeo/{device_id}/state",
                 "value_template": "{{ value_json.amps_limit }}",
-                "unit_of_measurement": "A", 
+                "unit_of_measurement": "A",
                 "device_class": "current",
+                "state_class": "measurement",
                 "icon": "mdi:current-ac"
             },
             {
@@ -382,6 +384,7 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "value_template": "{{ value_json.power_delivered }}",
                 "unit_of_measurement": "kW",
                 "device_class": "power",
+                "state_class": "measurement",
                 "icon": "mdi:flash"
             },
             {
@@ -392,6 +395,7 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "value_template": "{{ value_json.power_requested }}",
                 "unit_of_measurement": "kW",
                 "device_class": "power",
+                "state_class": "measurement",
                 "icon": "mdi:flash-outline"
             },
             {
@@ -401,7 +405,8 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "state_topic": f"openeo/{device_id}/state",
                 "value_template": "{{ value_json.voltage }}",
                 "unit_of_measurement": "V",
-                "device_class": "voltage", 
+                "device_class": "voltage",
+                "state_class": "measurement",
                 "icon": "mdi:lightning-bolt"
             },
             {
@@ -412,6 +417,7 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "value_template": "{{ value_json.frequency }}",
                 "unit_of_measurement": "Hz",
                 "device_class": "frequency",
+                "state_class": "measurement",
                 "icon": "mdi:sine-wave"
             },
             {
@@ -422,6 +428,7 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "value_template": "{{ value_json.current_site }}",
                 "unit_of_measurement": "A",
                 "device_class": "current",
+                "state_class": "measurement",
                 "icon": "mdi:home-lightning-bolt"
             },
             {
@@ -432,6 +439,7 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "value_template": "{{ value_json.current_vehicle }}",
                 "unit_of_measurement": "A",
                 "device_class": "current",
+                "state_class": "measurement",
                 "icon": "mdi:car-electric"
             },
             {
@@ -441,7 +449,8 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "state_topic": f"openeo/{device_id}/state",
                 "value_template": "{{ value_json.current_solar }}",
                 "unit_of_measurement": "A",
-                "device_class": "current", 
+                "device_class": "current",
+                "state_class": "measurement",
                 "icon": "mdi:solar-power"
             },
             {
@@ -485,6 +494,7 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "value_template": "{{ value_json.session_kwh }}",
                 "unit_of_measurement": "kWh",
                 "device_class": "energy",
+                "state_class": "total_increasing",
                 "icon": "mdi:home-lightning-bolt"
             },
             {
@@ -495,6 +505,7 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "value_template": "{{ value_json.session_cost | round(2)}}",
                 "unit_of_measurement": "GBP",
                 "device_class": "monetary",
+                "state_class": "total_increasing",
                 "icon": "mdi:currency-gbp"
             },
         ]
@@ -578,7 +589,7 @@ class homeassistantClassPlugin(PluginSuperClass):
             }
             
             # Add optional fields if present
-            for field in ["value_template", "unit_of_measurement", "device_class", 
+            for field in ["value_template", "unit_of_measurement", "device_class", "state_class",
                          "icon", "payload_on", "payload_off", "command_topic", "min", "max", "step", "options"]:
                 if field in entity:
                     config[field] = entity[field]
