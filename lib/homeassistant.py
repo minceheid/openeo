@@ -82,7 +82,14 @@ class homeassistantClassPlugin(PluginSuperClass):
             self.mqtt_client.on_connect = self._on_connect
             self.mqtt_client.on_disconnect = self._on_disconnect
             self.mqtt_client.on_message = self._on_message
-            
+
+            self.mqtt_client.will_set(
+                self._get_availability_topic(),
+                payload="offline",
+                qos=1,
+                retain=True,
+            )
+
             # Connect to broker
             host = self.get_config("mqtt_host")
             port = self.get_config("mqtt_port")
@@ -99,6 +106,12 @@ class homeassistantClassPlugin(PluginSuperClass):
         if rc == 0:
             self.connected = True
             _LOGGER.info("Connected to MQTT broker")
+            self.mqtt_client.publish(
+                self._get_availability_topic(),
+                payload="online",
+                qos=1,
+                retain=True,
+            )
             # Subscribe to command topics
             self._subscribe_to_commands()
             # Send discovery messages after connection
@@ -325,6 +338,10 @@ class homeassistantClassPlugin(PluginSuperClass):
         }
         return defaults.get(field, "")
     
+    def _get_availability_topic(self):
+        device_id = self.get_config("device_id")
+        return f"openeo/{device_id}/availability"
+
     def _get_device_info(self):
         """Generate device information for Home Assistant"""
         return {
@@ -343,6 +360,7 @@ class homeassistantClassPlugin(PluginSuperClass):
         device_info = self._get_device_info()
         discovery_prefix = self.get_config("mqtt_discovery_prefix")
         device_id = self.get_config("device_id")
+        availability_topic = self._get_availability_topic()
         
         # Define all sensors to create in Home Assistant
         sensors = [
@@ -593,7 +611,9 @@ class homeassistantClassPlugin(PluginSuperClass):
                          "icon", "payload_on", "payload_off", "command_topic", "min", "max", "step", "options"]:
                 if field in entity:
                     config[field] = entity[field]
-            
+
+            config["availability"] = [{"topic": availability_topic}]
+
             topic = f"{discovery_prefix}/{entity['component']}/{device_id}/{entity['object_id']}/config"
             payload = json.dumps(config)
             
@@ -696,5 +716,14 @@ class homeassistantClassPlugin(PluginSuperClass):
     def __del__(self):
         """Cleanup MQTT connection on plugin destruction"""
         if self.mqtt_client and self.connected:
+            try:
+                self.mqtt_client.publish(
+                    self._get_availability_topic(),
+                    payload="offline",
+                    qos=1,
+                    retain=True,
+                )
+            except Exception:
+                pass
             self.mqtt_client.loop_stop()
             self.mqtt_client.disconnect()
