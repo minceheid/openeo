@@ -351,6 +351,8 @@ class homeassistantClassPlugin(PluginSuperClass):
             "model": "EV Charger Controller",
             "sw_version": globalState.stateDict.get("app_version", "unknown")
         }
+
+
     
     def _send_discovery(self):
         """Send Home Assistant auto-discovery messages"""
@@ -660,6 +662,7 @@ class homeassistantClassPlugin(PluginSuperClass):
             "charging_active": "true" if charging_active else "false",
             "switch_on": globalState.configDB.get("switch", "on", False),
             "switch_enabled": globalState.configDB.get("switch", "enabled", False),
+            "current_limit_setting": globalState.MIN_CHARGING_CURRENT,
             "schedule_start": self._get_schedule_field("start"),
             "schedule_end": self._get_schedule_field("end"),
             "schedule_amps": self._get_schedule_field("amps"),
