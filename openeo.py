@@ -210,13 +210,13 @@ def main():
 
                         # Live voltage is in hex, and seems to be peak to peak
             # Convert to int, divide by 2, then by sqrt(2) to get RMS
-            # Apply a default correction factor of ~0.77 to get correct-ish value. User can override this in config.json
+            # Apply a default correction factor of ~0.77 to get correct-ish value. 
             globalState.stateDict["eo_live_voltage"] = round(
                 (
                 int(charger.live_voltage, 16)
                 / 2
                 / math.sqrt(2)
-                * float(globalState.configDB.get("chargeroptions","mains_voltage_correction", 0.776231001))
+                * (float(globalState.configDB.get("chargeroptions","mains_voltage_correction", 77.6))/100)
                 ),
                 2,
             )
