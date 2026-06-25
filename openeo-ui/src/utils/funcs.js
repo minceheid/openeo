@@ -47,3 +47,13 @@ export function getCurrencyConfig() {
   // Fallback → GBP
   return { locale: "en-GB", currency: "GBP", symbol: "£" };
 }
+
+
+export function formatCurrency(amount,CURRENCY = getCurrencyConfig()) {
+  return new Intl.NumberFormat(CURRENCY.locale, {
+    style: "currency",
+    currency: CURRENCY.currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount ?? 0);
+}

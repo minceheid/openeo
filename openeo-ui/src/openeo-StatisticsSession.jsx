@@ -73,8 +73,6 @@ export default function StatisticsSession() {
             } else {
               text.push("");
             }
-
-
           }  
           item.mode = "lines+text";
           item.textposition = "bottom right";
