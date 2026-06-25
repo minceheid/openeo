@@ -20,7 +20,7 @@ The Charging Log page can now report on the cost of the electricity that your EV
 <img src="https://github.com/user-attachments/assets/3937d19b-4389-43c6-b4eb-5bc9559911ca" style="width:75%; height:auto;"/>
 </p>
 
-## NEW: Timezone setting
+## Timezone setting
 The timezone of the RPi can now be set in the configuration portal. This is the control panel page that allows you to set the WiFi network and SSH key, and can be accessed for 30 minutes, following a reboot by connecting to the OpenEO WiFi network then pointing a browser at 192.168.1.1, just as you may have done when setting up OpenEO in the first instance. (Alternately, this control panel can also be accessed by visiting http://openeo.local:81 on your usual WiFi network within that first 30 minutes after reboot)
 
 ## NEW: Solar Improvements
@@ -30,19 +30,19 @@ Additionally, we now show the status of your solar charging on the Status Panel 
 
 See more in the <b>Solar Integration</b> section, below.
 
-## NEW: Donate to support the development
+## Donate to support the development
 Several folks have asked about how they might be able to contribute, to thank and to support. The primary method that I'd encourage is for them to subscribe to the OpenEO cloud service. This will give those who wish to contribute an additional service. However - for those that would prefer not to subscribe to the cloud service, here is a payment link that should allow a similar donation. Any payment is entirely voluntary and very much appreciated.
 
 <a href="https://donate.stripe.com/9B66oJ0Lb2AkbeZ9SF2oE00">
   <img src="https://github.com/user-attachments/assets/4e257c47-0f61-4faa-8883-8594fb428ef7" style="width:25%; height:auto;"/>
 </a>
 
-## NEW: Multiple Schedules
+## Multiple Schedules
 New for the current release - multiple timed schedules can be defined. In order to do this, we had to redesign the UI: in previous versions there was two distinct modes of operation: "Manual" and "Schedule" - the timed schedule would not run if the charger was in "Manual" mode, and vice versa. 
 This has now changed - the new concept is that all defined timer schedules will operate, and they can be overriden by a manual control (either to disable all timers, or to manually switch the charger on).
 You can scroll through the defined timers on the home page, as well as create new timers and delete unwanted ones. Each timer appears as a separate clockface where you set the start, end and Amps.
 
-## NEW: OpenEO Cloud
+## OpenEO Cloud
 It sounds a bit odd to have a cloud service for a cloudless EV Charger, doesn't it?. However -for those that might want to access their charger from anywhere, we have developed OpenEO Cloud. This provides a secure interface for connecting to your OpenEO charger over the internet. It works by running the latest version of OpenEO on your charger, which can securely connect to https://openeo.uk, where you can log in with your Google Account and access the familiar OpenEO interface. Importantly, OpenEO does not require your charger to be connected to the cloud service. If you don't enable it - your charger will continue to work as-is.
 More info, and configuration details below.
 
@@ -61,8 +61,8 @@ This project has been designed to be compatible with the EO Smart Home Hub/Mini 
 <img src="https://github.com/user-attachments/assets/5488462c-a5c6-44c0-843b-16ec874e846a" style="width:25%; height:auto;" />
 </p>
 
-## Install Instructions *NEW*
-The new and recommended method of install is to download a SD card image directly from GitHub, and boot your pi with it - here's how.
+## Install Instructions
+The recommended method of install is to download a SD card image directly from GitHub, and boot your pi with it - here's how.
 
 1. Obtain a 8GB (or larger) micro SD card. It's worth ensuring that this is a known good card, and at least Class 10 for performance reasons. If the SD card in your hand has been sat at the back of your drawer for a decade, then it's probably worth disposing of it, and getting a new one. We recommend that you keep your original EO SD card safe and separate, so that you can revert easily, should things don't work out for you, however (I do wonder what possible use that crippled old software could be these days...) 
 3. Download the SD card image from here:
@@ -105,70 +105,6 @@ https://github.com/minceheid/openeo/releases/latest/download/openeo_latest.img.x
 </p>
 
 10. Once the wifi network has been sucessfully configured, you should be able to disconenct from the OpenEO network, reconnect to your home network, and then browse to http://openeo.local/ or the IP address that was allocated by your network to see the full OpenEO interface.
-
-## Install Instructions - Manual Method
-
-Of course - it remains possible to carry out a manual install. Here's how we do that:
-
-This software can be installed onto a Raspberry OS Lite install. 
-
-1. Obtain a 8GB (or larger) micro SD card
-2. Flash the SD card with the Raspberry PI imager (Device: Raspberry Pi 3 for Home Hub and Raspberry Pi Zero for Mini Pro 2, Operating System: Raspberry PI OS Lite (32 bit)). Note that as of OpenEO v0.7, all development and testing is done on  Raspberry Pi OS (32 bit) Lite "Trixie", which was released in December 2025.
-
-<p align="center">
-<img src="https://github.com/user-attachments/assets/a2314a38-dcf3-4218-8e00-7666afc1b67d" style="width:25%; height:auto;" />
-<img src="https://github.com/user-attachments/assets/eaa44933-dc08-4008-9130-ab680867fce5" style="width:25%; height:auto;" />
-</p>
-
-3. In the Raspberry PI imager "Storage" settings, select your SD Card:
-
-<p align="center">
-<img src="https://github.com/user-attachments/assets/785266fa-8ed6-47d4-95dc-be3d14ee0409" style="width:25%; height:auto;" />
-</p>
-
-4. In the Raspberry PI imager "Customisation" settings - set your Hostname to "openeo" and set the Localisation configuration as appropriate to your part of the world. In Username/Password you must use a username of "pi". Continue to fill in your Wireless LAN settings as appropriate.
-
-5. In the "Remote Access" settings, ensure that SSH is enabled, and I would recommend that public-key authentication is enabled, and you should add your SSH public key as approprate.  Alternatively, you may use a secure password, but be aware anyone with that password will be able to access the Raspberry Pi device, so choose a unique one and keep it safe.
-
-<p align="center"><img alt="Screenshot 2025-07-19 142824" src="https://github.com/user-attachments/assets/d6572124-31e7-4ece-bd16-6090ce675c3a" style="width:25%; height:auto;" />
-</p>
-
-6. You can now write the sd card
-
-<p align="center">
-<img  src="https://github.com/user-attachments/assets/4c7127ab-04e9-423a-8a71-c9a434ee85ac" style="width:25%; height:auto;"/>
-</p>
-  
-7. *IMPORTANT* Once the new SD card has been created, remove power to your EO box by disconnecting it or by switching off the relevant breaker in your consumer unit. Please ensure that it is completely isolated from the mains electricity. *If you are unsure that the electricity is fully disconnected, then do not proceed*.
-8. Open the Smart Hub or Mini Pro 2 box by loosening the four captive screws that are visible on the front of the case (you may need to remove the four rubber covers, if they are fitted), and you will see the Raspberry Pi inside (Smart Hub is a Raspberry Pi 3, and the Mini Pro 2 is a smaller Raspberry Pi Zero). You can now switch the SD cards, keeping the original safe. Whilst you are doing this, on the Mini Pro 2, take care to not accidentally dislodge the cables connecting the Raspberry Pi board with the main control board in the lid of the unit.
-
-<table style="width:80%"><tr><td>
-<p align="center">
-<figure>
-<img src="https://github.com/user-attachments/assets/d6a89cbe-7f8c-448c-9222-654200d533d4" style="width:50%; height:auto;" />
-<br><figcaption>Smart Hub</figcaption>
-</figure>
-</td><td>
-<figure>
-<img src="https://github.com/user-attachments/assets/791a735f-6907-45ce-a0b4-738466f55b5b" style="width:50%; height:auto;" />
-<br><figcaption>Mini Pro 2</figcaption>
-</figure>
-</p>
-</td></tr></table>
-
-8. Close the EO enclosure, and apply power to it. The Raspberry Pi should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take about five minutes to fully boot before it is seen on the network.
-8. Log onto your account on the RPi via SSH (e.g. using <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">PuTTY</a>) over the WiFi network, and run the following commands. This will download the software from GitHub and run the installation process, then reboots your RPi to allow the software to finish configuring and start up.
-
-~~~~
-curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -
-~~~~
-~~~~
-sudo reboot
-~~~~
-
-Once the Raspberry Pi reboots, it should all be working. You should be able to point your browser at the IP address (or you can use mDNS to navigate to _hostname_.local in a web browser - where _hostname_ is whichever hostname you set in step 3 above). You should see the configuration web page, showing the charger status, and giving you control.
-
-*Note* - at this time, only the **_Schedule_** mode and **_Manual_** mode is available. We will be adding **_Remote_** (OCPP) shortly.
 
 ## Home Assistant and Prometheus
 openeo is designed to allow the export of data for visualisation through home automation toolsets such as Home Assistant and Prometheus. The following endpoints are available:
