@@ -1,1 +1,1 @@
-Latest release: v0.9.3.1
+Latest release: v0.9.3.2
