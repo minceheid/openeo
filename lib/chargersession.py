@@ -175,7 +175,7 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
             # Only retrieve sizeable sessions to remove any noise from short term connections from plug/unplug
             self.cursor.execute(f"SELECT first_timestamp, last_timestamp, day_timestamp, joules, seconds_charged, cost, cost_by_tariff \
             FROM {self.SESSION_TABLE_5} \
-            where joules>1500000 and first_timestamp>{six_months_ago}")
+            where joules>300000 and first_timestamp>{six_months_ago}")
             rows = self.cursor.fetchall()
 
         data=[]
