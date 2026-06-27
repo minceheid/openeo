@@ -186,12 +186,10 @@ class homeassistantClassPlugin(PluginSuperClass):
             # Enable switch plugin and set state
             globalState.configDB.set("switch", "enabled", True)
             globalState.configDB.set("switch", "on", switch_on)
-            
-            # Disable scheduler when manually controlling
-            globalState.configDB.set("scheduler", "enabled", False)
-            
+
             _LOGGER.info(f"Switch command executed: {switch_on}")
-            
+            self._publish_state()
+
         except Exception as e:
             _LOGGER.error(f"Error handling switch command '{payload}': {e}")
     
@@ -212,10 +210,7 @@ class homeassistantClassPlugin(PluginSuperClass):
             # Set current limit for switch plugin
             globalState.configDB.set("switch", "amps", current_limit)
             globalState.configDB.set("switch", "enabled", True)
-            
-            # Disable scheduler when manually controlling
-            globalState.configDB.set("scheduler", "enabled", False)
-            
+
             _LOGGER.info(f"Current limit set to {current_limit}A")
             
         except (ValueError, TypeError) as e:
@@ -243,7 +238,8 @@ class homeassistantClassPlugin(PluginSuperClass):
             
             globalState.configDB.set(plugin_name, "enabled", enabled)
             _LOGGER.info(f"Plugin '{plugin_name}' {'enabled' if enabled else 'disabled'}")
-            
+            self._publish_state()
+
         except Exception as e:
             _LOGGER.error(f"Error handling plugin command '{payload}': {e}")
     
@@ -341,6 +337,10 @@ class homeassistantClassPlugin(PluginSuperClass):
     def _get_availability_topic(self):
         device_id = self.get_config("device_id")
         return f"openeo/{device_id}/availability"
+
+    def _bool_config(self, module, key, default=False):
+        val = globalState.configDB.get(module, key, default)
+        return val in (True, "True", "true", "1", 1)
 
     def _get_device_info(self):
         """Generate device information for Home Assistant"""
@@ -538,8 +538,8 @@ class homeassistantClassPlugin(PluginSuperClass):
         control_entities = [
             {
                 "component": "switch",
-                "object_id": "charger_switch",
-                "name": "Charger Switch",
+                "object_id": "charging",
+                "name": "Charging",
                 "state_topic": f"openeo/{device_id}/state",
                 "command_topic": f"openeo/{device_id}/command/switch/set",
                 "value_template": "{{ 'ON' if (value_json.switch_enabled and value_json.switch_on) else 'OFF' }}",
@@ -581,6 +581,20 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "icon": "mdi:clock-end"
             },
             {
+                "component": "switch",
+                "object_id": "timers_switch",
+                "name": "Timers",
+                "state_topic": f"openeo/{device_id}/state",
+                "command_topic": f"openeo/{device_id}/command/enable_plugin/set",
+                "value_template": "{{ 'ON' if value_json.scheduler_enabled else 'OFF' }}",
+                "payload_on": "scheduler:true",
+                "payload_off": "scheduler:false",
+                "state_on": "ON",
+                "state_off": "OFF",
+                "icon": "mdi:timer",
+                "device_class": "switch"
+            },
+            {
                 "component": "number",
                 "object_id": "schedule_amps",
                 "name": "Schedule Current Limit",
@@ -610,7 +624,7 @@ class homeassistantClassPlugin(PluginSuperClass):
             
             # Add optional fields if present
             for field in ["value_template", "unit_of_measurement", "device_class", "state_class",
-                         "icon", "payload_on", "payload_off", "command_topic", "min", "max", "step", "options"]:
+                         "icon", "payload_on", "payload_off", "state_on", "state_off", "command_topic", "min", "max", "step", "options"]:
                 if field in entity:
                     config[field] = entity[field]
 
@@ -625,6 +639,18 @@ class homeassistantClassPlugin(PluginSuperClass):
             except Exception as e:
                 _LOGGER.error(f"Failed to publish discovery for {entity['name']}: {e}")
         
+        # Remove renamed/deprecated entities by publishing empty retained payloads
+        deprecated_topics = [
+            f"{discovery_prefix}/switch/{device_id}/charger_switch/config",
+            f"{discovery_prefix}/select/{device_id}/charger_mode/config",
+        ]
+        for topic in deprecated_topics:
+            try:
+                self.mqtt_client.publish(topic, "", retain=True)
+                _LOGGER.debug(f"Removed deprecated discovery topic: {topic}")
+            except Exception as e:
+                _LOGGER.error(f"Failed to remove deprecated discovery topic {topic}: {e}")
+
         self.discovery_sent = True
         _LOGGER.info("Home Assistant discovery messages sent")
     
@@ -660,8 +686,9 @@ class homeassistantClassPlugin(PluginSuperClass):
             "vehicle_connected": "true" if vehicle_connected else "false",
             "cable_connected": "true" if cable_connected else "false",
             "charging_active": "true" if charging_active else "false",
-            "switch_on": globalState.configDB.get("switch", "on", False),
-            "switch_enabled": globalState.configDB.get("switch", "enabled", False),
+            "switch_on": self._bool_config("switch", "on"),
+            "switch_enabled": self._bool_config("switch", "enabled"),
+            "scheduler_enabled": self._bool_config("scheduler", "enabled"),
             "current_limit_setting": globalState.MIN_CHARGING_CURRENT,
             "schedule_start": self._get_schedule_field("start"),
             "schedule_end": self._get_schedule_field("end"),
@@ -679,7 +706,7 @@ class homeassistantClassPlugin(PluginSuperClass):
         payload = json.dumps(state_payload)
         
         try:
-            self.mqtt_client.publish(topic, payload)
+            self.mqtt_client.publish(topic, payload, retain=True)
             _LOGGER.debug("Published state to MQTT")
         except Exception as e:
             _LOGGER.error(f"Failed to publish state: {e}")
