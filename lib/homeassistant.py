@@ -58,6 +58,8 @@ class homeassistantClassPlugin(PluginSuperClass):
         self.connected = False
         self.last_publish = 0
         self.discovery_sent = False
+        self._published_schedule_count = 0
+        self._published_solar_schedule_count = 0
         super().__init__(configParam)
         
         if not MQTT_AVAILABLE:
@@ -138,9 +140,9 @@ class homeassistantClassPlugin(PluginSuperClass):
             f"openeo/{device_id}/command/switch/set",
             f"openeo/{device_id}/command/current_limit/set",
             f"openeo/{device_id}/command/enable_plugin/set",
-            f"openeo/{device_id}/command/schedule_start/set",
-            f"openeo/{device_id}/command/schedule_end/set",
-            f"openeo/{device_id}/command/schedule_amps/set"
+            f"openeo/{device_id}/command/schedule/#",
+            f"openeo/{device_id}/command/solar_schedule/#",
+            f"openeo/{device_id}/command/solar_enable/set",
         ]
         
         for topic in command_topics:
@@ -165,12 +167,14 @@ class homeassistantClassPlugin(PluginSuperClass):
                 self._handle_current_limit_command(payload)
             elif topic == f"openeo/{device_id}/command/enable_plugin/set":
                 self._handle_enable_plugin_command(payload)
-            elif topic == f"openeo/{device_id}/command/schedule_start/set":
-                self._handle_schedule_start_command(payload)
-            elif topic == f"openeo/{device_id}/command/schedule_end/set":
-                self._handle_schedule_end_command(payload)
-            elif topic == f"openeo/{device_id}/command/schedule_amps/set":
-                self._handle_schedule_amps_command(payload)
+            elif topic.startswith(f"openeo/{device_id}/command/schedule/"):
+                self._handle_indexed_schedule_command(topic, payload, solar=False)
+            elif topic.startswith(f"openeo/{device_id}/command/solar_schedule/"):
+                self._handle_indexed_schedule_command(topic, payload, solar=True)
+            elif topic == f"openeo/{device_id}/command/solar_enable/set":
+                enabled = payload.lower() in ["on", "true", "1"]
+                globalState.configDB.set("loadmanagement", "solar_enable", enabled)
+                self._publish_state()
             else:
                 _LOGGER.warning(f"Unknown command topic: {topic}")
                 
@@ -243,96 +247,117 @@ class homeassistantClassPlugin(PluginSuperClass):
         except Exception as e:
             _LOGGER.error(f"Error handling plugin command '{payload}': {e}")
     
-    def _handle_schedule_start_command(self, payload):
-        """Handle schedule start time command"""
+    def _get_schedules(self):
+        """Return live schedule list from scheduler plugin"""
+        module = globalState.stateDict["_moduleDict"].get("scheduler")
+        return (module.get_config("schedule") or []) if module else []
+
+    def _get_solar_schedules(self):
+        """Return live schedule list from loadmanagement plugin"""
+        module = globalState.stateDict["_moduleDict"].get("loadmanagement")
+        return (module.get_config("schedule") or []) if module else []
+
+    def _handle_indexed_schedule_command(self, topic, payload, solar):
+        """Handle add/edit/delete commands for indexed charging or solar schedule slots"""
         try:
-            start_time = self._normalize_time(payload)
-            if start_time:
-                self._update_schedule_field("start", start_time)
-                _LOGGER.info(f"Schedule start time set to {start_time}")
-        except Exception as e:
-            _LOGGER.error(f"Error handling schedule start command '{payload}': {e}")
-    
-    def _handle_schedule_end_command(self, payload):
-        """Handle schedule end time command"""
-        try:
-            end_time = self._normalize_time(payload)
-            if end_time:
-                self._update_schedule_field("end", end_time)
-                _LOGGER.info(f"Schedule end time set to {end_time}")
-        except Exception as e:
-            _LOGGER.error(f"Error handling schedule end command '{payload}': {e}")
-    
-    def _handle_schedule_amps_command(self, payload):
-        """Handle schedule current limit command"""
-        try:
-            current_limit = int(float(payload))
-            max_allowed = min(globalState.MAX_CHARGING_CURRENT, 
-                            globalState.stateDict.get("eo_overall_limit_current", globalState.MAX_CHARGING_CURRENT))
-            
-            if globalState.MIN_CHARGING_CURRENT <= current_limit <= max_allowed:
-                self._update_schedule_field("amps", current_limit)
-                _LOGGER.info(f"Schedule current limit set to {current_limit}A")
+            device_id = self.get_config("device_id")
+            prefix = "solar_schedule" if solar else "schedule"
+            base = f"openeo/{device_id}/command/{prefix}/"
+            parts = topic[len(base):].split("/")
+
+            schedules = self._get_solar_schedules() if solar else self._get_schedules()
+            plugin = "loadmanagement" if solar else "scheduler"
+            default = {"start": "0000", "end": "2359", "amps": 0} if solar \
+                      else {"start": "2200", "end": "0600", "amps": 16}
+            max_allowed = min(globalState.MAX_CHARGING_CURRENT,
+                              globalState.stateDict.get("eo_overall_limit_current", globalState.MAX_CHARGING_CURRENT))
+
+            if parts == ["add"]:
+                if solar and not self._bool_config("loadmanagement", "solar_enable"):
+                    _LOGGER.warning("Cannot add solar schedule: solar charging is disabled")
+                    return
+                schedules.append(dict(default))
+                globalState.configDB.set(plugin, "schedule", json.dumps(schedules))
+                self.discovery_sent = False
+                self._publish_state()
+                _LOGGER.info(f"Added new {prefix} (total: {len(schedules)})")
+
+            elif len(parts) == 2 and parts[1] == "delete":
+                if not parts[0].isdigit():
+                    _LOGGER.error(f"Invalid schedule index '{parts[0]}'")
+                    return
+                n = int(parts[0])
+                if not (1 <= n <= len(schedules)):
+                    _LOGGER.error(f"Schedule index {n} out of range (1..{len(schedules)})")
+                    return
+                if len(schedules) == 1:
+                    schedules[0] = dict(default)
+                else:
+                    del schedules[n - 1]
+                globalState.configDB.set(plugin, "schedule", json.dumps(schedules))
+                self.discovery_sent = False
+                self._publish_state()
+                _LOGGER.info(f"Deleted {prefix} {n}")
+
+            elif len(parts) == 3 and parts[2] == "set" and parts[1] in ("start", "end"):
+                if not parts[0].isdigit():
+                    _LOGGER.error(f"Invalid schedule index '{parts[0]}'")
+                    return
+                n = int(parts[0])
+                if not (1 <= n <= len(schedules)):
+                    _LOGGER.error(f"Schedule index {n} out of range (1..{len(schedules)})")
+                    return
+                value = self._normalize_time(payload)
+                if value is None:
+                    return
+                schedules[n - 1][parts[1]] = value
+                globalState.configDB.set(plugin, "schedule", json.dumps(schedules))
+                self._publish_state()
+                _LOGGER.info(f"Set {prefix} {n} {parts[1]} to {value}")
+
+            elif len(parts) == 3 and parts[2] == "set" and parts[1] == "amps":
+                if not parts[0].isdigit():
+                    _LOGGER.error(f"Invalid schedule index '{parts[0]}'")
+                    return
+                n = int(parts[0])
+                if not (1 <= n <= len(schedules)):
+                    _LOGGER.error(f"Schedule index {n} out of range (1..{len(schedules)})")
+                    return
+                try:
+                    amps = int(float(payload))
+                except (ValueError, TypeError):
+                    _LOGGER.error(f"Invalid amps value '{payload}'")
+                    return
+                min_amps = 0 if solar else globalState.MIN_CHARGING_CURRENT
+                if not (min_amps <= amps <= max_allowed):
+                    _LOGGER.error(f"Amps {amps} out of range ({min_amps}..{max_allowed})")
+                    return
+                schedules[n - 1]["amps"] = amps
+                globalState.configDB.set(plugin, "schedule", json.dumps(schedules))
+                self._publish_state()
+                _LOGGER.info(f"Set {prefix} {n} amps to {amps}")
+
             else:
-                _LOGGER.error(f"Invalid schedule current limit: {current_limit}. Must be {globalState.MIN_CHARGING_CURRENT}-{max_allowed} amps")
-                
-        except (ValueError, TypeError):
-            _LOGGER.error(f"Invalid schedule current limit value '{payload}'")
+                _LOGGER.warning(f"Unrecognised schedule command topic: {topic}")
+
         except Exception as e:
-            _LOGGER.error(f"Error handling schedule amps command '{payload}': {e}")
+            _LOGGER.error(f"Error handling schedule command '{topic}': {e}")
     
     def _normalize_time(self, time_str):
         """Convert time to HHMM format with basic validation"""
-        time_str = time_str.strip().replace(':', '')
-        
+        time_str = time_str.strip()
+        # HA time entities send HH:MM:SS — drop the seconds component
+        if len(time_str) == 8 and time_str[2] == ':' and time_str[5] == ':':
+            time_str = time_str[:5]
+        time_str = time_str.replace(':', '')
+
         if len(time_str) == 4 and time_str.isdigit():
             hour, minute = int(time_str[:2]), int(time_str[2:])
             if 0 <= hour <= 23 and 0 <= minute <= 59:
                 return time_str
-        
-        _LOGGER.error(f"Invalid time format '{time_str}'. Expected HH:MM or HHMM")
+
+        _LOGGER.error(f"Invalid time format '{time_str}'. Expected HH:MM:SS, HH:MM or HHMM")
         return None
-    
-    def _update_schedule_field(self, field, value):
-        """Update schedule field using existing plugin system"""
-        scheduler_module = globalState.stateDict["_moduleDict"].get("scheduler")
-        if not scheduler_module:
-            _LOGGER.error("Scheduler module not available")
-            return
-        
-        # Get current schedule from plugin (already parsed)
-        current_schedule = scheduler_module.get_config("schedule") or []
-        
-        # Ensure we have at least one schedule entry
-        if not current_schedule:
-            current_schedule = [{"start": "2200", "end": "0600", "amps": globalState.MIN_CHARGING_CURRENT}]
-        
-        # Update the field
-        current_schedule[0][field] = value
-        
-        # Save using config system (will trigger plugin reconfiguration)
-        globalState.configDB.set("scheduler", "schedule", current_schedule)
-        globalState.configDB.set("scheduler", "enabled", True)
-    
-    
-    def _get_schedule_field(self, field):
-        """Get schedule field using plugin system"""
-        scheduler_module = globalState.stateDict["_moduleDict"].get("scheduler")
-        if scheduler_module:
-            schedule = scheduler_module.get_config("schedule") or []
-            if schedule:
-                return schedule[0].get(field, self._get_schedule_default(field))
-        
-        return self._get_schedule_default(field)
-    
-    def _get_schedule_default(self, field):
-        """Get default value for schedule field"""
-        defaults = {
-            "start": "2200",
-            "end": "0600", 
-            "amps": globalState.MIN_CHARGING_CURRENT
-        }
-        return defaults.get(field, "")
     
     def _get_availability_topic(self):
         device_id = self.get_config("device_id")
@@ -563,24 +588,6 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "icon": "mdi:current-ac"
             },
             {
-                "component": "time",
-                "object_id": "schedule_start",
-                "name": "Schedule Start Time",
-                "state_topic": f"openeo/{device_id}/state",
-                "command_topic": f"openeo/{device_id}/command/schedule_start/set",
-                "value_template": "{{ value_json.schedule_start[:2] + ':' + value_json.schedule_start[2:] if value_json.schedule_start and value_json.schedule_start|length == 4 else '22:00' }}",
-                "icon": "mdi:clock-start"
-            },
-            {
-                "component": "time",
-                "object_id": "schedule_end",
-                "name": "Schedule End Time",
-                "state_topic": f"openeo/{device_id}/state",
-                "command_topic": f"openeo/{device_id}/command/schedule_end/set",
-                "value_template": "{{ value_json.schedule_end[:2] + ':' + value_json.schedule_end[2:] if value_json.schedule_end and value_json.schedule_end|length == 4 else '06:00' }}",
-                "icon": "mdi:clock-end"
-            },
-            {
                 "component": "switch",
                 "object_id": "timers_switch",
                 "name": "Timers",
@@ -594,41 +601,189 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "icon": "mdi:timer",
                 "device_class": "switch"
             },
-            {
-                "component": "number",
-                "object_id": "schedule_amps",
-                "name": "Schedule Current Limit",
-                "state_topic": f"openeo/{device_id}/state",
-                "command_topic": f"openeo/{device_id}/command/schedule_amps/set",
-                "value_template": "{{ value_json.schedule_amps }}",
-                "min": globalState.MIN_CHARGING_CURRENT,
-                "max": max_allowed_current,
-                "step": 1,
-                "unit_of_measurement": "A",
-                "device_class": "current",
-                "icon": "mdi:current-ac"
-            }
         ]
         
+        # Build dynamic entities for each charging schedule slot
+        schedules = self._get_schedules()
+        schedule_entities = []
+        for n, _ in enumerate(schedules, 1):
+            schedule_entities += [
+                {
+                    "component": "time",
+                    "object_id": f"schedule_{n}_start",
+                    "name": f"Charge Schedule {n} Start",
+                    "state_topic": f"openeo/{device_id}/state",
+                    "command_topic": f"openeo/{device_id}/command/schedule/{n}/start/set",
+                    "value_template": (
+                        f"{{{{ value_json.charging_schedule_{n}_start[:2] + ':' + "
+                        f"value_json.charging_schedule_{n}_start[2:] "
+                        f"if value_json.get('charging_schedule_{n}_start') else '22:00' }}}}"
+                    ),
+                    "icon": "mdi:clock-start"
+                },
+                {
+                    "component": "time",
+                    "object_id": f"schedule_{n}_end",
+                    "name": f"Charge Schedule {n} End",
+                    "state_topic": f"openeo/{device_id}/state",
+                    "command_topic": f"openeo/{device_id}/command/schedule/{n}/end/set",
+                    "value_template": (
+                        f"{{{{ value_json.charging_schedule_{n}_end[:2] + ':' + "
+                        f"value_json.charging_schedule_{n}_end[2:] "
+                        f"if value_json.get('charging_schedule_{n}_end') else '06:00' }}}}"
+                    ),
+                    "icon": "mdi:clock-end"
+                },
+                {
+                    "component": "number",
+                    "object_id": f"schedule_{n}_amps",
+                    "name": f"Charge Schedule {n} Current",
+                    "state_topic": f"openeo/{device_id}/state",
+                    "command_topic": f"openeo/{device_id}/command/schedule/{n}/amps/set",
+                    "value_template": f"{{{{ value_json.get('charging_schedule_{n}_amps', {globalState.MIN_CHARGING_CURRENT}) }}}}",
+                    "min": globalState.MIN_CHARGING_CURRENT,
+                    "max": max_allowed_current,
+                    "step": 1,
+                    "unit_of_measurement": "A",
+                    "device_class": "current",
+                    "icon": "mdi:current-ac"
+                },
+                {
+                    "component": "button",
+                    "object_id": f"schedule_{n}_delete",
+                    "name": f"Delete Charge Schedule {n}",
+                    "command_topic": f"openeo/{device_id}/command/schedule/{n}/delete",
+                    "payload_press": "delete",
+                    "icon": "mdi:delete"
+                },
+            ]
+        schedule_entities.append({
+            "component": "button",
+            "object_id": "schedule_add",
+            "name": "Add Charge Schedule",
+            "command_topic": f"openeo/{device_id}/command/schedule/add",
+            "payload_press": "add",
+            "icon": "mdi:plus-circle",
+            "availability": [
+                {"topic": availability_topic},
+                {
+                    "topic": f"openeo/{device_id}/state",
+                    "value_template": "{{ 'online' if value_json.scheduler_enabled else 'offline' }}"
+                }
+            ],
+            "availability_mode": "all"
+        })
+
+        # Build dynamic entities for each solar schedule slot
+        solar_schedules = self._get_solar_schedules()
+        solar_schedule_entities = []
+        for n, _ in enumerate(solar_schedules, 1):
+            solar_schedule_entities += [
+                {
+                    "component": "time",
+                    "object_id": f"solar_schedule_{n}_start",
+                    "name": f"Solar Schedule {n} Start",
+                    "state_topic": f"openeo/{device_id}/state",
+                    "command_topic": f"openeo/{device_id}/command/solar_schedule/{n}/start/set",
+                    "value_template": (
+                        f"{{{{ value_json.solar_schedule_{n}_start[:2] + ':' + "
+                        f"value_json.solar_schedule_{n}_start[2:] "
+                        f"if value_json.get('solar_schedule_{n}_start') else '00:00' }}}}"
+                    ),
+                    "icon": "mdi:weather-sunny-clock"
+                },
+                {
+                    "component": "time",
+                    "object_id": f"solar_schedule_{n}_end",
+                    "name": f"Solar Schedule {n} End",
+                    "state_topic": f"openeo/{device_id}/state",
+                    "command_topic": f"openeo/{device_id}/command/solar_schedule/{n}/end/set",
+                    "value_template": (
+                        f"{{{{ value_json.solar_schedule_{n}_end[:2] + ':' + "
+                        f"value_json.solar_schedule_{n}_end[2:] "
+                        f"if value_json.get('solar_schedule_{n}_end') else '23:59' }}}}"
+                    ),
+                    "icon": "mdi:weather-sunny-off"
+                },
+                {
+                    "component": "number",
+                    "object_id": f"solar_schedule_{n}_amps",
+                    "name": f"Solar Schedule {n} Reservation",
+                    "state_topic": f"openeo/{device_id}/state",
+                    "command_topic": f"openeo/{device_id}/command/solar_schedule/{n}/amps/set",
+                    "value_template": f"{{{{ value_json.get('solar_schedule_{n}_amps', 0) }}}}",
+                    "min": 0,
+                    "max": max_allowed_current,
+                    "step": 1,
+                    "unit_of_measurement": "A",
+                    "device_class": "current",
+                    "icon": "mdi:solar-power"
+                },
+                {
+                    "component": "button",
+                    "object_id": f"solar_schedule_{n}_delete",
+                    "name": f"Delete Solar Schedule {n}",
+                    "command_topic": f"openeo/{device_id}/command/solar_schedule/{n}/delete",
+                    "payload_press": "delete",
+                    "icon": "mdi:delete"
+                },
+            ]
+        solar_schedule_entities += [
+            {
+                "component": "switch",
+                "object_id": "solar_enabled",
+                "name": "Solar Charging",
+                "state_topic": f"openeo/{device_id}/state",
+                "command_topic": f"openeo/{device_id}/command/solar_enable/set",
+                "value_template": "{{ 'ON' if value_json.solar_enabled else 'OFF' }}",
+                "payload_on": "ON",
+                "payload_off": "OFF",
+                "state_on": "ON",
+                "state_off": "OFF",
+                "icon": "mdi:solar-power-variant",
+                "device_class": "switch"
+            },
+            {
+                "component": "button",
+                "object_id": "solar_schedule_add",
+                "name": "Add Solar Schedule",
+                "command_topic": f"openeo/{device_id}/command/solar_schedule/add",
+                "payload_press": "add",
+                "icon": "mdi:plus-circle",
+                "availability": [
+                    {"topic": availability_topic},
+                    {
+                        "topic": f"openeo/{device_id}/state",
+                        "value_template": "{{ 'online' if value_json.solar_enabled else 'offline' }}"
+                    }
+                ],
+                "availability_mode": "all"
+            },
+        ]
+
         # Combine sensors and control entities for discovery
-        all_entities = sensors + control_entities
+        all_entities = sensors + control_entities + schedule_entities + solar_schedule_entities
         
         # Send discovery message for each entity
         for entity in all_entities:
             config = {
                 "name": entity["name"],
                 "unique_id": f"{device_id}_{entity['object_id']}",
-                "state_topic": entity["state_topic"],
                 "device": device_info
             }
-            
+            if "state_topic" in entity:
+                config["state_topic"] = entity["state_topic"]
+
             # Add optional fields if present
             for field in ["value_template", "unit_of_measurement", "device_class", "state_class",
-                         "icon", "payload_on", "payload_off", "state_on", "state_off", "command_topic", "min", "max", "step", "options"]:
+                         "icon", "payload_on", "payload_off", "payload_press", "state_on", "state_off",
+                         "command_topic", "min", "max", "step", "options"]:
                 if field in entity:
                     config[field] = entity[field]
 
-            config["availability"] = [{"topic": availability_topic}]
+            config["availability"] = entity.get("availability", [{"topic": availability_topic}])
+            if "availability_mode" in entity:
+                config["availability_mode"] = entity["availability_mode"]
 
             topic = f"{discovery_prefix}/{entity['component']}/{device_id}/{entity['object_id']}/config"
             payload = json.dumps(config)
@@ -639,10 +794,34 @@ class homeassistantClassPlugin(PluginSuperClass):
             except Exception as e:
                 _LOGGER.error(f"Failed to publish discovery for {entity['name']}: {e}")
         
+        # Remove retired slot entities for any schedule slots that no longer exist
+        new_count = len(schedules)
+        new_solar_count = len(solar_schedules)
+        slot_sub_entities = ["start", "end", "amps", "delete"]
+        for n in range(new_count + 1, self._published_schedule_count + 1):
+            for sub in slot_sub_entities:
+                stale = f"{discovery_prefix}/{'button' if sub == 'delete' else ('time' if sub in ('start','end') else 'number')}/{device_id}/schedule_{n}_{sub}/config"
+                try:
+                    self.mqtt_client.publish(stale, "", retain=True)
+                    _LOGGER.debug(f"Cleared stale discovery topic: {stale}")
+                except Exception as e:
+                    _LOGGER.error(f"Failed to clear stale topic {stale}: {e}")
+        for n in range(new_solar_count + 1, self._published_solar_schedule_count + 1):
+            for sub in slot_sub_entities:
+                stale = f"{discovery_prefix}/{'button' if sub == 'delete' else ('time' if sub in ('start','end') else 'number')}/{device_id}/solar_schedule_{n}_{sub}/config"
+                try:
+                    self.mqtt_client.publish(stale, "", retain=True)
+                    _LOGGER.debug(f"Cleared stale solar discovery topic: {stale}")
+                except Exception as e:
+                    _LOGGER.error(f"Failed to clear stale solar topic {stale}: {e}")
+
         # Remove renamed/deprecated entities by publishing empty retained payloads
         deprecated_topics = [
             f"{discovery_prefix}/switch/{device_id}/charger_switch/config",
             f"{discovery_prefix}/select/{device_id}/charger_mode/config",
+            f"{discovery_prefix}/time/{device_id}/schedule_start/config",
+            f"{discovery_prefix}/time/{device_id}/schedule_end/config",
+            f"{discovery_prefix}/number/{device_id}/schedule_amps/config",
         ]
         for topic in deprecated_topics:
             try:
@@ -651,6 +830,8 @@ class homeassistantClassPlugin(PluginSuperClass):
             except Exception as e:
                 _LOGGER.error(f"Failed to remove deprecated discovery topic {topic}: {e}")
 
+        self._published_schedule_count = new_count
+        self._published_solar_schedule_count = new_solar_count
         self.discovery_sent = True
         _LOGGER.info("Home Assistant discovery messages sent")
     
@@ -690,9 +871,7 @@ class homeassistantClassPlugin(PluginSuperClass):
             "switch_enabled": self._bool_config("switch", "enabled"),
             "scheduler_enabled": self._bool_config("scheduler", "enabled"),
             "current_limit_setting": globalState.MIN_CHARGING_CURRENT,
-            "schedule_start": self._get_schedule_field("start"),
-            "schedule_end": self._get_schedule_field("end"),
-            "schedule_amps": self._get_schedule_field("amps"),
+            "solar_enabled": self._bool_config("loadmanagement", "solar_enable"),
             "serial_errors": globalState.stateDict.get("eo_serial_errors", 0),
             "app_version": globalState.stateDict.get("app_version", "unknown"),
             "openeo_latest_version": globalState.stateDict.get("openeo_latest_version", "unknown"),
@@ -701,6 +880,16 @@ class homeassistantClassPlugin(PluginSuperClass):
             "timestamp": int(time.time())
         }
         
+        for n, s in enumerate(self._get_schedules(), 1):
+            state_payload[f"charging_schedule_{n}_start"] = s.get("start", "2200")
+            state_payload[f"charging_schedule_{n}_end"] = s.get("end", "0600")
+            state_payload[f"charging_schedule_{n}_amps"] = s.get("amps", globalState.MIN_CHARGING_CURRENT)
+
+        for n, s in enumerate(self._get_solar_schedules(), 1):
+            state_payload[f"solar_schedule_{n}_start"] = s.get("start", "0000")
+            state_payload[f"solar_schedule_{n}_end"] = s.get("end", "2359")
+            state_payload[f"solar_schedule_{n}_amps"] = s.get("amps", 0)
+
         device_id = self.get_config("device_id")
         topic = f"openeo/{device_id}/state"
         payload = json.dumps(state_payload)
@@ -719,6 +908,12 @@ class homeassistantClassPlugin(PluginSuperClass):
         current_time = time.time()
         publish_interval = self.get_config("publish_interval")
         
+        # Detect schedule count changes from native UI and trigger re-discovery
+        if self.connected and self.discovery_sent:
+            if (len(self._get_schedules()) != self._published_schedule_count or
+                    len(self._get_solar_schedules()) != self._published_solar_schedule_count):
+                self.discovery_sent = False
+
         # Send discovery messages if not sent yet and connected
         if self.connected and not self.discovery_sent:
             threading.Thread(target=self._send_discovery, daemon=True).start()
