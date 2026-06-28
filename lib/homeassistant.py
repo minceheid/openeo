@@ -677,6 +677,13 @@ class homeassistantClassPlugin(PluginSuperClass):
         # Build dynamic entities for each solar schedule slot
         solar_schedules = self._get_solar_schedules()
         solar_schedule_entities = []
+        solar_availability = [
+            {"topic": availability_topic},
+            {
+                "topic": f"openeo/{device_id}/state",
+                "value_template": "{{ 'online' if value_json.solar_enabled else 'offline' }}"
+            }
+        ]
         for n, _ in enumerate(solar_schedules, 1):
             solar_schedule_entities += [
                 {
@@ -690,7 +697,9 @@ class homeassistantClassPlugin(PluginSuperClass):
                         f"value_json.solar_schedule_{n}_start[2:] "
                         f"if value_json.get('solar_schedule_{n}_start') else '00:00' }}}}"
                     ),
-                    "icon": "mdi:weather-sunny-clock"
+                    "icon": "mdi:weather-sunny-clock",
+                    "availability": solar_availability,
+                    "availability_mode": "all"
                 },
                 {
                     "component": "time",
@@ -703,7 +712,9 @@ class homeassistantClassPlugin(PluginSuperClass):
                         f"value_json.solar_schedule_{n}_end[2:] "
                         f"if value_json.get('solar_schedule_{n}_end') else '23:59' }}}}"
                     ),
-                    "icon": "mdi:weather-sunny-off"
+                    "icon": "mdi:weather-sunny-off",
+                    "availability": solar_availability,
+                    "availability_mode": "all"
                 },
                 {
                     "component": "number",
@@ -717,7 +728,9 @@ class homeassistantClassPlugin(PluginSuperClass):
                     "step": 1,
                     "unit_of_measurement": "A",
                     "device_class": "current",
-                    "icon": "mdi:solar-power"
+                    "icon": "mdi:solar-power",
+                    "availability": solar_availability,
+                    "availability_mode": "all"
                 },
                 {
                     "component": "button",
@@ -725,7 +738,9 @@ class homeassistantClassPlugin(PluginSuperClass):
                     "name": f"Delete Solar Schedule {n}",
                     "command_topic": f"openeo/{device_id}/command/solar_schedule/{n}/delete",
                     "payload_press": "delete",
-                    "icon": "mdi:delete"
+                    "icon": "mdi:delete",
+                    "availability": solar_availability,
+                    "availability_mode": "all"
                 },
             ]
         solar_schedule_entities += [
