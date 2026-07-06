@@ -216,10 +216,13 @@ export default function EVChargerStatus(
   
   const openeo_state=Number(status.status.eo_charger_state_id);
 
+
   if (openeo_state<9) {
     stateIdx=0; // Idle
   } else if (openeo_state!=99 && (openeo_state<11 || openeo_state>12)) {
     stateIdx=1; // Car Connected
+  } else if (status.status.eo_current_vehicle<6) {
+    stateIdx=1; // Car Connected but not charging
   } else {
     if (status.status.eo_current_vehicle - status.status.eo_current_solar <2 ) {
       stateIdx=3; // Solar only
