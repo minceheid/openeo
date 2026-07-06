@@ -453,7 +453,7 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
           </button>
 )}
 
-{ schedules[active]?.type !== SWITCH_TYPE  && (
+{ schedules[active]?.type !== SWITCH_TYPE  && schedules[active]?.type !== STATUS_TYPE && (
 
             <button
             onClick={removeActive}
