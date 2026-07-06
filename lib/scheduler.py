@@ -56,11 +56,6 @@ class schedulerClassPlugin(PluginSuperClass):
 
         return amps
 
-    # def get_user_settings(self):
-    #     settings = []
-    #     util.add_simple_setting(self.pluginConfig, settings, 'slider', "scheduler", ("scheduler_granularity",), 'Schedule Clockface Step Size', \
-    #         note="This allows the granularity of the clock timer to be set", range=(5,15), step=5, default=5, value_unit="min")
-    #     return settings
-
     def get_user_settings(self):
-        return [{"type": "slider", "name": "scheduler_granularity", "label": "Schedule Clockface Step Size", "default":self.pluginConfig.get("scheduler_granularity",5), "range": [5,15], "step":5, "default":5, "value_unit":"min", "note":"This allows the granularity of the clock timer to be set."}];
+        # print(f"scheduler get_user_settings called, config: {self.pluginConfig} {self.pluginConfig.get('scheduler_granularity',5)}")
+        return [{"type": "slider", "name": "scheduler_granularity", "label": "Schedule Clockface Step Size", "default":self.pluginConfig.get("scheduler_granularity",5), "range": [5,15], "step":5, "value_unit":"min", "note":"This allows the granularity of the clock timer to be set."}];
