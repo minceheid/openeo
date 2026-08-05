@@ -73,10 +73,8 @@ https://github.com/minceheid/openeo/releases/latest/download/openeo_latest.img.x
 https://github.com/minceheid/openeo/releases/latest/download/openeo_latest.img.xz.sha256
 )
 
-3. Get and install a tool to write SD cards. I use the [Raspberry Pi imager]([url](https://www.raspberrypi.com/software/)). Follow the instructions on the tool to write the image to the SD card.
-
-    > **Note**: Do not change the default username (`pi`) as the installation requires this
-
+3. Get and install a tool to write SD cards. I use the [Raspberry Pi imager]([url](https://www.raspberrypi.com/software/)). Follow the instructions on the tool to write the image to the SD card. We recommended that you do not use any imager tool to customise the image.
+    > **Note**: Explicitly - do not change the default username (`pi`) as the installation requires this. 
   
 4. *IMPORTANT* Once the new SD card has been created, remove power to your EO box by disconnecting it or by switching off the relevant breaker in your consumer unit. Please ensure that it is completely isolated from the mains electricity. *If you are unsure that the electricity is fully disconnected, then do not proceed*.
 5. Open the Smart Hub or Mini Pro 2 box by loosening the four captive screws that are visible on the front of the case (you may need to remove the four rubber covers, if they are fitted), and you will see the Raspberry Pi inside (Smart Hub is a Raspberry Pi 3, and the Mini Pro 2 is a smaller Raspberry Pi Zero). You can now switch the SD cards, keeping the original safe. Whilst you are doing this, on the Mini Pro 2, take care to not accidentally dislodge the cables connecting the Raspberry Pi board with the main control board in the lid of the unit.
