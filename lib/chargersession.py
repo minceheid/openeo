@@ -46,7 +46,6 @@ class chargersessionClassPlugin(PluginSuperClass):
         globalState.stateDict["eo_session_kwh"]=0
         globalState.stateDict["eo_session_seconds_charged"]=0
         globalState.stateDict["eo_session_cost"]=0
-        globalState.stateDict["eo_session_timestamp"]=int(time.time())
 
         # store tariff data for the session log, so that we can calculate the cost of the session as it progresses.
         # This is required because the tariff may change during a session, and we need to be able to calculate the
@@ -83,6 +82,8 @@ class chargersessionClassPlugin(PluginSuperClass):
             (TEST==False and globalState.stateDict["eo_charger_state_id"]<9): 
 
             self.reset_session()
+            globalState.stateDict["eo_session_timestamp"]=int(time.time())
+
 
             if (TEST==True):
                 # Debug logging
@@ -90,6 +91,12 @@ class chargersessionClassPlugin(PluginSuperClass):
 
         else:
             secondsSinceLastLoop=(thisloop-self.lastloop).total_seconds()
+
+            if timestamp_start_of_today() > int(globalState.stateDict["eo_session_timestamp"].astimezone().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()):
+                # if the session timestamp is from a previous day, then we reset the session counters, so that we start a new session for the new day.
+                # but we don't reset the session timestamp, because we want to keep the timestamp of the first session of the day, so that we can calculate the total cost of the day.
+                self.reset_session()
+                pass
 
             ## Production Routine
             # 1J = 1Ws = 1 x V * A * s
