@@ -48,7 +48,6 @@ class chargersessionClassPlugin(PluginSuperClass):
         globalState.stateDict["eo_session_cost"]=0
         self.today_timestamp=self.timestamp_start_of_today()
 
-
         # store tariff data for the session log, so that we can calculate the cost of the session as it progresses.
         # This is required because the tariff may change during a session, and we need to be able to calculate the
         # cost of the session accurately. We store this in a list of dicts, with each dict containing the start and 
@@ -89,7 +88,7 @@ class chargersessionClassPlugin(PluginSuperClass):
 
             if (TEST==True):
                 # Debug logging
-                print(f"Sessionlog resetting {globalState.stateDict['eo_session_timestamp']}")
+                print(f"Sessionlog resetting to {globalState.stateDict['eo_session_timestamp']}")
 
         else:
             secondsSinceLastLoop=(thisloop-self.lastloop).total_seconds()
@@ -133,13 +132,13 @@ class chargersessionClassPlugin(PluginSuperClass):
 
             # Debug Logging
             if (TEST==True):
-                print(f"Sessionlog accumulating {globalState.stateDict['eo_session_joules']}j \
-                    {globalState.stateDict['eo_session_seconds_charged']}s \
-                        £{globalState.stateDict['eo_session_cost']} \
-                            {json.dumps(joules_by_tariff)}")
+                print(f"Sessionlog {globalState.stateDict['eo_session_timestamp']}/{self.timestamp_start_of_today() } accumulating {globalState.stateDict['eo_session_joules']}j {globalState.stateDict['eo_session_seconds_charged']:.1f}s £{globalState.stateDict['eo_session_cost']} {json.dumps(joules_by_tariff)}")
 
             # Once a minute, we should write the current session information to the persistent log
             if (thisloop.minute>self.lastloop.minute):
+                if (TEST==True):
+                    print(f"Sessionlog {globalState.stateDict['eo_session_timestamp']} writing")
+
                 self.writesessionlog(globalState.stateDict["eo_session_timestamp"],
                     globalState.stateDict["eo_session_joules"],
                     globalState.stateDict["eo_session_seconds_charged"],
@@ -207,6 +206,7 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
         # if the software is restarted during a charging session, we don't want to carry over the old session data 
         # into the new session.
         self.reset_session()
+        globalState.stateDict["eo_session_timestamp"]=int(time.time())
 
         # Create mutex lock for protecting transactions - noting that the get_sessions() method will be called from
         # another thread in configserver.
