@@ -183,7 +183,7 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
             # Only retrieve sizeable sessions to remove any noise from short term connections from plug/unplug
             self.cursor.execute(f"SELECT first_timestamp, last_timestamp, day_timestamp, joules, seconds_charged, cost, cost_by_tariff \
             FROM {self.SESSION_TABLE_5} \
-            where joules and first_timestamp>{six_months_ago}")
+            where first_timestamp>{six_months_ago}")
             rows = self.cursor.fetchall()
 
         data=[]
@@ -201,13 +201,13 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
         summary={}
         for x in data:
             if x["first_timestamp"] not in summary:
-                summary[x["first_timestamp"]]={"joules":0,"seconds_charged":0,"cost":0.0}
-            summary[x["first_timestamp"]]["joules"]+=x["joules"]
+                summary[x["first_timestamp"]]=0
+            summary[x["first_timestamp"]]+=x["joules"]
 
-        # generate a list of all first_timestamp values where joules >3000
+        # generate a list of all first_timestamp values where joules <0.5MJ
         short_sessions=[]
         for k,v in summary.items():
-            if v["joules"]<(3600000/2):  # less than 0.5kWh
+            if v<(3600000/2):  # less than 0.5kWh
                 short_sessions.append(k)
 
         # remove any entries from data where first_timestamp is in short_sessions
