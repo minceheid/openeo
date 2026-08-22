@@ -111,9 +111,9 @@ This project is compatible with:
    - Install the SD card into the Raspberry Pi
    - Secure the cable connection between Raspberry Pi and power board
 
-6. **Boot and Configure**
+6. **Boot**
    - Close the enclosure and apply power
-   - The Raspberry Pi should boot and join your wireless network (if configured in step 2)
+   - The Raspberry Pi should boot
 
 7. **Access Configuration Portal**
    - Look for "OpenEO" wireless network on your phone/tablet
@@ -125,7 +125,7 @@ This project is compatible with:
    - Configure your home WiFi network
    - Set timezone for your installation
    - Optionally add SSH key for command-line access
-   - **Note**: Configuration portal is active for 30 minutes after every reboot
+   - **Note**: Configuration portal is active for 30 minutes after every reboot and once WiFi is configured can also be accessed via `http://<charger-ip>:81/`
 
 9. **Access Main Interface**
    - Disconnect from OpenEO network and reconnect to your home WiFi
@@ -266,8 +266,8 @@ Access your charger from anywhere via secure encrypted connection.
 3. Sign into [https://openeo.uk](https://openeo.uk) using your Google Account
 4. Paste your charger ID into the control panel and click "Save"
 5. Copy the generated authorization token
-6. Paste token into OpenEO Cloud settings on your charger
-7. Set "Enable Module" to "Yes"
+6. Set "Enable Module" to "Yes" in the OpenEO Cloud settings on your charger
+7. Paste token into OpenEO Cloud settings on your charger
 8. The connection indicator on openeo.uk should turn green when charger connects
 
 **Pricing**: 14 days free usage on first login, then subscription required
@@ -278,26 +278,6 @@ Access your charger from anywhere via secure encrypted connection.
 <img src="https://github.com/user-attachments/assets/c840e866-c1f3-4299-94b8-5d183af61c09" style="width:50%; height:auto;"/>
 <img src="https://github.com/user-attachments/assets/dc4edc98-d51a-482d-9fd4-5ab8ee83ecf6" style="width:50%; height:auto;"/>
 </p>
-
----
-
-## ⚙️ Configuration
-
-### Configuration Database
-- Default configuration loaded on first start
-- Stored in `/home/pi/etc/config.db` (SQLite)
-- All setting changes are retained across reboots
-
-### Manual Configuration
-Create `/home/pi/etc/config.json` to manually add configuration:
-- File is read at startup
-- Successfully merged configs are renamed to `.backup`
-- Use JSON format for settings
-
-**Example** - Set log level to debug:
-```json
-{"chargeroptions":{"log_level":"debug"}}
-```
 
 ---
 
@@ -312,7 +292,7 @@ python3 openeo_download.py --list
 # Install specific release
 python3 openeo_download.py --release v0.9.3.3
 
-# Install from branch (development)
+# Install from branch (for development purposes)
 python3 openeo_download.py --release main
 ```
 
