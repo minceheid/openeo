@@ -298,6 +298,55 @@ python3 openeo_download.py --release main
 
 ---
 
+## 🧑‍💻 For Developers
+
+### REST API Documentation
+Complete API reference for the Config Server, including all available endpoints, request/response formats, and integration examples:
+
+📖 **[API Documentation](docs/API.md)** - Full REST API reference
+
+The Config Server provides a comprehensive REST API for:
+- **Status Monitoring**: Real-time charger state and metrics
+- **Configuration Management**: Get/set module configurations
+- **Data Integration**: Prometheus metrics and Home Assistant compatibility
+- **Session Data**: Historical charging session information
+- **Chart Data**: Historical data with Plotly visualization support
+- **System Management**: Restart, debug information, and software updates
+
+**Quick API Examples**:
+```bash
+# Get current charger status
+curl http://openeo.local/getstatus | jq .
+
+# Retrieve Prometheus metrics
+curl http://openeo.local/metrics
+
+# Get Home Assistant compatible data
+curl http://openeo.local/api | jq .
+
+# Update charging settings
+curl -X POST http://openeo.local/setsettings \
+  -d 'chargeroptions:max_current=20'
+```
+
+### Contributing Code
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Code style and standards
+- Testing procedures
+- Pull request process
+- Release procedures
+
+### Architecture
+The codebase is organized as a plugin-based system:
+- **Core Modules**: Configuration server, charger control, state management
+- **Plugin System**: Extensible architecture for adding features (scheduler, solar, load balancing, etc.)
+- **Configuration Database**: SQLite-based persistent storage
+- **Web Interface**: Modern web UI for control and monitoring
+
+For more details, explore the repository structure and module documentation.
+
+---
+
 ## 🐛 Troubleshooting
 
 ### "Waiting" Message on Startup
@@ -353,6 +402,7 @@ Copyright © 2025 Mike Scott and contributors
 - [Issues Tracker](https://github.com/minceheid/openeo/issues)
 - [Discussions](https://github.com/minceheid/openeo/discussions)
 - [OpenEO Cloud Service](https://openeo.uk)
+- [API Documentation](docs/API.md)
 
 ---
 
