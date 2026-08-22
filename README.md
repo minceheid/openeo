@@ -1,235 +1,379 @@
-# Cloudless software for the EO Smart Home Hub/Mini and Mini Pro 2 EV charger
+# Cloudless Software for the EO Smart Home Hub/Mini and Mini Pro 2 EV Charger
 
-[![Latest Release](https://img.shields.io/github/v/release/minceheid/openeo)](
-https://github.com/minceheid/openeo/releases/latest
-)
+[![Latest Release](https://img.shields.io/github/v/release/minceheid/openeo)](https://github.com/minceheid/openeo/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/minceheid/openeo)](https://github.com/minceheid/openeo)
+[![GitHub forks](https://img.shields.io/github/forks/minceheid/openeo)](https://github.com/minceheid/openeo/network)
 
-EO Charging announced in July 2025 that their EO Smart Home app is being discontinued on November 30th 2025. This disables the ability for owners to set automated timed schedules and to directly manage their device, which will then operate purely as a "plug & play" charger. This project aims to provide an alternate, open source software that can be directly installed on these devices to allow control from the local WiFi network without relying on the original manufacturer. 
+EO Charging announced in July 2025 that their EO Smart Home app will be discontinued on November 30th, 2025. This would disable the ability for owners to set automated timed schedules and to directly manage their device, leaving chargers operating purely as basic "plug & play" units.
+
+OpenEO is an open-source alternative that can be directly installed on EO Smart Home Hub and Mini Pro 2 devices to enable full local WiFi network control without relying on the manufacturer's cloud services.
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/e8eb317d-e411-4b7b-83f1-c2d1a450f97c" style="width:25%; height:auto;"/>
 <img src="https://github.com/user-attachments/assets/d41a2b3e-8d2e-4806-81a4-dd613ddad66c" style="width:25%; height:auto;"/>
-<img src="https://github.com/user-attachments/assets/72bbf639-530b-4743-a0a7-431bfc92eaa2" />
+<img src="https://github.com/user-attachments/assets/72bbf639-530b-4743-a0a7-431bfc92eaa2" style="width:25%; height:auto;"/>
 </p>
 
-## NEW: Electricity Cost Reporting
+---
 
-The Charging Log page can now report on the cost of the electricity that your EV car uses whilst charging. The charts can additionally be switched between kWh and cost. See the "Session Logs" section, below for more details.
+## 🎯 Key Features
+
+### ⚡ Core Functionality
+- **Local WiFi Control**: Manage your charger directly from your home network—no cloud required
+- **Automated Scheduling**: Define multiple timed charging schedules with flexible start/end times and amperage settings
+- **Real-Time Monitoring**: Live charger status, power metrics, and diagnostics
+- **Session Logging**: Complete charging history with energy consumption (kWh) and cost analysis
+- **Configuration Portal**: Web-based setup for WiFi, timezone, and SSH keys (accessible for 30 minutes after reboot)
+
+### ☀️ Solar Integration
+Smart charging based on solar generation with:
+- Solar timers allowing selective charging during specific hours
+- Live solar generation status visualization on the homepage
+- Yellow sun icon when solar is active and sufficient
+- Cloudy icon when solar generation is insufficient for charging
+
+### 💰 Electricity Cost Tracking
+- Automatic cost calculation based on configurable electricity tariffs
+- Session logs with switchable kWh/cost views
+- CSV export for detailed analysis and record-keeping
+- Support for complex tariff structures
+
+### 📊 Advanced Features
+- **Load Balancing**: Manage total site current draw to prevent circuit breaker trips
+- **CT Calibration**: Fine-tune current transformer readings with offset and scaling adjustments
+- **Statistics Dashboard**: Comprehensive visualizations of charger operations
+- **Home Assistant Integration**: Export data via `/api` endpoint
+- **Prometheus Metrics**: Export operational metrics via `/metrics` endpoint
+
+### 🌍 Remote Access (Optional)
+OpenEO Cloud service allows secure internet access to your charger:
+- Encrypted connection to remote webservice
+- Access your charger from anywhere via https://openeo.uk
+- 14 days free usage on first login (subscription required after)
+
+---
+
+## 📋 Technical Stack
+
+- **Backend**: Python (47.8%) - Core application logic and charger control
+- **Frontend**: JavaScript (44.5%) & HTML (4.8%) - Web-based user interface
+- **Deployment**: Shell scripts (2.5%) - Automated setup and installation
+- **Configuration**: SQLite database for persistent settings
+- **License**: MIT
+
+---
+
+## 🏗️ Compatibility
+
+This project is compatible with:
+- ✅ **EO Smart Home Hub/Mini** ([Datasheet](https://github.com/user-attachments/files/22066221/EO_Home_Hub.pdf))
+- ✅ **EO Mini Pro 2** ([Manual](https://github.com/user-attachments/files/22066224/eo-mini-pro-2-installation-and-userguide.pdf))
+- ❌ **NOT** compatible with Mini Pro 3
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/3937d19b-4389-43c6-b4eb-5bc9559911ca" style="width:75%; height:auto;"/>
+<img src="https://github.com/user-attachments/assets/1ad1ba51-ef88-4cb6-9a99-9f922e32f02c" style="width:25%; height:auto;" />
+<img src="https://github.com/user-attachments/assets/5488462c-a5c6-44c0-843b-16ec874e846a" style="width:25%; height:auto;" />
 </p>
 
-## Timezone setting
-The timezone of the RPi can now be set in the configuration portal. This is the control panel page that allows you to set the WiFi network and SSH key, and can be accessed for 30 minutes, following a reboot by connecting to the OpenEO WiFi network then pointing a browser at 192.168.1.1, just as you may have done when setting up OpenEO in the first instance. (Alternately, this control panel can also be accessed by visiting http://openeo.local:81 on your usual WiFi network within that first 30 minutes after reboot)
+---
 
-## NEW: Solar Improvements
-The solar charging integration has been improved! - previously the solar charging facility was always on when enabled. We have introduced the concept of solar timers, allowing OpenEO to selectively charge your car during specific hours of the day. This might be useful if you need to run multiple loads from your solar generation (e.g. hot water heater), and need to schedule/prioritise.
+## 🚀 Installation
 
-Additionally, we now show the status of your solar charging on the Status Panel of the homepage. If solar is active, a yellow icon will be shown.
+### Prerequisites
+- EO Smart Home Hub/Mini or Mini Pro 2 device
+- Micro SD card (8GB or larger, Class 10 recommended)
+- WiFi network with internet connectivity
+- Ability to safely power down your EV charger
 
-See more in the <b>Solar Integration</b> section, below.
+### Step-by-Step Installation
 
-## Donate to support the development
-Several folks have asked about how they might be able to contribute, to thank and to support. The primary method that I'd encourage is for them to subscribe to the OpenEO cloud service. This will give those who wish to contribute an additional service. However - for those that would prefer not to subscribe to the cloud service, here is a payment link that should allow a similar donation. Any payment is entirely voluntary and very much appreciated.
+1. **Prepare SD Card**
+   - Obtain an 8GB (or larger) Class 10 micro SD card
+
+2. **Download SD Image**
+
+   [![Download SD Image](https://img.shields.io/badge/download-SD%20image-blue)](https://github.com/minceheid/openeo/releases/latest/download/openeo_latest.img.xz) 
+   [![SHA256](https://img.shields.io/badge/checksum-sha256-lightgrey)](https://github.com/minceheid/openeo/releases/latest/download/openeo_latest.img.xz.sha256)
+
+3. **Write Image to SD Card**
+   - Download [Raspberry Pi Imager](https://www.raspberrypi.com/software/) or similar tool
+   - Write the OpenEO image to your SD card
+   - **Important**: Do not change the default username (`pi`) - the installation requires it
+
+4. **Safely Power Down Your Charger**
+   - Disconnect power by switching off the relevant breaker in your consumer unit
+   - Ensure the device is completely powered down
+
+5. **Install Raspberry Pi**
+   - Open the EO enclosure by loosening the four captive screws on the front
+   - Remove any rubber covers if present
+   - Install the SD card into the Raspberry Pi
+   - Secure the cable connection between Raspberry Pi and power board
+
+6. **Boot and Configure**
+   - Close the enclosure and apply power
+   - The Raspberry Pi should boot and join your wireless network (if configured in step 2)
+
+7. **Access Configuration Portal**
+   - Look for "OpenEO" wireless network on your phone/tablet
+   - Connect to it
+   - Your browser should auto-redirect to the configuration interface
+   - If not, navigate to `192.168.1.1`
+
+8. **Complete Setup**
+   - Configure your home WiFi network
+   - Set timezone for your installation
+   - Optionally add SSH key for command-line access
+   - **Note**: Configuration portal is active for 30 minutes after every reboot
+
+9. **Access Main Interface**
+   - Disconnect from OpenEO network and reconnect to your home WiFi
+   - Access the dashboard at `http://openeo.local/` or `http://<charger-ip>/`
+
+<p align="center">
+<img src="https://github.com/user-attachments/assets/f9470a6f-b815-4cda-ac31-8901c7547a36" style="width:25%; height:auto;" />
+</p>
+
+---
+
+## 📖 Usage Guide
+
+### Home Page & Status
+- View current charger state and power metrics
+- Navigate between multiple charging schedules
+- Create new schedules or delete existing ones
+- Each schedule displays as a separate clockface showing start, end, and amperage
+
+### Charging Schedules
+Multiple schedules can be defined independently:
+- All defined timer schedules operate simultaneously
+- Manual controls can override timers (disable all or manually switch)
+- Scroll through schedules on the home page
+- Set start time, end time, and charging amps (6-32A) for each schedule
+
+### Session Logs
+Access your charging history with:
+- Energy consumption tracking (kWh)
+- Electricity cost calculation
+- Session duration and power delivery metrics
+- Charts switchable between kWh and cost views
+- Download data as CSV for spreadsheet analysis
+
+**To configure electricity tariff**:
+- Go to Settings → Session section
+- Due to complexity, use a tablet or laptop for better visibility
+- Defines cost per kWh based on time periods
+
+<p align="center">
+<img src="https://github.com/user-attachments/assets/721c6756-efaa-4548-bb86-0f258b9ddb57" style="width:50%; height:auto;"/>
+<img src="https://github.com/user-attachments/assets/ab46eb7a-3565-4121-aadc-99f2e2a5db18" style="width:50%; height:auto;"/>
+</p>
+
+### Statistics
+Full visualization of charger operations including:
+- Historical performance data
+- Energy consumption trends
+- Load balancing metrics
+
+<p align="center">
+<img src="https://github.com/user-attachments/assets/fde895b3-f1b9-412e-b4d5-4eb02fb3200a" style="width:50%; height:auto;"/>
+</p>
+
+### Solar Integration
+To enable solar-based charging:
+
+1. Ensure CT clamp is measuring solar generation
+2. Go to Settings and enable "Solar Charging Enabled"
+3. Create "Solar Timers" on the home page to define hours when solar charging is active
+4. If no solar timers are defined, solar charging is active at all times
+
+**Solar Status Icons**:
+- 🟡 Yellow sun: Solar is active and generating sufficient power
+- ☁️ Cloud: Solar is enabled but generation is insufficient
+- Green indication: Charger is actively drawing solar power
+
+**Important Note**: The EO hardware cannot measure the difference between export and import current. If solar generation exceeds your charger's draw, excess power will flow to the grid (not into your home battery if you have one). Account for this in your scheduling.
+
+<p align="center">
+<img src="https://github.com/user-attachments/assets/55ec3fd4-405a-4253-8d5e-32bb0b3d41d3" style="width:25%; height:auto;"/>
+<img src="https://github.com/user-attachments/assets/a3d75cb3-9722-4384-89bb-4f34ad93d9c4" style="width:33%; height:auto;"/>
+</p>
+
+### Load Balancing
+Prevent circuit breaker trips on shared or looped supplies:
+
+1. Install CT clamp on your inbound electricity supply (usually at meter)
+2. Go to Settings → Load Management
+3. Set site maximum current draw (default is appropriate for most installations)
+4. OpenEO automatically limits charger current to stay within site limits
+
+### CT Calibration
+Fine-tune current transformer readings (recommended from tablet/laptop):
+
+1. Go to Settings → CT Calibration
+2. View rolling 15-minute chart of CT readings
+3. Adjust using sliders:
+   - **Offset**: Added to CT reading (-2A to +2A)
+   - **Scaling**: Multiplied to CT reading (0.8 to 1.2, or -20% to +20%)
+4. Observe visual changes in real-time
+5. Click "Save" when satisfied
+
+<p align="center">
+<img src="https://github.com/user-attachments/assets/82ba7e4e-536d-4c29-9d55-d6973e2bc0b3" style="width:50%; height:auto;"/>
+</p>
+
+---
+
+## 🔌 Integration with Home Automation
+
+### Home Assistant
+Export charger data for Home Assistant integration:
+- Endpoint: `http://<charger-ip>/api`
+- Provides current charger state, power metrics, and session data
+
+### Prometheus
+Export metrics in Prometheus format for time-series monitoring:
+- Endpoint: `http://<charger-ip>/metrics`
+- Includes all operational metrics for visualization in Grafana or similar
+
+---
+
+## 🔄 Updating
+
+OpenEO checks for new releases periodically and displays update availability on the home page.
+
+### Update via Web Interface
+1. Click the update notification on the home page
+2. Follow the on-screen instructions
+
+### Update via Command Line
+```bash
+curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -
+sudo reboot
+```
+
+---
+
+## ☁️ OpenEO Cloud (Optional Remote Access)
+
+Access your charger from anywhere via secure encrypted connection.
+
+### Setup
+
+1. Ensure your OpenEO charger is running the latest version
+2. Find your charger identification number in Settings → OpenEO Cloud section
+3. Sign into [https://openeo.uk](https://openeo.uk) using your Google Account
+4. Paste your charger ID into the control panel and click "Save"
+5. Copy the generated authorization token
+6. Paste token into OpenEO Cloud settings on your charger
+7. Set "Enable Module" to "Yes"
+8. The connection indicator on openeo.uk should turn green when charger connects
+
+**Pricing**: 14 days free usage on first login, then subscription required
+
+**Privacy Note**: All internet requests are transmitted via our webservice to your charger. Your charger initiates the connection, and you maintain full control over what data is shared.
+
+<p align="center">
+<img src="https://github.com/user-attachments/assets/c840e866-c1f3-4299-94b8-5d183af61c09" style="width:50%; height:auto;"/>
+<img src="https://github.com/user-attachments/assets/dc4edc98-d51a-482d-9fd4-5ab8ee83ecf6" style="width:50%; height:auto;"/>
+</p>
+
+---
+
+## ⚙️ Configuration
+
+### Configuration Database
+- Default configuration loaded on first start
+- Stored in `/home/pi/etc/config.db` (SQLite)
+- All setting changes are retained across reboots
+
+### Manual Configuration
+Create `/home/pi/etc/config.json` to manually add configuration:
+- File is read at startup
+- Successfully merged configs are renamed to `.backup`
+- Use JSON format for settings
+
+**Example** - Set log level to debug:
+```json
+{"chargeroptions":{"log_level":"debug"}}
+```
+
+---
+
+## 🔧 Advanced: openeo_download.py
+
+Manage downloads and deployments via command line:
+
+```bash
+# List available releases and branches
+python3 openeo_download.py --list
+
+# Install specific release
+python3 openeo_download.py --release v0.9.3.3
+
+# Install from branch (development)
+python3 openeo_download.py --release main
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### "Waiting" Message on Startup
+Normal during initial boot—software is establishing communication with charger. If it persists:
+
+1. Turn off power to charger at consumer unit
+2. Remove enclosure cover
+3. Verify cable connection between Raspberry Pi and power board is fully seated on both ends
+4. Reassemble and power on
+
+<p align="center">
+<img src="https://github.com/user-attachments/assets/8cfa69fe-603f-45b7-bbae-3bec67837291" style="width:50%; height:auto;"/>
+</p>
+
+---
+
+## 💚 Support & Contribution
+
+### Reporting Issues
+Found a bug? Have a feature request? [Open an issue](https://github.com/minceheid/openeo/issues) on GitHub.
+
+### Contributing Code
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on submitting pull requests.
+
+### Supporting Development
+Several ways to support the project:
+
+1. **Subscribe to OpenEO Cloud** - Primary way to support development while getting additional features
+2. **Donate** - For those preferring not to use cloud services
 
 <a href="https://donate.stripe.com/9B66oJ0Lb2AkbeZ9SF2oE00">
   <img src="https://github.com/user-attachments/assets/4e257c47-0f61-4faa-8883-8594fb428ef7" style="width:25%; height:auto;"/>
 </a>
 
-## Multiple Schedules
-New for the current release - multiple timed schedules can be defined. In order to do this, we had to redesign the UI: in previous versions there was two distinct modes of operation: "Manual" and "Schedule" - the timed schedule would not run if the charger was in "Manual" mode, and vice versa. 
-This has now changed - the new concept is that all defined timer schedules will operate, and they can be overriden by a manual control (either to disable all timers, or to manually switch the charger on).
-You can scroll through the defined timers on the home page, as well as create new timers and delete unwanted ones. Each timer appears as a separate clockface where you set the start, end and Amps.
+---
 
-## OpenEO Cloud
-It sounds a bit odd to have a cloud service for a cloudless EV Charger, doesn't it?. However -for those that might want to access their charger from anywhere, we have developed OpenEO Cloud. This provides a secure interface for connecting to your OpenEO charger over the internet. It works by running the latest version of OpenEO on your charger, which can securely connect to https://openeo.uk, where you can log in with your Google Account and access the familiar OpenEO interface. Importantly, OpenEO does not require your charger to be connected to the cloud service. If you don't enable it - your charger will continue to work as-is.
-More info, and configuration details below.
+## 📄 License & Disclaimer
 
-## Compatibility
-This project has been designed to be compatible with the EO Smart Home Hub/Mini and EO "Mini Pro 2" devices. It does **not** support "Mini Pro 3"
+**License**: MIT License - see [LICENSE](LICENSE) file for details
 
-### [Smart Home Hub/Mini](https://github.com/user-attachments/files/22066221/EO_Home_Hub.pdf)
-<p align="center">
-<img src="https://github.com/user-attachments/assets/1ad1ba51-ef88-4cb6-9a99-9f922e32f02c" style="width:25%; height:auto;" />
-<img src="https://github.com/user-attachments/assets/62a2e6cc-128f-49bd-8265-9c09de2d08fe" style="width:25%; height:auto;" />
-  
-</p>
+**Disclaimer**: This software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. This is an independent, open-source project and is not affiliated with EO Charging.
 
-### [Mini Pro 2](https://github.com/user-attachments/files/22066224/eo-mini-pro-2-installation-and-userguide.pdf)
-<p align="center">
-<img src="https://github.com/user-attachments/assets/5488462c-a5c6-44c0-843b-16ec874e846a" style="width:25%; height:auto;" />
-</p>
+**Safety**: Ensure you understand the electrical safety implications of controlling an EV charger before installation. Use at your own risk.
 
-## Install Instructions
-The recommended method of install is to download a SD card image directly from GitHub, and boot your pi with it - here's how.
+Copyright © 2025 Mike Scott and contributors
 
-1. Obtain a 8GB (or larger) micro SD card. It's worth ensuring that this is a known good card, and at least Class 10 for performance reasons. If the SD card in your hand has been sat at the back of your drawer for a decade, then it's probably worth disposing of it, and getting a new one. We recommend that you keep your original EO SD card safe and separate, so that you can revert easily, should things don't work out for you, however (I do wonder what possible use that crippled old software could be these days...) 
-3. Download the SD card image from here:
+---
 
-[![Download SD Image](https://img.shields.io/badge/download-SD%20image-blue)](
-https://github.com/minceheid/openeo/releases/latest/download/openeo_latest.img.xz
-) [![SHA256](https://img.shields.io/badge/checksum-sha256-lightgrey)](
-https://github.com/minceheid/openeo/releases/latest/download/openeo_latest.img.xz.sha256
-)
+## 📚 Additional Resources
 
-3. Get and install a tool to write SD cards. I use the [Raspberry Pi imager]([url](https://www.raspberrypi.com/software/)). Follow the instructions on the tool to write the image to the SD card. We recommended that you do not use any imager tool to customise the image.
-    > **Note**: Explicitly - do not change the default username (`pi`) as the installation requires this. 
-  
-4. *IMPORTANT* Once the new SD card has been created, remove power to your EO box by disconnecting it or by switching off the relevant breaker in your consumer unit. Please ensure that it is completely isolated from the mains electricity. *If you are unsure that the electricity is fully disconnected, then do not proceed*.
-5. Open the Smart Hub or Mini Pro 2 box by loosening the four captive screws that are visible on the front of the case (you may need to remove the four rubber covers, if they are fitted), and you will see the Raspberry Pi inside (Smart Hub is a Raspberry Pi 3, and the Mini Pro 2 is a smaller Raspberry Pi Zero). You can now switch the SD cards, keeping the original safe. Whilst you are doing this, on the Mini Pro 2, take care to not accidentally dislodge the cables connecting the Raspberry Pi board with the main control board in the lid of the unit.
+- [GitHub Repository](https://github.com/minceheid/openeo)
+- [Releases Page](https://github.com/minceheid/openeo/releases)
+- [Issues Tracker](https://github.com/minceheid/openeo/issues)
+- [Discussions](https://github.com/minceheid/openeo/discussions)
+- [OpenEO Cloud Service](https://openeo.uk)
 
-<table style="width:80%"><tr><td>
-<p align="center">
-<figure>
-<img src="https://github.com/user-attachments/assets/d6a89cbe-7f8c-448c-9222-654200d533d4" style="width:50%; height:auto;" />
-<br><figcaption>Smart Hub</figcaption>
-</figure>
-</td><td>
-<figure>
-<img src="https://github.com/user-attachments/assets/791a735f-6907-45ce-a0b4-738466f55b5b" style="width:50%; height:auto;" />
-<br><figcaption>Mini Pro 2</figcaption>
-</figure>
-</p>
-</td></tr></table>
+---
 
-6. Close the EO enclosure, and apply power to it. The Raspberry Pi should boot, and if you got the configuration correct in step #3 above, it will then join your wireless network and you can log in with SSH (you should be able to find the RPi IP address from your broadband router). Note that the first time that you power up with a fresh SD card, it will take about five minutes to fully boot before it is seen on the network. Be patient - it's only a small pi and it takes some time to set itself up.
-7. Once the pi fully boots, whilst standing close to your charger, you should have a wireless network called "OpenEO", use your phone or tablet to join this wireless network.
-8. Once joined, use your browser which will redirect to the wifi configuration interface, if it doesn't auto-redirect, then launch a browser and type the following into the address bar: 192.168.1.1
-9. This control panel will allow you to set your charger to your home network, and set the timezone that you need for your installation. If you need command-line access to your charger, then here is also where you'd set a public SSH key. For security purposes, the OpenEO network is only available for 30 minutes after the charger starts, after which time it disables itself.
-
-**Note**: this configuration portal is active for 30 minutes after *every* reboot, should you ever need to revisit any of these settings.
-
-<p align="center">
-<img src="https://github.com/user-attachments/assets/f9470a6f-b815-4cda-ac31-8901c7547a36" style="width:25%; height:auto; "/>
-</p>
-
-10. Once the wifi network has been sucessfully configured, you should be able to disconenct from the OpenEO network, reconnect to your home network, and then browse to http://openeo.local/ or the IP address that was allocated by your network to see the full OpenEO interface.
-
-## Home Assistant and Prometheus
-openeo is designed to allow the export of data for visualisation through home automation toolsets such as Home Assistant and Prometheus. The following endpoints are available:
-
-* ```/metrics```: Prometheus exporter
-* ```/api```: Home Assistant exporter
-
-## Session Logs
-OpenEO will keep track of your charging, and give you full access to your data. By keeping track of when you connect and disconnect your car, and with knowledge of your electricity tariff we record the power delivery and cost on each charging session. The bar charts on this page also give you summaries of how many kWh you charged on each of the last seven days, four weeks, and four months, and can be switched between showing kWh and the cost of charging.
-
-Also on this page, you can hit the button to download the data as a CSV file if you need to do more analysis in a spreadsheet.
-
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/721c6756-efaa-4548-bb86-0f258b9ddb57" style="width:50%; height:auto;"/>
-</p>
-
-To configure your electricity tariff, check the "Session" section of the Configuration page. Due to the complexity, this sectioon may be difficult to configure on a small mobile device, and we recommend a large screen where possible. It is recommended that all 24 hours of a day are correctly specified. You can adjust the unit cost (per kWh) of each time segment as necessary. To change the time of a segment, you can only adjust the end time of the last shown time segment. This means that you may need to delete later segments if you wish to change the end time of earlier segments. It's easier than it sounds :-)
-<p align="center">
-
-<img src="https://github.com/user-attachments/assets/ab46eb7a-3565-4121-aadc-99f2e2a5db18"  style="width:50%; height:auto;"/>
-</p>
-
-
-## Statistics
-Full visualisation of the chargers operations is available by selecting the "Statistics" option in the menu.
-
-<p align="center">
-<img alt="newplot (3)" src="https://github.com/user-attachments/assets/fde895b3-f1b9-412e-b4d5-4eb02fb3200a" style="width:50%; height:auto;"/>
-</p>
-
-## Solar Integration
-Where there is a CT clamp measuring solar generation, openeo can control vehicle charge, based on the solar generation. To enable this feature, select the "Solar Charging Enabled" options in the settings. 
-
-With Solar enabled, you have the option of creating a "Solar Timer" on the home page. A "Solar Timer" allows you to schedule hours that solar charging is active. In the following example, the solar charging facility will be active from 11:00 to 16:30, and will operate with a 3A reservation. For example - if your CT clamp is reporting 10A of solar generation, and your Solar Reservation is set at 3A, then your vehicle will charge at 7A. This may allow you to reduce grid consumption for power requirements elsewhere in your home
-
-<p align="center">
-<img src="https://github.com/user-attachments/assets/55ec3fd4-405a-4253-8d5e-32bb0b3d41d3" style="width:25%; height:auto;"/>
-</p>
-You can define more than one solar timer. If you have *NO* solar timers defined, then solar will be active at all times.
-
-If Solar Charging is enabled and active, a yellow icon will be shown on the Status Bar at the bottom of the home page.
-<p align="center">
-<img  src="https://github.com/user-attachments/assets/a3d75cb3-9722-4384-89bb-4f34ad93d9c4" style="width:33%; height:auto;"/>
-</p>
-If the solar generated current is insuffient to charge the car, then a cloudy icon will be shown. When the generated power by your solar array allows the car to begin charging, a bright sun will be shown.
-
-If you are using solar, then you probably also need to be aware that the EO hardware is not capable of measuring the difference between export and import. Due to hardware design choices made by EO - this functionality is not possible. For more information - refer to the article by Ryan Walmsley here https://walmsley.tech/eo-mini-pro-2-review/ - in particular, see the section "Technical Deep Dive".
-
-## Load Balancing
-If this charger is used on a looped supply, a small fuse, or shares a supply with another charger, you may wish to consider reviewing the Load Management settings to avoid a failure of the main incoming fuse, which would result in a total power outage to the home, and would require your electricity supplier to visit and correct the failure. The load balancing feature is included for testing purposes but for now, *DO NOT* use this software if you **depend** upon that feature.
-The Load Balancing feature requires the use of a CT clamp on your inbound electricity supply, usually located at your meter. The settings page allows to set a site maximum current draw (the default is 60A). Vehicle charging will be limited to prevent openeo from exceeding this limit. As an example, if your site limit is set to 80A, and your site CT is reading 74A, then the maximum that openeo will allow you to charge your vehicle at is 6A.
-
-## CT Calibration
-Current Transformer (CT) meter readings sometimes require additional calibration to compensate for minor inaccuracies. This may have been a procedure that your EO installation engineer carried out when your charger was installed. If necessary, you can also set the CT calibration on openeo by visiting the "CT calibration" menu item. 
-It is recommended that you do this from a larger screen (tablet or laptop), as the larger screen will be useful. This page shows a rolling chart of the last 15 minutes of CT readings from each of the three possible CT meters that can be connected to the charger. Each reading can be calibrated by adjusting an offset and a scaling factor to suit your circumstances:
-* Offset: This figure will be added to the CT reading - configurable values are between -2A and +2A
-* Scaling: This figure will be multiplied to the CT reading - configurable values are between 0.8 and 1.2 (-20% and +20%)
-
-Simply use the sliders at the top of the page, and observe the visual changes in the charts on the screen. When you're happy with the setting, hit "Save" for it to become fixed.
-
-<p align="center">
-<img alt="image" src="https://github.com/user-attachments/assets/82ba7e4e-536d-4c29-9d55-d6973e2bc0b3" style="width:50%; height:auto;"/>
-</p>
-
-## Updating
-From time to time, we will update the software. Your openeo software will periodically check for new releases being made available, and when it finds an updated release, it will highlight that fact on the home screen with an "Update Available" message. You can either click on that message, or select "Update Software" from the options menu - either way will take you to a page with three buttons allowing you to update OpenEO, the Raspberry Pi OS, and to reboot the Operating System. Only one action can be taken at a time, and the buttons remain disabled when an update is in progress.
-
-<p align="center">
-<img alt="image" src="https://github.com/user-attachments/assets/f7d578e3-9c31-43fb-97c3-0de77813c532" style="width:50%; height:auto;"/>
-</p>
-
-Alternately, the update process can be carried out on the command line by simply repeating the install procedure. This will retrieve the latest release, install and activate it:
-
-~~~~
-curl -sSL https://github.com/minceheid/openeo/raw/refs/heads/main/openeo_download.py | python3 -
-sudo reboot
-~~~~
-
-## Configuring OpenEO Cloud
-OpenEO cloud is a secure web based service for accessing your OpenEO charger. It works by allowing your charger to open an encrypted connection out to the webservice, and when you sign into the webservice, you can access your charger through that encrypted link. In order to set it up, you need to sign into the webservice (https://openeo.uk) and associate your charger with your google credentials, and then set an authorisation code on your charger to ensure that only you can access your charger.
-1. Ensure that your OpenEO charger is installed with the latest version.
-2. Your OpenEO charger identification number can be found in the "OpenEO Cloud" section of the settings page of OpenEO that is running on your home charger.
-3. Sign into https://openeo.uk using your Google Account details. When you do this for the first time, a control panel will be shown.
-4. Paste your charger identification text into the "Charger ID" box of the control panel, and click on the "Save" button.
-5. This will generate an authorisation token that you should now copy and paste into your OpenEO Cloud settings on your charger.
-6. Set "Enable Module" in the OpenEO Cloud section to "Yes"
-If all is well, then the "Connection" indicator on the control panel on https://openeo.uk should turn green when the charger connects. You receive 14 days free usage on first login. Once expired, a button will appear allowing you to subscribe.
-
-### OpenEO Settings Page
-<p align="center">
-<img  alt="image" src="https://github.com/user-attachments/assets/c840e866-c1f3-4299-94b8-5d183af61c09" style="width:50%; height:auto;"/>
-</p>
-
-### OpenEO Cloud Control Panel
-<p align="center">
-<img  alt="image" src="https://github.com/user-attachments/assets/dc4edc98-d51a-482d-9fd4-5ab8ee83ecf6" style="width:50%; height:auto;"/>
-</p>
-
-### Note:
-The OpenEO cloud service works by allowing you to access your charger over the internet. This means that all requests must be transmitted over the internet to our webservice, then on to your charger, and all the way back to your browser. This means that the interface will be slower, and from time to time, you may see timeouts and failures - particularly if you have a marginal WiFi connection on your charger. 
-
-## Configuration
-On first start, the default configuration will be loaded into the configuration database (stored in /home/pi/etc/config.db) - any settings changes (schedule timing, mode change, etc) are retained by updating this configuration database. To revert entirely to defaults, the /home/pi/etc/config.db file can be deleted, and the software restarted.
-
-New configuration can be manually added by creating a JSON file called /home/pi/etc/config.json. This file is read at startup, and if sucessfully merged into the configuration database, it is renamed to config.json_loaded
-
-Example ```~pi/etc/config.json``` file to set the default log level to debug (normally "info")
-```
-{"chargeroptions":{"log_level":"debug"}}
-```
-
-## Troubleshooting
-After installation - it is normal to sometimes briefly recieve a "Waiting" message on startup. This is simply the software establishing communications with the charger. If the "Waiting" message persists for more than a minute, then this indicates that the Raspberry Pi has not been able to establish serial communication with the charger contol board. Particularly if this is your first startup of openeo since replacing the sdcard, We recommend that you doublecheck the connection within the unit (these instructions assume Mini Pro 2)
-
-<p align="center"><img  src="https://github.com/user-attachments/assets/8cfa69fe-603f-45b7-bbae-3bec67837291" style="width:50%; height:auto;"/></p>
-
-1. turn power to the charger off at the consumer unit
-2. take the cover off
-3. check carefully that the cable that runs between the Raspberry Pi board and the power board (the one with the big relay) is fully and correctly seated on both ends
-4. assembly is the reverse of disassembly
-
-## openeo_download.py
-The openeo_download.py program helps to manage the download and deployment of the software. Run with no parameters, it will locate and download/install the latest release from GitHub. Parameters available to further assist are:
-* ```--list``` : list available releases or branches (for dev use only)
-* ```--release <name>```: install the given release. This might allow for install of an earlier release, for example. The ```<name>``` can also be a branch name, in which case it will download and try to deploy the head of the named branch, though this is intended for development use only.   
-
-## Disclaimer
-The software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software.   Please see the important terms and conditions in the `LICENSE.txt` file.   The software has been developed by clean-room reverse engineering of the existing EO software and no copyrighted EO code is used in this application.  
+**Questions?** Check the [Issues](https://github.com/minceheid/openeo/issues) section or start a [Discussion](https://github.com/minceheid/openeo/discussions).
