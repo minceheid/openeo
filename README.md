@@ -124,8 +124,19 @@ This project is compatible with:
 8. **Complete Setup**
    - Configure your home WiFi network
    - Set timezone for your installation
-   - Optionally add SSH key for command-line access
+   - Optionally add SSH key for command-line access - the following openssh key types are accepted:
+
+| Key type | Accepted prefix | Notes |
+|---|---|---|
+| DSA | `ssh-dss` | Legacy/deprecated DSA keys |
+| ECDSA P-256 | `ecdsa-sha2-nistp256` | Only the NIST P-256 curve |
+| FIDO/U2F ECDSA | `sk-ecdsa-sha2-nistp256@openssh.com` | Security-key-backed ECDSA |
+| Ed25519 | `ssh-ed25519` | Standard Ed25519 |
+| FIDO/U2F Ed25519 | `sk-ssh-ed25519@openssh.com` | Security-key-backed Ed25519 |
+| RSA | `ssh-rsa` | Standard RSA public-key format |
+
    - **Note**: Configuration portal is active for 30 minutes after every reboot and once WiFi is configured can also be accessed via `http://<charger-ip>:81/`
+   
 
 9. **Access Main Interface**
    - Disconnect from OpenEO network and reconnect to your home WiFi
