@@ -120,6 +120,9 @@ This project is compatible with:
    - Connect to it
    - Your browser should auto-redirect to the configuration interface
    - If not, navigate to `192.168.1.1`
+<p align="center">
+<img src="https://github.com/user-attachments/assets/f9470a6f-b815-4cda-ac31-8901c7547a36" style="width:25%; height:auto;" />
+</p>
 
 8. **Complete Setup**
    - Configure your home WiFi network
@@ -142,9 +145,7 @@ This project is compatible with:
    - Disconnect from OpenEO network and reconnect to your home WiFi
    - Access the dashboard at `http://openeo.local/` or `http://<charger-ip>/`
 
-<p align="center">
-<img src="https://github.com/user-attachments/assets/f9470a6f-b815-4cda-ac31-8901c7547a36" style="width:25%; height:auto;" />
-</p>
+
 
 ---
 
