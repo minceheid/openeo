@@ -21,6 +21,10 @@ function initFormData(schema) {
       if (field.type === "boolean") val = val === true || val === "true";
       if (field.type === "slider")
         val = typeof val === "number" ? val : field.range ? field.range[0] : 0;
+
+      if (field.type === "json") {
+        console.log("JSON field", field.name, "value", val, "type", typeof val);
+      }
       data[modulename+":"+field.name] = val;
     });
   });

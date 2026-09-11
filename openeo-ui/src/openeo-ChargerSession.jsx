@@ -12,7 +12,7 @@ const CURRENCY = getCurrencyConfig();
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function getDate(d) {
-  return `${d.getUTCFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function getWeekCommencing(d) {
@@ -23,7 +23,8 @@ function getWeekCommencing(d) {
 }
 
 function getMonth(d) {
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  var mymonth= `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return mymonth;
 }
 
 function aggregate(data, keyFunc, valueKey = "kwh_number") {
@@ -81,6 +82,9 @@ function aggregateByTariff(data, keyFunc) {
     const key = keyFunc(date);
     if (!totals[key]) totals[key] = {};
 
+    //if (keyFunc === getMonth) {
+    //  console.log("aggregateByTariff", key, session.day_timestamp, date, session.cost_by_tariff);
+    //}
     const tariffs = session.cost_by_tariff || {};
     const rateEntries = Object.entries(tariffs).filter(([, joules]) => joules);
 
