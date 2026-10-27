@@ -25,16 +25,25 @@ class openeoConfigClass:
     #LOG_PURGE_TTL = 3600 * 12 # 12 hours
 
 
-    def logget(self):
+    def logget(self,limit=None):
         """
-        Retrieves the entire logfile
+        Retrieves the entire logfile, or only the newest `limit` entries (oldest first)
         """
 
         rows=[]
         with self.lock:
-            self.cursor.execute(f'''
-                SELECT * from {self.LOG_TABLE} 
-            ''')
+            if limit is None:
+                self.cursor.execute(f'''
+                    SELECT * from {self.LOG_TABLE}
+                ''')
+            else:
+                # rowid is insertion order, and ordering by it walks the table b-tree rather than
+                # sorting the whole (unindexed) table under the lock - the main loop needs that lock
+                self.cursor.execute(f'''
+                    SELECT timestamp, message FROM (
+                        SELECT rowid, timestamp, message FROM {self.LOG_TABLE} ORDER BY rowid DESC LIMIT ?
+                    ) ORDER BY rowid ASC
+                ''', (int(limit),))
             rows = self.cursor.fetchall()
         
         string=""
