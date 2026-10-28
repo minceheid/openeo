@@ -11,6 +11,7 @@ import StatisticsSession from "./openeo-StatisticsSession";
 import Calibration from "./openeo-Calibration";
 import ChargerSession from "./openeo-ChargerSession";
 import Update from "./openeo-Update";
+import LogViewer from "./openeo-LogViewer";
 import { ToastProvider } from "./openeo-Toast";
 import FloatingLogo from "./openeo-Logo";
 
@@ -47,6 +48,7 @@ function AppContent() {
       case "calibration":  return <Calibration />;
       case "chargersession": return <ChargerSession />;
       case "update":       return <Update />;
+      case "logs":         return <LogViewer />;
       default:             return <ScheduleCarousel />;
     }
   };
@@ -63,6 +65,7 @@ function AppContent() {
           { label: "Session Statistics",  href: "?r=statistics_session" },
           { label: "CT Calibration",      href: "?r=calibration"   },
           { label: "Charging Log",        href: "?r=chargersession"},
+          { label: "System Logs",         href: "?r=logs"          },
           { label: "Update OpenEO",       href: "?r=update"        },
         ]}
         isActive={isActive}

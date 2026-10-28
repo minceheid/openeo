@@ -380,6 +380,34 @@ Retrieves system debug information and logs for troubleshooting.
 
 ---
 
+#### GET `/getlogs`
+Retrieves recent log lines for the System Logs page in the web UI.
+
+**Query Parameters**:
+- `source` (optional): `app` for the application event log (the sqlite `log` table, purged after `chargeroptions.log_purge_ttl`, 24h by default), or `journal` for the openeo service journal (`journalctl -u openeo`, persists across reboots). Unknown values fall back to `app`. Default `app`.
+- `lines` (optional): number of most recent lines to return, clamped to 50–5000. Non-numeric values fall back to the default. Default `500`.
+
+**Example Request**:
+```
+GET /getlogs?source=journal&lines=200
+```
+
+**Example Response**:
+```json
+{
+  "source": "journal",
+  "lines": 200,
+  "content": "2026-10-27T17:00:01+0000 openeo openeo[812]: openeo: INFO - main:46 - Starting openeo main loop\n..."
+}
+```
+
+**Notes**:
+- Lines are returned oldest first
+- If `journalctl` fails or times out (10s), `content` holds an `Error: ...` message
+- Requests to this endpoint are not written to the application event log, so polling does not flood the log being viewed
+
+---
+
 #### POST `/update`
 Triggers a software update check and installation.
 
@@ -556,6 +584,11 @@ curl -X POST http://openeo.local/update \
 ### Get Debug Information
 ```bash
 curl http://openeo.local/debugdata | jq .
+```
+
+### Tail the Service Journal
+```bash
+curl 'http://openeo.local/getlogs?source=journal&lines=200' | jq -r .content
 ```
 
 ---
