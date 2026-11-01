@@ -147,7 +147,9 @@ class cloudClassPlugin(PluginSuperClass):
             except Exception as e:
                 _LOGGER.error(f"OpenEO Cloud Connection error: {e}")
                 self.failurecount+=1
-
+                time.sleep(self.looptime)
+                continue
+               
             finally:
                 try:
                     self.ssl_sock.close()
