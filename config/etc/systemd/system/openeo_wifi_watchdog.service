@@ -1,0 +1,9 @@
+[Unit]
+Description=openeo Wi-Fi watchdog
+After=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/pi/openeo/portal/tools/openeo_wifi_watchdog.py
+SyslogIdentifier=openeo-wifi-watchdog
+TimeoutStartSec=10min

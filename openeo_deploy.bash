@@ -75,9 +75,11 @@ $SUDO systemctl enable openeo
 $SUDO systemctl force-reload systemd-journald
 $SUDO systemctl enable dnsmasq
 $SUDO systemctl enable openeo_portal
+$SUDO systemctl enable openeo_wifi_watchdog.timer
 
 if [ ! -z "$SUDO" ]; then
     # Don't run these if run by root
     $SUDO systemctl start rc-local.service
     $SUDO systemctl restart openeo
+    $SUDO systemctl start openeo_wifi_watchdog.timer
 fi
