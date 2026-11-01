@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the openeo Wi-Fi watchdog every 60 seconds
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=60s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

@@ -14,6 +14,7 @@ import subprocess
 import socket
 import fcntl,struct,re
 from urllib.parse import parse_qs
+import wifi_pinning
 
 
 PORT = 81
@@ -28,13 +29,6 @@ auth_keys_file = os.path.join(SSH_DIR, "authorized_keys")
 def redact(text):
     """Mask Wi-Fi passwords in a log line (the setup page sends them in the query string)."""
     return re.sub(r'(password=)[^&\s"]*', r"\1***", text, flags=re.IGNORECASE)
-
-
-def as_root(cmd):
-    """Prefix cmd with sudo only when we aren't already root. The portal service runs as
-    root, and sudo writes every command line it runs to the journal, so a needless sudo
-    put the Wi-Fi password from 'nmcli ... wifi-sec.psk <password>' in the system log."""
-    return cmd if os.geteuid() == 0 else ['sudo'] + cmd
 
 
 shutdown_event = threading.Event()
@@ -64,6 +58,7 @@ def api_get_wifi(params):
     data["INTERNET"]=can_access_internet()
     data["SSH"]=get_ssh_public_key()
     data["IP"]=get_ip_address(WIFI_INTERFACE)
+    data["PINNED"]=wifi_pinning.get_pin(wifi_pinning.make_runner(sudo=True))
     return data
 
 
@@ -78,12 +73,14 @@ def api_set_wifi(params):
     if not is_valid_password(password):
         return({"error": "Invalid Password"})
 
-    connected, message = setup_wifi_connection(ssid, password)
+    connected, message, pinned_bssid, pinned_signal = setup_wifi_connection(ssid, password)
 
     return({
         "connected_to_wifi": connected,
         "nmcli_message": message,
-        "internet_access": can_access_internet()
+        "internet_access": can_access_internet(),
+        "pinned_bssid": pinned_bssid,
+        "pinned_signal": pinned_signal
     })
 
 
@@ -279,45 +276,90 @@ def is_valid_password(password):
         re.match(r"^[\x21-\x7E]+$", password)  # Printable ASCII without spaces
     )
 
-def setup_wifi_connection(ssid, password):
+def setup_wifi_connection(ssid, password, run=None, sleep=time.sleep):
+    """Create the custom-wifi profile and connect. On a multi-AP network, pin the strongest
+    BSSID, and keep the pin only if the connection and the gateway health check succeed.
+    Returns (success, message, pinned_bssid, pinned_signal)."""
+    if DRYRUN:
+        print(f"setup_wifi_connection {ssid} - dryrun - not executed\n")
+        return False, "dryrun - not executed", None, None
+
+    if run is None:
+        run = wifi_pinning.make_runner(sudo=True)
+
+    def connect():
+        # Refresh the lock first: a slow connect must not let it look stale to the watchdog
+        run(['touch', wifi_pinning.SETUP_LOCK])
+        return wifi_pinning.con_up(run)
+
+    # The watchdog stands down while this lock exists
+    run(['touch', wifi_pinning.SETUP_LOCK])
     try:
-        if DRYRUN:
-            print(f"setup_wifi_connection {ssid} - dryrun - not executed\n")
-            return 0
-        
         # Delete any existing connection with this name
-        subprocess.run(as_root(['nmcli', 'connection', 'delete', CONNECTION_NAME]),
-                       check=False)
+        run(['nmcli', 'connection', 'delete', CONNECTION_NAME])
 
         # Add new connection profile
-        subprocess.run(as_root([
+        result = run([
             'nmcli', 'connection', 'add',
             'type', 'wifi',
             'ifname', WIFI_INTERFACE,
             'con-name', CONNECTION_NAME,
             'ssid', ssid
-        ]), check=True)
+        ])
+        if result.returncode != 0:
+            return False, f"nmcli error: {result.stderr.strip()}", None, None
 
-        # Set security and password
-        subprocess.run(as_root([
+        # Set security and password. psk-flags 0 stores the PSK in the profile,
+        # so NM never needs a secret agent for it
+        result = run([
             'nmcli', 'connection', 'modify', CONNECTION_NAME,
             'wifi-sec.key-mgmt', 'wpa-psk',
-            'wifi-sec.psk', password
-        ]), check=True)
+            'wifi-sec.psk', password,
+            'wifi-sec.psk-flags', '0'
+        ])
+        if result.returncode != 0:
+            return False, f"nmcli error: {result.stderr.strip()}", None, None
+
+        # Pin the strongest node if several share this SSID
+        selection = wifi_pinning.choose_pin(run, ssid, sleep)
+        pinned = selection.bssid if selection.bssid and wifi_pinning.set_pin(run, selection.bssid) else None
 
         # Bring up the connection
-        result = subprocess.run(as_root([
-            'nmcli', 'connection', 'up', CONNECTION_NAME
-        ]), capture_output=True, text=True)
+        result = connect()
+
+        if pinned and result.returncode != 0:
+            # The pinned node may have rejected us. Never leave the profile pinned to it
+            print(wifi_pinning.format_event("PIN_REJECTED", {
+                "bssid": pinned, "signal": selection.signal, "source": "setup"}), flush=True)
+            wifi_pinning.clear_pin(run)
+            pinned = None
+            result = connect()
+        elif pinned:
+            health = wifi_pinning.health_check(run)
+            loss = None if health.skipped else f"{health.loss}%"
+            if health.passed:
+                print(wifi_pinning.format_event("PIN", {
+                    "bssid": pinned, "signal": selection.signal, "runner_up": selection.runner_up,
+                    "samples": selection.samples, "loss": loss, **wifi_pinning.station_info(run)}), flush=True)
+            else:
+                print(wifi_pinning.format_event("PIN_REJECTED", {
+                    "bssid": pinned, "signal": selection.signal, "loss": loss, "source": "setup"}), flush=True)
+                wifi_pinning.clear_pin(run)
+                pinned = None
+                result = connect()
 
         success = result.returncode == 0
-        return success, result.stdout.strip() if success else result.stderr.strip()
+        message = result.stdout.strip() if success else result.stderr.strip()
+        if success and pinned:
+            return True, message, pinned, selection.signal
+        return success, message, None, None
 
-    except subprocess.CalledProcessError as e:
-        # str(e) would include the full command line, password and all
-        return False, f"nmcli error: {e.stderr.strip() if e.stderr else f'exit status {e.returncode}'}"
     except Exception as e:
-        return False, f"Exception: {str(e)}"
+        return False, f"Exception: {str(e)}", None, None
+    finally:
+        # Mark when setup ended, so the watchdog doesn't count its reconnects as drops
+        run(['touch', wifi_pinning.SETUP_DONE])
+        run(['rm', '-f', wifi_pinning.SETUP_LOCK])
     
 def is_valid_key(key):
     return (
