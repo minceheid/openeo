@@ -25,7 +25,7 @@ def events(actions):
 
 
 # =========================
-# decide() / after_health() (§6.4)
+# decide() / after_health()
 # =========================
 
 def test_steady_up_no_action_before_settle():
@@ -178,7 +178,7 @@ def test_decide_does_not_mutate_input():
 
 
 # =========================
-# State file and run_once (§6.1, §6.7)
+# State file and run_once
 # =========================
 
 import json
@@ -363,7 +363,7 @@ def test_run_once_sees_drop_from_iw_while_nm_still_up(tmp_path):
 
 
 # =========================
-# Journal drops (§4.2)
+# Journal drops
 # =========================
 
 from wifi_pinning import WpaEvent
@@ -398,7 +398,7 @@ def test_run_once_saves_journal_cursor(tmp_path, monkeypatch):
 
 
 # =========================
-# Flap rule 1a, exclusions and cool-off (§4.2, §4.3)
+# Flap rule 1a, exclusions and cool-off
 # =========================
 
 def flap_step(state, now, drop_times, up=True, pinned=P):
@@ -569,7 +569,7 @@ def test_profile_reset_clears_exclusions(tmp_path):
 
 
 # =========================
-# Health status (§4.4)
+# Health status
 # =========================
 
 from wifi_pinning import LinkState

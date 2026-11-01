@@ -4,7 +4,7 @@
 Unpins custom-wifi when its pinned node goes away or stops carrying traffic, reconnects
 when NM has given up, and re-pins once the link has been stable again. The rules live in
 two pure functions, decide() and after_health(), so they can be unit-tested; the code
-around them gathers inputs and carries out the actions. See the design spec §6.
+around them gathers inputs and carries out the actions.
 """
 
 import json
@@ -215,11 +215,11 @@ def after_health(state, now, source, passed, bssid=None):
 
 
 # =========================
-# Health status (spec §4.4)
+# Health status
 # =========================
 
 def _health(state, now, now_wall, link, pinned, ssid, drops_1h):
-    """The first matching (level, code, message), in the spec table's order."""
+    """The first matching (level, code, message), in priority order."""
     # Only while disconnected: handshake timeouts during AP flapping also log WRONG_KEY
     if (not link.up and state["last_auth_fail"] is not None
             and now - state["last_auth_fail"] <= wp.AUTH_FAIL_HOLD):
@@ -414,7 +414,7 @@ class Executor:
         if wp.con_up(self.run).returncode == 0:
             result = wp.health_check(self.run)
         else:
-            # The node refused us; never keep a pin on it (as at setup, §5 step 7)
+            # The node refused us; never keep a pin on it (as at setup)
             result = wp.HealthResult(False, None, True)
         self.ctx.update(bssid=selection.bssid, signal=selection.signal, loss=_loss(result))
         if result.passed:
