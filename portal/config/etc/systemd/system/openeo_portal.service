@@ -5,6 +5,7 @@ After=multi-user.target
 [Service]
 ExecStart=/home/pi/openeo/portal/portal.py
 Type=oneshot
+Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=multi-user.target
