@@ -6,6 +6,8 @@ import { useToastContext } from "./openeo-Toast";
 const SOURCES = [
   { id: "app",     label: "App Events" },
   { id: "journal", label: "Service Journal" },
+  // The server caps the Wi-Fi source at 1000 events (lib/logviewer.py WIFI_MAX_LINES)
+  { id: "wifi",    label: "Wi-Fi", maxLines: 1000 },
 ];
 const LINE_OPTIONS = [200, 500, 1000, 5000];
 const REFRESH_MS = 5000;
@@ -19,8 +21,15 @@ const TOOLBAR_GAP = "12px";
 export default function LogViewer() {
   const addToast = useToastContext();
 
-  const [source, setSource] = useState("app");
+  const [source, setSource] = useState(() => {
+    const wanted = new URLSearchParams(window.location.search).get("source");
+    return SOURCES.some((s) => s.id === wanted) ? wanted : "app";
+  });
   const [lines, setLines] = useState(500);
+  // A source with a cap offers only the sizes it can return; the chosen size comes back when switching away
+  const maxLines = SOURCES.find((s) => s.id === source)?.maxLines ?? Infinity;
+  const lineOptions = LINE_OPTIONS.filter((n) => n <= maxLines);
+  const shownLines = Math.min(lines, maxLines);
   const [filter, setFilter] = useState("");
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [content, setContent] = useState("");
@@ -29,21 +38,21 @@ export default function LogViewer() {
   const followRef = useRef(true);
 
   // The spinner shows until the content matches the selected source and line count
-  const queryKey = `${source}:${lines}`;
+  const queryKey = `${source}:${shownLines}`;
   const loading = loadedKey !== queryKey;
 
   const fetchLogs = useCallback(() => {
-    fetch(buildUrl(`getlogs?source=${source}&lines=${lines}`))
+    fetch(buildUrl(`getlogs?source=${source}&lines=${shownLines}`))
       .then((r) => r.json())
       .then((data) => {
         setContent(data["content"] ?? "");
-        setLoadedKey(`${source}:${lines}`);
+        setLoadedKey(`${source}:${shownLines}`);
       })
       .catch((err) => {
         console.log("Error fetching logs:", err);
         addToast({ type: "error", title: "Logs", message: "Unable to fetch logs" });
       });
-  }, [source, lines, addToast]);
+  }, [source, shownLines, addToast]);
 
   // Refetch whenever the source or line count changes
   useEffect(() => {
@@ -106,11 +115,11 @@ export default function LogViewer() {
 
         <select
           style={{ ...styles.textInput, ...CONTROL, ...LABEL }}
-          value={lines}
+          value={shownLines}
           onChange={(e) => setLines(Number(e.target.value))}
           aria-label="Number of lines"
         >
-          {LINE_OPTIONS.map((n) => (
+          {lineOptions.map((n) => (
             <option key={n} value={n}>{n} lines</option>
           ))}
         </select>
