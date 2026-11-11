@@ -22,7 +22,9 @@ JOURNAL_TIMEOUT = 10
 
 WIFI_UNITS = ("openeo_wifi_watchdog", "openeo_portal", "wpa_supplicant")
 # journalctl time grows with matches: 1000 took 1.8 s on a Pi Zero W, 5000 up to 9.2 s
-# under load, too close to JOURNAL_TIMEOUT for a tab that auto-refreshes every 5 s
+# under load, too close to JOURNAL_TIMEOUT for a tab that auto-refreshes every 5 s.
+# There are usually far fewer than 1000 events, so the read covers the whole journal;
+# that stays fast only because _unit_matches() leaves out the service manager's lines.
 WIFI_MAX_LINES = 1000
 # Allowlist: old setup-portal request lines contain the Wi-Fi password, so only
 # lines whose message starts with a known event name may ever be shown.
@@ -86,6 +88,19 @@ def _unit_args(units):
     return [arg for unit in units for arg in ("-u", unit)]
 
 
+def _unit_matches(units):
+    """
+    journalctl matches for what the units themselves log, OR-ed with "+". Unlike -u, these
+    leave out the service manager's lines about each unit: for the 60 s watchdog timer that
+    is ~5,300 lines a day, and --grep would regex every one (23.5 s vs 1.7 s on a 318 MB
+    journal on a Pi Zero W).
+    """
+    matches = []
+    for unit in units:
+        matches += ["+", f"_SYSTEMD_UNIT={unit}.service"]
+    return matches[1:]
+
+
 def read_journal(lines):
     """Returns the last n lines of the openeo service journal as a string."""
     return _journalctl([*_unit_args(("openeo",)), "-n", str(int(lines))])
@@ -126,7 +141,7 @@ def read_wifi_log(lines):
     WIFI_MAX_LINES.
     """
     lines = min(int(lines), WIFI_MAX_LINES)
-    text = _journalctl([*_unit_args(WIFI_UNITS), "--grep", WIFI_GREP, "-r", "-n", str(lines)],
+    text = _journalctl([*_unit_matches(WIFI_UNITS), "--grep", WIFI_GREP, "-r", "-n", str(lines)],
                        no_match_ok=True)
     if text.startswith("Error:"):
         return text

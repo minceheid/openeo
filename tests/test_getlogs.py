@@ -106,7 +106,10 @@ class WifiLogTests(unittest.TestCase):
 
     def test_read_wifi_log_asks_journalctl_for_newest_events_only(self):
         # journalctl filters with --grep and reads newest-first (-r), so it stops after n
-        # matches instead of formatting the whole journal (16.8 s on a Pi Zero W)
+        # matches instead of formatting the whole journal (16.8 s on a Pi Zero W).
+        # _SYSTEMD_UNIT= matches only what the units themselves log. -u also matches the
+        # service manager's lines about the unit: ~5,300 a day for the 60 s watchdog timer,
+        # all regexed on every read (23.5 s on a 318 MB journal, against a 10 s timeout).
         older = f"{PFX} openeo-wifi-watchdog[1]: RECONNECT reason=old rc=0"
         newest_first = f"{WD}\n{REQ}\n{older}\n"
         completed = subprocess.CompletedProcess([], 0, stdout=newest_first, stderr="")
@@ -114,7 +117,11 @@ class WifiLogTests(unittest.TestCase):
             out = logviewer.read_wifi_log(100)
         self.assertEqual(out, f"{older}\n{WD}\n")      # oldest first; REQ still dropped by the allowlist
         cmd = run.call_args[0][0]
-        self.assertEqual(cmd[:7], ["journalctl", "-u", "openeo_wifi_watchdog", "-u", "openeo_portal", "-u", "wpa_supplicant"])
+        self.assertEqual(cmd[:6], ["journalctl",
+                                   "_SYSTEMD_UNIT=openeo_wifi_watchdog.service", "+",
+                                   "_SYSTEMD_UNIT=openeo_portal.service", "+",
+                                   "_SYSTEMD_UNIT=wpa_supplicant.service"])
+        self.assertNotIn("-u", cmd)
         self.assertEqual(cmd[cmd.index("--grep") + 1], logviewer.WIFI_GREP)
         self.assertIn("-r", cmd)
         self.assertEqual(cmd[cmd.index("-n") + 1], "100")
