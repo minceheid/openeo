@@ -812,3 +812,23 @@ def test_run_once_does_not_count_setup_reconnects_after_lock_removed(tmp_path, m
     monkeypatch.setattr(wd.wp, "read_wpa_events", lambda run, cursor, boot: (events, "c1"))
     wd.run_once(FakeRunner([UP, PIN]), 1000, now_wall, st, lock)
     assert wd.load_state(st)["drops"] == []
+
+
+# --- systemd unit logging -------------------------------------------------------
+
+import configparser
+import pathlib
+
+UNIT = pathlib.Path(__file__).resolve().parent.parent / "config/etc/systemd/system/openeo_wifi_watchdog.service"
+
+
+def test_unit_keeps_timer_runs_out_of_the_journal():
+    # The 60 s timer made PID1 log Starting/Deactivated/Finished/Consumed for every run,
+    # ~5,300 info lines a day that bury the events. LogLevelMax=notice drops those (it also
+    # applies to the service manager's own lines about the unit), and SyslogLevel=notice
+    # raises the watchdog's stdout to notice so its event lines still pass the cap.
+    unit = configparser.ConfigParser(strict=False, interpolation=None)
+    unit.optionxform = str
+    unit.read(UNIT)
+    assert unit["Service"]["SyslogLevel"] == "notice"
+    assert unit["Service"]["LogLevelMax"] == "notice"

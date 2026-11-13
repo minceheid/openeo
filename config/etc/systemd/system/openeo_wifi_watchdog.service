@@ -6,4 +6,13 @@ After=NetworkManager.service
 Type=oneshot
 ExecStart=/home/pi/openeo/portal/tools/openeo_wifi_watchdog.py
 SyslogIdentifier=openeo-wifi-watchdog
+# Keep the every-minute timer runs out of the journal: LogLevelMax also drops the
+# service manager's Starting/Finished/Consumed lines (~5,300 a day). SyslogLevel puts
+# the watchdog's own output at notice, so its event lines still get through.
+# To log every run while debugging, add a drop-in and run daemon-reload:
+#   /etc/systemd/system/openeo_wifi_watchdog.service.d/debug.conf
+#   [Service]
+#   LogLevelMax=debug
+SyslogLevel=notice
+LogLevelMax=notice
 TimeoutStartSec=10min
