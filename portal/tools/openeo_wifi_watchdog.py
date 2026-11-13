@@ -2,7 +2,8 @@
 """openeo Wi-Fi watchdog. Run every 60 s by openeo_wifi_watchdog.timer, as root.
 
 Unpins custom-wifi when its pinned node goes away or stops carrying traffic, reconnects
-when NM has given up, and re-pins once the link has been stable again. The rules live in
+when NM has given up, and re-pins once the link has been stable again: after its own
+unpin, or whenever setup marked the profile for pinning (wp.PIN_MARKER, which survives reboots). The rules live in
 two pure functions, decide() and after_health(), so they can be unit-tested; the code
 around them gathers inputs and carries out the actions.
 """
@@ -33,6 +34,7 @@ def default_state():
         "last_health_check": None,
         "health_failures": 0,
         "repin_rejections": 0,
+        "repin_gave_up": False, # stop re-pinning for the rest of this boot (/run)
         "profile_uuid": None,
         "journal_cursor": None,
         "drops": [],            # [at, bssid] pairs, monotonic seconds
@@ -113,8 +115,9 @@ def record_events(state, events, now, *, lock_age, setup_done_age=None):
     return state
 
 
-def decide(state, now, *, link_up, pinned, profile_exists, lock_age):
-    """Decide this run's actions from the link state. Returns (actions, new_state)."""
+def decide(state, now, *, link_up, pinned, profile_exists, lock_age, pin_wanted=False):
+    """Decide this run's actions from the link state. Returns (actions, new_state).
+    pin_wanted: setup marked this profile for pinning (wp.PIN_MARKER), which survives reboots."""
     # Guards: unconfigured charger, or the portal is setting up Wi-Fi right now
     if not profile_exists or (lock_age is not None and lock_age < wp.LOCK_STALE):
         return [], state
@@ -162,8 +165,10 @@ def decide(state, now, *, link_up, pinned, profile_exists, lock_age):
         if state["health_failures"] > 0 or since_check is None or since_check >= wp.HEALTH_INTERVAL:
             return [Action("CHECK_HEALTH", {"source": "periodic"})], state
 
-    # Rule 4: re-pin once the link has been stable after a watchdog unpin
-    if link_up and not pinned and state["unpinned_by_watchdog"] and up_for >= wp.REPIN_STABLE:
+    # Rule 4: re-pin once the link has been stable, if setup marked this profile for pinning
+    # or this boot's watchdog unpinned it
+    owed_pin = (pin_wanted or state["unpinned_by_watchdog"]) and not state["repin_gave_up"]
+    if link_up and not pinned and owed_pin and up_for >= wp.REPIN_STABLE:
         since_attempt = _since(now, state["last_repin_attempt"])
         # A node that flapped gets an hour's cool-off before any re-pin
         cooled_off = (state["last_unpin_reason"] != "flapping"
@@ -210,6 +215,7 @@ def after_health(state, now, source, passed, bssid=None):
     else:
         # A router that ignores ping would otherwise cost two blips an hour forever
         state["unpinned_by_watchdog"] = False
+        state["repin_gave_up"] = True    # until a reboot or a new setup
         actions.append(_log("REPIN_GIVEUP", rejections=state["repin_rejections"]))
     return actions, state
 
@@ -424,9 +430,9 @@ class Executor:
 
 
 def run_once(run, now, now_wall, state_path=wp.STATE_FILE, lock_path=wp.SETUP_LOCK, sleep=time.sleep,
-             status_path=None):
+             status_path=None, marker_path=None):
     """One watchdog run. 'now' is monotonic time; returns the log lines it printed.
-    status_path None means wp.STATUS_FILE. A run that ends in ERROR leaves the status file
+    status_path None means wp.STATUS_FILE, marker_path None wp.PIN_MARKER. A run that ends in ERROR leaves the status file
     alone, so the main app sees it go stale."""
     executor = None
     try:
@@ -435,6 +441,7 @@ def run_once(run, now, now_wall, state_path=wp.STATE_FILE, lock_path=wp.SETUP_LO
         uuid = wp.profile_uuid(run)
         if uuid and uuid != state["profile_uuid"]:
             state = default_state() | {"profile_uuid": uuid}
+        pin_wanted = bool(uuid) and wp.read_pin_marker(marker_path or wp.PIN_MARKER) == uuid
         events, state["journal_cursor"] = wp.read_wpa_events(run, state["journal_cursor"], wp.boot_id())
         lock = lock_age(lock_path, now_wall)
         state = record_events(state, events, now, lock_age=lock,
@@ -447,7 +454,8 @@ def run_once(run, now, now_wall, state_path=wp.STATE_FILE, lock_path=wp.SETUP_LO
                                 link_up=link.up,
                                 pinned=pinned,
                                 profile_exists=profile_exists,
-                                lock_age=lock)
+                                lock_age=lock,
+                                pin_wanted=pin_wanted)
         save_state(state_path, state)
         try:
             state = executor.execute(actions, state)

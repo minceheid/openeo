@@ -10,10 +10,12 @@ def _status_file_in_tmp(tmp_path, monkeypatch):
     """run_once writes the status file; never let a test write to /run."""
     import openeo_wifi_watchdog as wd
     monkeypatch.setattr(wd.wp, "STATUS_FILE", str(tmp_path / "status.json"))
+    monkeypatch.setattr(wd.wp, "PIN_MARKER", str(tmp_path / "pinning.json"))
 
 
-def step(state, now, up, pinned=P, profile=True, lock_age=None):
-    return decide(state, now, link_up=up, pinned=pinned, profile_exists=profile, lock_age=lock_age)
+def step(state, now, up, pinned=P, profile=True, lock_age=None, pin_wanted=False):
+    return decide(state, now, link_up=up, pinned=pinned, profile_exists=profile, lock_age=lock_age,
+                  pin_wanted=pin_wanted)
 
 
 def kinds(actions):
@@ -143,6 +145,7 @@ def test_repin_rejected_then_gives_up_on_third():
         assert events(a) == ["PIN_REJECTED"] and s["unpinned_by_watchdog"] and s["repin_rejections"] == n
     a, s = after_health(s, 3 * 3600, "repin", False)
     assert events(a) == ["PIN_REJECTED", "REPIN_GIVEUP"] and not s["unpinned_by_watchdog"]
+    assert s["repin_gave_up"]
     _, s = step(s, 3 * 3600 + 1, True, pinned="")
     a, _ = step(s, 9 * 3600, True, pinned="")
     assert a == []
@@ -153,6 +156,36 @@ def test_repin_no_node_does_not_count_as_rejection():
     _, s = step(s, 0, True, pinned="")
     _, s = step(s, 600, True, pinned="")     # REPIN_SCAN; script found no node, so no after_health
     assert s["repin_rejections"] == 0 and s["unpinned_by_watchdog"]
+
+
+def test_marked_profile_repins_after_reboot_with_fresh_state():
+    s = default_state()                                    # /run wiped by reboot
+    _, s = step(s, 0, True, pinned="", pin_wanted=True)
+    a, s = step(s, 600, True, pinned="", pin_wanted=True)
+    assert kinds(a) == ["REPIN_SCAN"]
+
+
+def test_unmarked_unpinned_profile_never_repins():
+    s = default_state()
+    _, s = step(s, 0, True, pinned="")
+    a, _ = step(s, 9 * 3600, True, pinned="")
+    assert a == []
+
+
+def test_giveup_holds_for_the_boot_even_when_marked():
+    s = default_state()
+    for n in (1, 2, 3):
+        _, s = after_health(s, n * 3600, "repin", False)
+    assert s["repin_gave_up"] and not s["unpinned_by_watchdog"]
+    _, s = step(s, 3 * 3600 + 1, True, pinned="", pin_wanted=True)
+    a, _ = step(s, 9 * 3600, True, pinned="", pin_wanted=True)
+    assert a == []
+
+
+def test_successful_repin_resets_rejections_and_leaves_gave_up_false():
+    s = default_state() | {"repin_rejections": 2}
+    _, s = after_health(s, 100, "repin", True)
+    assert s["repin_rejections"] == 0 and s["repin_gave_up"] is False
 
 
 def test_new_unpin_resets_rejections():
@@ -192,6 +225,7 @@ DOWN = (("nmcli", "-g", "GENERAL.STATE,GENERAL.CONNECTION"), ok("30 (disconnecte
 PIN = (("nmcli", "-g", "802-11-wireless.bssid"), ok("AA\\:BB\\:CC\\:DD\\:EE\\:01\n"))
 NOPIN = (("nmcli", "-g", "802-11-wireless.bssid"), ok("\n"))
 CLEAR = ("nmcli", "connection", "modify", "custom-wifi", "802-11-wireless.bssid", "")
+UUID_U1 = (("nmcli", "-g", "connection.uuid"), ok("u-1\n"))
 
 
 def is_con_up(call):
@@ -299,6 +333,25 @@ def test_run_once_repin_no_node_stays_unpinned(tmp_path, monkeypatch):
     assert wd.run_once(run, 600, 1e9, st, lock) == []
     assert not any(is_con_up(c) for c in run.calls)
     assert wd.load_state(st)["last_repin_attempt"] == 600
+
+
+def test_run_once_matching_marker_triggers_repin_scan(tmp_path, monkeypatch):
+    st, lock, mk = tmp_path / "s.json", tmp_path / "lock", tmp_path / "pinning.json"
+    mk.write_text('{"profile_uuid": "u-1"}')
+    wd.save_state(st, wd.default_state() | {"profile_uuid": "u-1", "up_since": 0})
+    calls = []
+    monkeypatch.setattr(wd.wp, "choose_pin", lambda run, ssid, sleep=None, exclude=None:
+                        calls.append(1) or wd.wp.Selection(reason="single"))
+    wd.run_once(FakeRunner([UP, NOPIN, UUID_U1]), 600, 1e9, st, lock, marker_path=str(mk))
+    assert calls == [1]
+
+
+def test_run_once_marker_for_other_profile_does_not_repin(tmp_path, monkeypatch):
+    st, lock, mk = tmp_path / "s.json", tmp_path / "lock", tmp_path / "pinning.json"
+    mk.write_text('{"profile_uuid": "old-uuid"}')
+    wd.save_state(st, wd.default_state() | {"profile_uuid": "u-1", "up_since": 0})
+    monkeypatch.setattr(wd.wp, "choose_pin", lambda *a, **k: pytest.fail("must not scan"))
+    assert wd.run_once(FakeRunner([UP, NOPIN, UUID_U1]), 600, 1e9, st, lock, marker_path=str(mk)) == []
 
 
 def test_run_once_exception_is_logged_not_raised(tmp_path):
