@@ -286,11 +286,16 @@ def con_up(run):
 def save_pin_marker(run, uuid, path=PIN_MARKER):
     """Record that setup created profile uuid with pinning. The runner may be sudo with no
     stdin, so write a temp file and let install(1) put it in place (creating the directory)."""
-    fd, tmp = tempfile.mkstemp(suffix=".json")
+    try:
+        fd, tmp = tempfile.mkstemp(suffix=".json")
+    except OSError:
+        return False    # e.g. a full SD card; setup must carry on regardless
     try:
         with os.fdopen(fd, "w") as f:
             json.dump({"profile_uuid": uuid}, f)
         return run(['install', '-D', '-m', '0644', tmp, path]).returncode == 0
+    except OSError:
+        return False
     finally:
         os.unlink(tmp)
 

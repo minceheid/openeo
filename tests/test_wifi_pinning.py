@@ -1,3 +1,5 @@
+import pytest
+
 from conftest import FakeRunner, ok, fail, cp
 from wifi_pinning import split_terse, unescape, format_event, make_runner
 
@@ -299,6 +301,66 @@ def test_api_get_wifi_reports_pinned(monkeypatch):
     assert portal.api_get_wifi({})["PINNED"] == PIN_A
 
 
+UUIDQ = (("nmcli", "-g", "connection.uuid"), ok("u-new\n"))
+
+
+def marker_calls(run):
+    return [c for c in run.calls if c[:1] == ["install"]]
+
+
+@pytest.mark.parametrize("bssid, healthy", [(PIN_A, True), (PIN_A, False), (None, True)])
+def test_setup_writes_marker_whatever_the_pin_outcome(monkeypatch, bssid, healthy):
+    pick(monkeypatch, bssid); health(monkeypatch, healthy, 0 if healthy else 60)
+    saved = []
+    monkeypatch.setattr(portal.wifi_pinning, "save_pin_marker", lambda run, uuid: saved.append(uuid) or True)
+    portal.setup_wifi_connection("Mesh", "password1", run=FakeRunner([UUIDQ]), sleep=no_sleep)
+    assert saved == ["u-new"]
+
+
+def test_setup_marker_written_before_choosing_a_pin(monkeypatch):
+    order = []
+    monkeypatch.setattr(portal.wifi_pinning, "save_pin_marker", lambda run, uuid: order.append("marker") or True)
+    monkeypatch.setattr(portal.wifi_pinning, "choose_pin",
+                        lambda run, ssid, sleep=None: order.append("choose") or portal.wifi_pinning.Selection(reason="single"))
+    portal.setup_wifi_connection("Mesh", "password1", run=FakeRunner([UUIDQ]), sleep=no_sleep)
+    assert order == ["marker", "choose"]
+
+
+def test_setup_marker_failure_does_not_fail_setup(monkeypatch, capsys):
+    pick(monkeypatch, PIN_A); health(monkeypatch, True, 0)
+    run = FakeRunner([UUIDQ, (("install",), fail(1, "denied"))])
+    assert portal.setup_wifi_connection("Mesh", "password1", run=run, sleep=no_sleep) == (True, "", PIN_A, 80)
+    out = capsys.readouterr().out
+    assert "PIN_MARKER_FAILED" in out and "password1" not in out
+
+
+def test_setup_temp_file_failure_does_not_fail_setup(monkeypatch, capsys):
+    # A full or read-only /tmp must not leave a password-less profile behind
+    pick(monkeypatch, PIN_A); health(monkeypatch, True, 0)
+
+    def no_space(*a, **k):
+        raise OSError(28, "No space left on device")
+    monkeypatch.setattr(wifi_pinning.tempfile, "mkstemp", no_space)
+    run = FakeRunner([UUIDQ])
+    assert portal.setup_wifi_connection("Mesh", "password1", run=run, sleep=no_sleep) == (True, "", PIN_A, 80)
+    assert marker_calls(run) == [] and "PIN_MARKER_FAILED" in capsys.readouterr().out
+    assert any("wifi-sec.psk-flags" in c for c in run.calls)
+
+
+def test_setup_no_uuid_skips_marker_and_logs(monkeypatch, capsys):
+    pick(monkeypatch, None)
+    run = FakeRunner([])                                   # connection.uuid -> ""
+    assert portal.setup_wifi_connection("Mesh", "password1", run=run, sleep=no_sleep)[0] is True
+    assert marker_calls(run) == [] and "PIN_MARKER_FAILED" in capsys.readouterr().out
+
+
+def test_setup_add_failure_writes_no_marker(monkeypatch):
+    pick(monkeypatch, PIN_A)
+    run = FakeRunner([(("nmcli", "connection", "add"), fail(1, "bad ssid"))])
+    portal.setup_wifi_connection("Mesh", "password1", run=run, sleep=no_sleep)
+    assert marker_calls(run) == []
+
+
 def test_setup_refreshes_lock_before_every_connect(monkeypatch):
     # A slow setup must not let the lock go stale (LOCK_STALE) while it connects
     pick(monkeypatch, PIN_A); health(monkeypatch, False, 60)
@@ -430,8 +492,6 @@ def test_make_runner_skips_sudo_when_root(monkeypatch):
 
 import json
 import os
-
-import pytest
 
 import wifi_pinning
 

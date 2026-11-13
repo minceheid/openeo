@@ -309,6 +309,11 @@ def setup_wifi_connection(ssid, password, run=None, sleep=time.sleep):
         if result.returncode != 0:
             return False, f"nmcli error: {result.stderr.strip()}", None, None
 
+        # The watchdog keeps re-pinning only profiles named in this marker, even after a reboot
+        uuid = wifi_pinning.profile_uuid(run)
+        if not uuid or not wifi_pinning.save_pin_marker(run, uuid):
+            print(wifi_pinning.format_event("PIN_MARKER_FAILED", {"uuid": uuid}), flush=True)
+
         # Set security and password. psk-flags 0 stores the PSK in the profile,
         # so NM never needs a secret agent for it
         result = run([
