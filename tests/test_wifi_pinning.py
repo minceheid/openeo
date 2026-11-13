@@ -422,3 +422,51 @@ def test_make_runner_skips_sudo_when_root(monkeypatch):
     monkeypatch.setattr(wpm.os, "geteuid", lambda: 1000)
     wpm.make_runner(sudo=True)(["nmcli", "x"])
     assert seen == [["nmcli", "x"], ["sudo", "nmcli", "x"]]
+
+
+# =========================
+# Pin marker (survives reboots)
+# =========================
+
+import json
+import os
+
+import pytest
+
+import wifi_pinning
+
+
+def test_save_pin_marker_installs_json_via_runner(tmp_path):
+    seen = {}
+
+    def install(args):
+        seen["args"] = list(args)
+        with open(args[-2]) as f:
+            seen["body"] = json.load(f)
+        return ok()
+    run = FakeRunner([(("install",), install)])
+    target = str(tmp_path / "d" / "pinning.json")
+    assert wifi_pinning.save_pin_marker(run, "u-1", path=target) is True
+    assert seen["args"][:4] == ["install", "-D", "-m", "0644"]
+    assert seen["args"][-1] == target
+    assert seen["body"] == {"profile_uuid": "u-1"}
+    assert not os.path.exists(seen["args"][-2])          # temp file cleaned up
+
+
+def test_save_pin_marker_reports_failure():
+    run = FakeRunner([(("install",), fail(1, "denied"))])
+    assert wifi_pinning.save_pin_marker(run, "u-1", path="/x/p.json") is False
+
+
+@pytest.mark.parametrize("content", [None, "", "not json", "[]", '{"profile_uuid": 7}', "{}"])
+def test_read_pin_marker_bad_or_missing_is_empty(tmp_path, content):
+    p = tmp_path / "pinning.json"
+    if content is not None:
+        p.write_text(content)
+    assert wifi_pinning.read_pin_marker(str(p)) == ""
+
+
+def test_read_pin_marker_returns_uuid(tmp_path):
+    p = tmp_path / "pinning.json"
+    p.write_text('{"profile_uuid": "63ed6a9e"}')
+    assert wifi_pinning.read_pin_marker(str(p)) == "63ed6a9e"

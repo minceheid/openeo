@@ -11,6 +11,7 @@ import math
 import re
 import statistics
 import subprocess
+import tempfile
 import time
 from dataclasses import dataclass
 
@@ -48,6 +49,8 @@ SETUP_LOCK = "/run/openeo-wifi-setup.lock"
 SETUP_DONE = "/run/openeo-wifi-setup.done"    # touched when a setup ends; see setup_done_path()
 STATE_FILE = "/run/openeo-wifi-watchdog/state.json"
 STATUS_FILE = "/run/openeo-wifi-watchdog/status.json"
+# Survives reboots: setup records the profile it created, so the watchdog knows to keep it pinned
+PIN_MARKER = "/var/lib/openeo-wifi/pinning.json"
 CONNECTION_NAME = "custom-wifi"
 WIFI_INTERFACE = "wlan0"
 
@@ -278,6 +281,29 @@ def clear_pin(run):
 
 def con_up(run):
     return run(['nmcli', 'connection', 'up', CONNECTION_NAME])
+
+
+def save_pin_marker(run, uuid, path=PIN_MARKER):
+    """Record that setup created profile uuid with pinning. The runner may be sudo with no
+    stdin, so write a temp file and let install(1) put it in place (creating the directory)."""
+    fd, tmp = tempfile.mkstemp(suffix=".json")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump({"profile_uuid": uuid}, f)
+        return run(['install', '-D', '-m', '0644', tmp, path]).returncode == 0
+    finally:
+        os.unlink(tmp)
+
+
+def read_pin_marker(path=PIN_MARKER):
+    """The profile UUID setup recorded, or "" when the marker is missing or unreadable."""
+    try:
+        with open(path) as f:
+            marker = json.load(f)
+    except (OSError, ValueError):
+        return ""
+    uuid = marker.get("profile_uuid") if isinstance(marker, dict) else None
+    return uuid if isinstance(uuid, str) else ""
 
 
 def norm_bssid(b):
