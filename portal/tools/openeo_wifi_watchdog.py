@@ -33,6 +33,7 @@ def default_state():
         "roam_count": 0,
         "last_health_check": None,
         "health_failures": 0,
+        "health_losses": [],    # loss of each failed check in the current run of failures
         "repin_rejections": 0,
         "repin_gave_up": False, # stop re-pinning for the rest of this boot (/run)
         "profile_uuid": None,
@@ -43,6 +44,7 @@ def default_state():
         "last_unpin_reason": None,
         "last_unpin_at": None,
         "last_flap": None,      # {"bssid", "drops", "span"} of the last flapping unpin
+        "last_unhealthy": None, # {"bssid", "gateway", "losses", "rssi"} of the last unhealthy unpin
         "pinned_at": None,      # when the watchdog re-pinned; None for a pin set by setup
         "weak_runs": 0,         # consecutive runs with a weak signal
         "status_level": None,   # the last status written, so 'since' survives between runs
@@ -57,8 +59,9 @@ def _log(event, **fields):
     return Action("LOG", {"event": event, **fields})
 
 
-def _con_up(reason):
-    return Action("CON_UP", {"reason": reason})
+def _con_up(reason, **cause):
+    """cause: fields that explain the reconnect, logged on the RECONNECT line."""
+    return Action("CON_UP", {"reason": reason, **cause})
 
 
 def _since(now, then):
@@ -84,10 +87,13 @@ def _unpin(state, now, bssid, reason, **extra):
     state["last_reconnect"] = now
     state["up_since"] = None
     state["health_failures"] = 0
+    state["health_losses"] = []
     state["repin_rejections"] = 0
+    # The RECONNECT line repeats the cause, minus the node details already on the UNPIN line
+    cause = {k: v for k, v in extra.items() if k not in ("gateway", "rssi")}
     return [Action("CLEAR_PIN", {}),
             _log("UNPIN", bssid=bssid, reason=reason, **extra, roam_count=state["roam_count"]),
-            _con_up("failover" if reason == "down" else reason)]
+            _con_up("failover" if reason == "down" else reason, **cause)]
 
 
 def record_events(state, events, now, *, lock_age, setup_done_age=None):
@@ -180,20 +186,29 @@ def decide(state, now, *, link_up, pinned, profile_exists, lock_age, pin_wanted=
     return [], state
 
 
-def after_health(state, now, source, passed, bssid=None):
+def after_health(state, now, source, passed, bssid=None, detail=None):
     """Act on a health check result. source is 'periodic' (rule 3) or 'repin' (rule 4);
-    bssid is the node checked: the current pin, or the one just pinned for a re-pin."""
+    bssid is the node checked: the current pin, or the one just pinned for a re-pin.
+    detail: what the check saw ({"gateway", "loss", "rssi"}, any may be missing), so an
+    unhealthy unpin can say why."""
     state = dict(state)
+    detail = detail or {}
 
     if source == "periodic":
         state["last_health_check"] = now
         if passed:
             state["health_failures"] = 0
+            state["health_losses"] = []
             return [], state
         state["health_failures"] += 1
+        losses = state["health_losses"] + [detail.get("loss")]
+        state["health_losses"] = losses
         actions = [_log("HEALTH_FAIL", failures=state["health_failures"])]
         if state["health_failures"] >= wp.HEALTH_FAILS_TO_UNPIN:
-            actions += _unpin(state, now, bssid, "unhealthy")
+            gateway, rssi = detail.get("gateway"), detail.get("rssi")
+            state["last_unhealthy"] = {"bssid": bssid, "gateway": gateway, "losses": losses, "rssi": rssi}
+            loss = ",".join(l for l in losses if l) or None
+            actions += _unpin(state, now, bssid, "unhealthy", loss=loss, gateway=gateway, rssi=rssi)
         return actions, state
 
     # Re-pin: the script has already set the pin and re-activated
@@ -204,6 +219,7 @@ def after_health(state, now, source, passed, bssid=None):
         state["pinned_at"] = now
         state["last_health_check"] = now
         state["health_failures"] = 0
+        state["health_losses"] = []
         state["repin_rejections"] = 0
         return [_log("REPIN")], state
 
@@ -223,6 +239,26 @@ def after_health(state, now, source, passed, bssid=None):
 # =========================
 # Health status
 # =========================
+
+def _unhealthy_message(unhealthy, bad):
+    """Say what the failed health checks saw. Total loss with a good signal points at the
+    access point's own uplink (a powerline or mesh link, say), not the Wi-Fi."""
+    bssid = unhealthy.get("bssid") or bad
+    losses = [l for l in unhealthy.get("losses") or [] if l]
+    gateway = unhealthy.get("gateway")
+    seen = f"{losses[-1] if losses else 'high'} packet loss to your router"
+    if gateway:
+        seen += f" at {gateway}"
+    rssi = unhealthy.get("rssi")
+    if rssi is None:
+        why = f"Access point {bssid} stopped passing traffic ({seen})."
+    elif rssi <= wp.WEAK_RSSI:
+        why = f"Access point {bssid} stopped passing traffic ({seen}) with a weak Wi-Fi signal ({rssi} dBm)."
+    else:
+        why = (f"Access point {bssid} stopped passing traffic ({seen}) although the Wi-Fi signal was good "
+               f"({rssi} dBm). This usually means the access point's own network connection failed.")
+    return f"{why} Running without a fixed access point; it will try another access point later."
+
 
 def _health(state, now, now_wall, link, pinned, ssid, drops_1h):
     """The first matching (level, code, message), in priority order."""
@@ -251,6 +287,8 @@ def _health(state, now, now_wall, link, pinned, ssid, drops_1h):
                 "too weak, or the network may be dropping it.")
     if state["unpinned_by_watchdog"]:
         bad = state["excluded_bssids"][-1] if state["excluded_bssids"] else "an access point"
+        if state["last_unpin_reason"] == "unhealthy" and state["last_unhealthy"]:
+            return "warning", "fallback", _unhealthy_message(state["last_unhealthy"], bad)
         return ("warning", "fallback",
                 f"Running without a fixed access point after a problem with {bad}. "
                 f"It will try another access point later.")
@@ -347,7 +385,7 @@ def lock_age(path, now_wall):
 
 # Fields the executor knows from this run, per event, placed before the event's own fields
 CONTEXT_FIELDS = {
-    "HEALTH_FAIL": ("bssid", "loss"),
+    "HEALTH_FAIL": ("bssid", "gateway", "loss", "rssi", "tx_failed"),
     "UNPIN": ("bssid",),
     "PIN_REJECTED": ("bssid", "signal", "loss"),
     "REPIN": ("bssid", "signal", "loss"),
@@ -397,13 +435,19 @@ class Executor:
                 wp.clear_pin(self.run)
             elif action.kind == "CON_UP":
                 rc = wp.con_up(self.run).returncode
-                self.emit(wp.format_event("RECONNECT", {"reason": action.fields["reason"], "rc": rc}))
+                self.emit(wp.format_event("RECONNECT", {**action.fields, "rc": rc}))
             elif action.kind == "LOG":
                 self.log(action.fields)
             elif action.kind == "CHECK_HEALTH":
                 result = wp.health_check(self.run)
-                self.ctx["loss"] = _loss(result)
-                more, state = after_health(state, self.now, "periodic", result.passed, self.ctx["bssid"])
+                detail = {"gateway": result.gateway, "loss": _loss(result)}
+                if not result.passed:
+                    # Signal at the moment of failure: a good one means the AP's uplink, not the radio
+                    station = wp.station_info(self.run)
+                    detail.update(rssi=station.get("rssi"), tx_failed=station.get("tx_failed"))
+                self.ctx.update(detail)
+                more, state = after_health(state, self.now, "periodic", result.passed, self.ctx["bssid"],
+                                           detail)
                 state = self.execute(more, state)
             elif action.kind == "REPIN_SCAN":
                 state = self.repin(state)

@@ -216,6 +216,7 @@ class HealthResult:
     passed: bool
     loss: int = None
     skipped: bool = False
+    gateway: str = None     # the address pinged, for the log
 
 
 SKIPPED = HealthResult(True, None, True)
@@ -232,7 +233,7 @@ def health_check(run):
     if result.returncode == 127 or not match:
         return SKIPPED
     loss = round(float(match.group(1)))
-    return HealthResult(loss <= HEALTH_MAX_LOSS, loss, False)
+    return HealthResult(loss <= HEALTH_MAX_LOSS, loss, False, gateway)
 
 
 def station_info(run):

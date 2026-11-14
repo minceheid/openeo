@@ -122,6 +122,34 @@ def test_two_failures_unpin_unhealthy():
     assert s["roam_count"] == 1 and s["repin_rejections"] == 0
 
 
+def test_unhealthy_unpin_carries_the_evidence():
+    # The UNPIN and RECONNECT lines must say why the link was judged unhealthy
+    s = default_state()
+    _, s = step(s, 0, True)
+    _, s = after_health(s, 120, "periodic", False, P, {"gateway": "192.168.1.1", "loss": "70%", "rssi": -66})
+    a, s = after_health(s, 180, "periodic", False, P, {"gateway": "192.168.1.1", "loss": "100%", "rssi": -68})
+    assert a[2].fields == {"event": "UNPIN", "bssid": P, "reason": "unhealthy", "loss": "70%,100%",
+                           "gateway": "192.168.1.1", "rssi": -68, "roam_count": 1}
+    assert a[3].fields == {"reason": "unhealthy", "loss": "70%,100%"}
+    assert s["last_unhealthy"] == {"bssid": P, "gateway": "192.168.1.1", "losses": ["70%", "100%"], "rssi": -68}
+    assert s["health_losses"] == []
+
+
+def test_passed_check_clears_loss_history():
+    s = default_state()
+    _, s = after_health(s, 120, "periodic", False, P, {"loss": "40%"})
+    assert s["health_losses"] == ["40%"]
+    _, s = after_health(s, 180, "periodic", True, P, {"loss": "0%"})
+    assert s["health_losses"] == []
+
+
+def test_other_unpins_put_their_cause_on_the_reconnect():
+    s = default_state()
+    _, s = step(s, 0, False)
+    a, _ = step(s, 60, False)
+    assert a[2].fields == {"reason": "failover", "down_for": 60}
+
+
 def test_skipped_check_counts_as_pass():
     # The script passes passed=True for a skipped check; health_failures resets
     s = default_state() | {"health_failures": 1}
@@ -226,6 +254,7 @@ PIN = (("nmcli", "-g", "802-11-wireless.bssid"), ok("AA\\:BB\\:CC\\:DD\\:EE\\:01
 NOPIN = (("nmcli", "-g", "802-11-wireless.bssid"), ok("\n"))
 CLEAR = ("nmcli", "connection", "modify", "custom-wifi", "802-11-wireless.bssid", "")
 UUID_U1 = (("nmcli", "-g", "connection.uuid"), ok("u-1\n"))
+STATION = (("iw",), ok("Station aa:bb:cc:dd:ee:01 (on wlan0)\n\ttx failed:\t2\n\tsignal:  \t-68 [-68] dBm\n"))
 
 
 def is_con_up(call):
@@ -259,7 +288,7 @@ def test_run_once_failover_logs_and_persists(tmp_path):
     wd.run_once(run, 0, 1e9, st, lock)
     lines = wd.run_once(run, 60, 1e9 + 60, st, lock)
     assert lines == ["UNPIN bssid=AA:BB:CC:DD:EE:01 reason=down down_for=60 roam_count=1",
-                     "RECONNECT reason=failover rc=0"]
+                     "RECONNECT reason=failover down_for=60 rc=0"]
     assert list(CLEAR) in run.calls and any(is_con_up(c) for c in run.calls)
     assert wd.load_state(st)["unpinned_by_watchdog"] is True
 
@@ -290,9 +319,10 @@ def test_run_once_ignores_stale_lock(tmp_path):
 def test_run_once_periodic_health_fail_logs_bssid_and_loss(tmp_path, monkeypatch):
     st, lock = tmp_path / "s.json", tmp_path / "lock"
     wd.save_state(st, wd.default_state() | {"up_since": 0})
-    monkeypatch.setattr(wd.wp, "health_check", lambda run: wd.wp.HealthResult(False, 40, False))
-    lines = wd.run_once(FakeRunner([UP, PIN]), 200, 1e9, st, lock)
-    assert lines == ["HEALTH_FAIL bssid=AA:BB:CC:DD:EE:01 loss=40% failures=1"]
+    monkeypatch.setattr(wd.wp, "health_check", lambda run: wd.wp.HealthResult(False, 40, False, "192.168.1.1"))
+    lines = wd.run_once(FakeRunner([UP, PIN, STATION]), 200, 1e9, st, lock)
+    assert lines == ["HEALTH_FAIL bssid=AA:BB:CC:DD:EE:01 gateway=192.168.1.1 loss=40% rssi=-68 tx_failed=2 "
+                     "failures=1"]
     assert wd.load_state(st)["health_failures"] == 1
 
 
@@ -599,10 +629,12 @@ def test_run_once_rejected_repin_excludes_selection(tmp_path, monkeypatch):
 
 def test_run_once_unhealthy_unpin_excludes_pin(tmp_path, monkeypatch):
     st, lock = tmp_path / "s.json", tmp_path / "lock"
-    wd.save_state(st, wd.default_state() | {"up_since": 0, "health_failures": 1})
-    monkeypatch.setattr(wd.wp, "health_check", lambda run: wd.wp.HealthResult(False, 40, False))
-    lines = wd.run_once(FakeRunner([UP, PIN]), 200, 1e9, st, lock)
-    assert "UNPIN bssid=AA:BB:CC:DD:EE:01 reason=unhealthy roam_count=1" in lines
+    wd.save_state(st, wd.default_state() | {"up_since": 0, "health_failures": 1, "health_losses": ["30%"]})
+    monkeypatch.setattr(wd.wp, "health_check", lambda run: wd.wp.HealthResult(False, 40, False, "192.168.1.1"))
+    lines = wd.run_once(FakeRunner([UP, PIN, STATION]), 200, 1e9, st, lock)
+    assert lines[1:] == ["UNPIN bssid=AA:BB:CC:DD:EE:01 reason=unhealthy loss=30%,40% gateway=192.168.1.1 "
+                         "rssi=-68 roam_count=1",
+                         "RECONNECT reason=unhealthy loss=30%,40% rc=0"]
     assert wd.load_state(st)["excluded_bssids"] == [P]
 
 
@@ -611,7 +643,7 @@ def test_run_once_flapping_logs_unpin_and_reconnect(tmp_path):
     wd.save_state(st, wd.default_state() | {"drops": [[0, P], [100, P], [200, P]]})
     lines = wd.run_once(FakeRunner([UP, PIN]), 300, 1e9, st, lock)
     assert lines == ["UNPIN bssid=AA:BB:CC:DD:EE:01 reason=flapping drops=3 window=600 roam_count=1",
-                     "RECONNECT reason=flapping rc=0"]
+                     "RECONNECT reason=flapping drops=3 window=600 rc=0"]
 
 
 def test_profile_reset_clears_exclusions(tmp_path):
@@ -710,6 +742,31 @@ def test_classify_fallback_names_bssid():
     status, _ = cl(st, pinned="")
     assert level_code(status) == ("warning", "fallback") and P in status["message"]
     assert status["pinned_bssid"] is None and status["excluded_bssids"] == [P]
+
+
+def unhealthy_fallback(rssi):
+    return default_state() | {"unpinned_by_watchdog": True, "last_unpin_reason": "unhealthy",
+                              "last_unpin_at": 900, "excluded_bssids": [P],
+                              "last_unhealthy": {"bssid": P, "gateway": "192.168.1.1",
+                                                 "losses": ["70%", "100%"], "rssi": rssi}}
+
+
+def test_classify_fallback_after_unhealthy_with_good_signal_blames_the_uplink():
+    status, _ = cl(unhealthy_fallback(-62), pinned="")
+    assert level_code(status) == ("warning", "fallback")
+    msg = status["message"]
+    assert P in msg and "100% packet loss" in msg and "192.168.1.1" in msg and "-62 dBm" in msg
+    assert "own network connection" in msg
+
+
+def test_classify_fallback_after_unhealthy_with_weak_signal_blames_the_signal():
+    msg = cl(unhealthy_fallback(-80), pinned="")[0]["message"]
+    assert "weak" in msg and "-80 dBm" in msg and "own network connection" not in msg
+
+
+def test_classify_fallback_after_unhealthy_without_signal():
+    msg = cl(unhealthy_fallback(None), pinned="")[0]["message"]
+    assert "100% packet loss" in msg and "dBm" not in msg
 
 
 def test_classify_weak_signal_needs_three_runs():

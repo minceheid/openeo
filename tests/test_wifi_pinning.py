@@ -165,6 +165,13 @@ def test_health_pings_gateway_on_wlan0():
     assert run.calls[-1] == ["ping", "-c", "10", "-i", "0.2", "-W", "1", "-I", "wlan0", "192.168.1.1"]
 
 
+def test_health_result_records_gateway():
+    # The ping target is logged on a failure, so the owner can see what stopped answering
+    for loss in (0, 100):
+        r = health_check(FakeRunner([GW_OK, (("ping",), ping_out(loss))]))
+        assert r.gateway == "192.168.1.1"
+
+
 def test_health_skipped_cases_count_as_pass():
     for runner in [FakeRunner([(GW, ok("\n"))]),
                    FakeRunner([GW_OK, (("ping",), fail(127))]),
