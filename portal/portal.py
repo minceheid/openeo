@@ -25,6 +25,18 @@ SSH_DIR="/home/pi/.ssh"
 auth_keys_file = os.path.join(SSH_DIR, "authorized_keys")
 
 
+def redact(text):
+    """Mask Wi-Fi passwords in a log line (the setup page sends them in the query string)."""
+    return re.sub(r'(password=)[^&\s"]*', r"\1***", text, flags=re.IGNORECASE)
+
+
+def as_root(cmd):
+    """Prefix cmd with sudo only when we aren't already root. The portal service runs as
+    root, and sudo writes every command line it runs to the journal, so a needless sudo
+    put the Wi-Fi password from 'nmcli ... wifi-sec.psk <password>' in the system log."""
+    return cmd if os.geteuid() == 0 else ['sudo'] + cmd
+
+
 shutdown_event = threading.Event()
 start_time = time.time()
 
@@ -270,39 +282,40 @@ def is_valid_password(password):
 def setup_wifi_connection(ssid, password):
     try:
         if DRYRUN:
-            print(f"setup_wifi_connection {ssid} {password} - dryrun - not executed\n")
+            print(f"setup_wifi_connection {ssid} - dryrun - not executed\n")
             return 0
         
         # Delete any existing connection with this name
-        subprocess.run(['sudo','nmcli', 'connection', 'delete', CONNECTION_NAME],
+        subprocess.run(as_root(['nmcli', 'connection', 'delete', CONNECTION_NAME]),
                        check=False)
 
         # Add new connection profile
-        subprocess.run([
-            'sudo','nmcli', 'connection', 'add',
+        subprocess.run(as_root([
+            'nmcli', 'connection', 'add',
             'type', 'wifi',
             'ifname', WIFI_INTERFACE,
             'con-name', CONNECTION_NAME,
             'ssid', ssid
-        ], check=True)
+        ]), check=True)
 
         # Set security and password
-        subprocess.run([
-            'sudo','nmcli', 'connection', 'modify', CONNECTION_NAME,
+        subprocess.run(as_root([
+            'nmcli', 'connection', 'modify', CONNECTION_NAME,
             'wifi-sec.key-mgmt', 'wpa-psk',
             'wifi-sec.psk', password
-        ], check=True)
+        ]), check=True)
 
         # Bring up the connection
-        result = subprocess.run([
-            'sudo','nmcli', 'connection', 'up', CONNECTION_NAME
-        ], capture_output=True, text=True)
+        result = subprocess.run(as_root([
+            'nmcli', 'connection', 'up', CONNECTION_NAME
+        ]), capture_output=True, text=True)
 
         success = result.returncode == 0
         return success, result.stdout.strip() if success else result.stderr.strip()
 
     except subprocess.CalledProcessError as e:
-        return False, f"nmcli error: {e.stderr.strip() if e.stderr else str(e)}"
+        # str(e) would include the full command line, password and all
+        return False, f"nmcli error: {e.stderr.strip() if e.stderr else f'exit status {e.returncode}'}"
     except Exception as e:
         return False, f"Exception: {str(e)}"
     
@@ -385,8 +398,9 @@ class APIServerHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(500, str(e))
 
     def log_message(self, fmt, *args):
-        sys.stdout.write("%s - %s\n" %
-                         (self.client_address[0], fmt % args))
+        sys.stdout.write(redact("%s - %s\n" %
+                                (self.client_address[0], fmt % args)))
+        sys.stdout.flush()
 
 
 # =========================
