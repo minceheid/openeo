@@ -5,7 +5,7 @@ import ClockFace from "./Carousel/openeo-ClockFace";
 import SolarTimer from "./Carousel/openeo-SolarTimer";
 import EVChargerStatus from "./Carousel/openeo-Status";
 import { useToastContext } from "./openeo-Toast";
-import { buildUrl } from './utils/funcs';
+import { buildUrl, getControllerConnectionStatus } from './utils/funcs';
 import { uiCss,globalCss,styles } from './utils/styles';
 
 
@@ -14,6 +14,7 @@ const STATUS_TYPE=0;
 const SWITCH_TYPE=1;
 const TIMER_TYPE=2;
 const SOLAR_TYPE=3;
+const STARTUP_GRACE_PERIOD_MS = 2 * 60 * 1000;
 
 
 
@@ -44,8 +45,24 @@ export default function ScheduleCarousel() {
   const [solarActive, setSolarActive] = useState(0);
   const [snapStep, setSnapStep] = useState(0);
   const [status, setStatus] = useState(null);
+  const [hasConnectedToController, setHasConnectedToController] = useState(false);
+  const [startupGracePeriod, setStartupGracePeriod] = useState(true);
 
 
+
+  useEffect(() => {
+    const timeoutId = setTimeout(
+      () => setStartupGracePeriod(false),
+      STARTUP_GRACE_PERIOD_MS
+    );
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  useEffect(() => {
+    if (getControllerConnectionStatus(status) === true) {
+      setHasConnectedToController(true);
+    }
+  }, [status]);
 
   useEffect(() => {
     let cancelled = false;
@@ -341,6 +358,11 @@ const itemWidth = 340; // or 380 for sm
 const gap = 24; // 6 * 4px (Tailwind spacing)
 const offset = active * (itemWidth + gap);
 const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
+const controllerConnectionStatus = getControllerConnectionStatus(status);
+const showConnectionBanner =
+  controllerConnectionStatus === false;
+const isInitialising =
+  showConnectionBanner && !hasConnectedToController && startupGracePeriod;
 
 
 
@@ -350,6 +372,28 @@ const translateX = `calc(50% - ${offset + itemWidth/2}px)`;
     <div className="min-h-screen w-full bg-[#1e242b] text-white flex justify-center p-6 " id="mainDiv">
 
       <div className="w-full max-w-5xl">
+          {showConnectionBanner && (
+            <div
+              role={isInitialising ? "status" : "alert"}
+              aria-live={isInitialising ? "polite" : "assertive"}
+              className={`mb-4 rounded-2xl border px-6 py-5 text-center shadow-lg ${
+                isInitialising
+                  ? "border-sky-400/60 bg-sky-950/90 text-sky-100"
+                  : "border-amber-400/70 bg-amber-950/90 text-amber-100"
+              }`}
+            >
+              <p className="text-xl font-bold sm:text-2xl">
+                {isInitialising
+                  ? "Initialising"
+                  : "OpenEO cannot connect to the controller board"}
+              </p>
+              <p className="mt-1 text-sm sm:text-base">
+                {isInitialising
+                  ? "OpenEO is starting up and connecting to the controller board. This can take up to two minutes."
+                  : "Please check the controller board and its connection. Charging controls may be unavailable until the connection is restored."}
+              </p>
+            </div>
+          )}
 
           {/* Carousel rail */}
           <div className="flex items-center gap-6 items-stretch transition-transform duration-500 ease-out mt-[10vh]" id="carouselRail"

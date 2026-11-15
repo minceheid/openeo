@@ -17,6 +17,16 @@ export function buildUrl(path) {
   return path;
 }
 
+export function getControllerConnectionStatus(status) {
+  const value = status?.eo_connected_to_controller;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    if (value.toLowerCase() === "true") return true;
+    if (value.toLowerCase() === "false") return false;
+  }
+  return null;
+}
+
 export function getCurrencyConfig() {
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
 

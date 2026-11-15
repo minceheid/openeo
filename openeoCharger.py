@@ -80,7 +80,10 @@ class openeoChargerClass:
         response = self.rs485.rx(recv_delay=0.5)
         if not response:
             _LOGGER.info("Response from serial was empty - possible serial overrun")
+            self.connected = False
             return None
+        else:
+            self.connected = True
         try:
             response = response.decode("ascii")
         except UnicodeDecodeError:
@@ -211,6 +214,10 @@ class openeoChargerClass:
     # Constructor methods
     def __init__(self):
 
+
+        # Set "connected" to False, until we can successfully talk to the controller board
+        self.connected = False
+
         # Check hardware type, and initialise the correct object class for communications
         # At this time there is only two hardware types that we are supporting, so this
         # is easy, but extensible, if we find more.
@@ -222,7 +229,6 @@ class openeoChargerClass:
         except Exception as e:
             _LOGGER.error(f"Error: Unable to initialise RS485 interface: {e}")
             print(f"Error: Unable to initialise RS485 interface: {e}\nIs OpenEO already running? Only one copy can run at any one time.")
-            exit(1)
 
         GPIO.setmode(GPIO.BCM)
         self.connect()
