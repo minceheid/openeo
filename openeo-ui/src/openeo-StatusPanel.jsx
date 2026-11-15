@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Sun, CloudSun } from "lucide-react";
-import { buildUrl } from './utils/funcs';
+import { getControllerConnectionStatus } from './utils/funcs';
 
 export default function StatusPanel(
   {status}
@@ -57,7 +57,7 @@ export default function StatusPanel(
 
       <>
         <div className="status-info flex justify-center items-center">
-          {!status.eo_connected_to_controller ? (
+          {getControllerConnectionStatus(status) !== true ? (
             <span className="status-item">Waiting..</span>
           ) : (
             <span
