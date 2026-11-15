@@ -77,6 +77,21 @@ This project is compatible with:
 </p>
 
 ---
+## Homebridge / Apple Home Matter Plugin
+
+[@wazza151](https://github.com/wazza151) has created a Homebridge/Apple Home Matter Plugin that works with OpenEO. This plugin shows an EO Mini Pro 2 or EO Smart Home Hub EV charger in Apple Home, when the charger runs OpenEO.
+
+The plugin:
+* talks to the charger on your home network - no account or cloud needed
+* finds the charger on the network by itself
+* shows a charge now on/off tile, a Car Connected sensor and a Charging Schedule switch
+* shows a Charger Problem sensor, which alerts you if the charger reports a fault or goes offline
+* can show live watts and kWh in the Home app, over Matter (Homebridge v2.2 or above)
+* adds a status page with recent charging sessions to the plugin's settings page
+
+https://github.com/homebridge-plugins/homebridge-openeo
+
+---
 
 ## 🚀 Installation
 
