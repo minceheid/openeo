@@ -37,6 +37,12 @@ except ImportError:
 # logging for use in this module
 _LOGGER = logging.getLogger(__name__)
 
+# paho's own log (keepalive pings, socket errors, retries) goes to a child logger.
+# Its level is set here because the root logger runs at INFO.
+PAHO_LOG_LEVEL = logging.DEBUG
+_PAHO_LOGGER = _LOGGER.getChild("paho")
+_PAHO_LOGGER.setLevel(PAHO_LOG_LEVEL)
+
 #################################################################################
 class homeassistantClassPlugin(PluginSuperClass):
     PRETTY_NAME = "Home Assistant MQTT"
@@ -79,8 +85,10 @@ class homeassistantClassPlugin(PluginSuperClass):
             # "offline" will then overwrites the "online" we just published, leaving every
             # HA entity unavailable while we carry on publishing state.
             device_id = self.get_config("device_id")
-            self.mqtt_client = mqtt.Client(client_id=f"openeo-{device_id}")
-            
+            self.mqtt_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+                                           client_id=f"openeo-{device_id}")
+            self.mqtt_client.enable_logger(_PAHO_LOGGER)
+
             # Set authentication if provided
             username = self.get_config("mqtt_username")
             password = self.get_config("mqtt_password")
@@ -90,6 +98,7 @@ class homeassistantClassPlugin(PluginSuperClass):
             # Set callbacks
             self.mqtt_client.on_connect = self._on_connect
             self.mqtt_client.on_disconnect = self._on_disconnect
+            self.mqtt_client.on_connect_fail = self._on_connect_fail
             self.mqtt_client.on_message = self._on_message
 
             self.mqtt_client.will_set(
@@ -110,9 +119,9 @@ class homeassistantClassPlugin(PluginSuperClass):
         except Exception as e:
             _LOGGER.error(f"Failed to setup MQTT connection: {e}")
     
-    def _on_connect(self, client, userdata, flags, rc):
+    def _on_connect(self, client, userdata, connect_flags, reason_code, properties):
         """Callback for MQTT connection"""
-        if rc == 0:
+        if not reason_code.is_failure:
             self.connected = True
             _LOGGER.info("Connected to MQTT broker")
             self.mqtt_client.publish(
@@ -126,16 +135,19 @@ class homeassistantClassPlugin(PluginSuperClass):
             # Send discovery messages after connection
             threading.Thread(target=self._send_discovery, daemon=True).start()
         else:
-            _LOGGER.error(f"Failed to connect to MQTT broker, return code {rc}")
-    
-    def _on_disconnect(self, client, userdata, rc):
+            _LOGGER.error(f"Failed to connect to MQTT broker, return code {reason_code}")
+
+    def _on_disconnect(self, client, userdata, disconnect_flags, reason_code, properties):
         """Callback for MQTT disconnection"""
         self.connected = False
         self.discovery_sent = False
-        if rc != 0:
+        if reason_code != 0:
             _LOGGER.warning("Unexpected MQTT disconnection")
         else:
             _LOGGER.info("Disconnected from MQTT broker")
+
+    def _on_connect_fail(self, client, userdata):
+        """Callback for a failed connection attempt (paho retries on its own)"""
     
     def _subscribe_to_commands(self):
         """Subscribe to MQTT command topics for control"""
