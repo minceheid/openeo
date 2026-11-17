@@ -43,6 +43,24 @@ PAHO_LOG_LEVEL = logging.DEBUG
 _PAHO_LOGGER = _LOGGER.getChild("paho")
 _PAHO_LOGGER.setLevel(PAHO_LOG_LEVEL)
 
+
+def _fmt_duration(seconds):
+    """42 -> '42s', 282 -> '4m42s', 7980 -> '2h13m'"""
+    s = int(seconds)
+    if s < 60:
+        return f"{s}s"
+    if s < 3600:
+        return f"{s // 60}m{s % 60:02d}s"
+    return f"{s // 3600}h{(s % 3600) // 60:02d}m"
+
+
+def _reason_text(reason_code):
+    """'reason="Keep alive timeout" (code 141)' for a paho ReasonCode; never raises."""
+    try:
+        return f'reason="{reason_code.getName()}" (code {reason_code.value})'
+    except Exception:
+        return f"reason={reason_code!r}"
+
 #################################################################################
 class homeassistantClassPlugin(PluginSuperClass):
     PRETTY_NAME = "Home Assistant MQTT"
@@ -67,6 +85,11 @@ class homeassistantClassPlugin(PluginSuperClass):
         self.discovery_sent = False
         self._published_schedule_count = 0
         self._published_solar_schedule_count = 0
+        # Connection bookkeeping for the log (time.monotonic() seconds)
+        self._up_since = None
+        self._down_since = None
+        self._failed_attempts = 0
+        self._failed_publishes = 0
         super().__init__(configParam)
         
         if not MQTT_AVAILABLE:
@@ -119,11 +142,37 @@ class homeassistantClassPlugin(PluginSuperClass):
         except Exception as e:
             _LOGGER.error(f"Failed to setup MQTT connection: {e}")
     
+    def _broker(self):
+        return f"{self.get_config('mqtt_host')}:{self.get_config('mqtt_port')}"
+
+    def _start_outage(self, now):
+        """Note when the link went down; a second callback for the same drop keeps the first time."""
+        if self._down_since is None:
+            self._down_since = now
+
+    def _log_connected(self, now):
+        """Log a successful connect, with the outage summary when it ends one, and reset the counters."""
+        try:
+            if self._down_since is None:
+                _LOGGER.info(f"MQTT connected to {self._broker()}")
+            else:
+                _LOGGER.info(
+                    f"MQTT connected to {self._broker()} after {_fmt_duration(now - self._down_since)} down, "
+                    f"{self._failed_attempts + 1} attempt(s), "
+                    f"{self._failed_publishes} state publish(es) failed while down")
+        except Exception:
+            _LOGGER.exception("Failed to log MQTT connect")
+        self._up_since = now
+        self._down_since = None
+        self._failed_attempts = 0
+        self._failed_publishes = 0
+
     def _on_connect(self, client, userdata, connect_flags, reason_code, properties):
         """Callback for MQTT connection"""
-        if not reason_code.is_failure:
+        now = time.monotonic()
+        if not getattr(reason_code, "is_failure", reason_code != 0):
             self.connected = True
-            _LOGGER.info("Connected to MQTT broker")
+            self._log_connected(now)
             self.mqtt_client.publish(
                 self._get_availability_topic(),
                 payload="online",
@@ -135,20 +184,41 @@ class homeassistantClassPlugin(PluginSuperClass):
             # Send discovery messages after connection
             threading.Thread(target=self._send_discovery, daemon=True).start()
         else:
-            _LOGGER.error(f"Failed to connect to MQTT broker, return code {reason_code}")
+            try:
+                self._start_outage(now)
+                self._failed_attempts += 1
+                _LOGGER.error(f"MQTT broker {self._broker()} refused connection: {_reason_text(reason_code)}")
+            except Exception:
+                _LOGGER.exception("Failed to log MQTT connection refusal")
 
     def _on_disconnect(self, client, userdata, disconnect_flags, reason_code, properties):
         """Callback for MQTT disconnection"""
         self.connected = False
         self.discovery_sent = False
-        if reason_code != 0:
-            _LOGGER.warning("Unexpected MQTT disconnection")
-        else:
-            _LOGGER.info("Disconnected from MQTT broker")
+        try:
+            if reason_code == 0:
+                _LOGGER.info("Disconnected from MQTT broker")
+                return
+            now = time.monotonic()
+            self._start_outage(now)
+            from_broker = "yes" if getattr(disconnect_flags, "is_disconnect_packet_from_server", False) else "no"
+            up_for = "unknown" if self._up_since is None else _fmt_duration(now - self._up_since)
+            _LOGGER.warning(f"MQTT disconnected: {_reason_text(reason_code)} from_broker={from_broker} "
+                            f"broker={self._broker()} up_for={up_for}")
+        except Exception:
+            _LOGGER.exception("Failed to log MQTT disconnect")
 
     def _on_connect_fail(self, client, userdata):
         """Callback for a failed connection attempt (paho retries on its own)"""
-    
+        try:
+            now = time.monotonic()
+            self._start_outage(now)
+            self._failed_attempts += 1
+            _LOGGER.warning(f"MQTT connect attempt {self._failed_attempts} failed, "
+                            f"down for {_fmt_duration(now - self._down_since)}")
+        except Exception:
+            _LOGGER.exception("Failed to log MQTT connect failure")
+
     def _subscribe_to_commands(self):
         """Subscribe to MQTT command topics for control"""
         if not self.connected:
@@ -875,6 +945,7 @@ class homeassistantClassPlugin(PluginSuperClass):
     def _publish_state(self):
         """Publish current state to MQTT"""
         if not self.connected:
+            self._failed_publishes += 1  # reported in the reconnect summary
             return
         
         # Determine vehicle connection and charging status from charger state
@@ -934,7 +1005,10 @@ class homeassistantClassPlugin(PluginSuperClass):
         payload = json.dumps(state_payload)
         
         try:
-            self.mqtt_client.publish(topic, payload, retain=True)
+            info = self.mqtt_client.publish(topic, payload, retain=True)
+            if info.rc != mqtt.MQTT_ERR_SUCCESS:
+                # Not logged one by one; reported in the reconnect summary.
+                self._failed_publishes += 1
             _LOGGER.debug("Published state to MQTT")
         except Exception as e:
             _LOGGER.error(f"Failed to publish state: {e}")
