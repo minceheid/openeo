@@ -107,9 +107,15 @@ class homeassistantClassPlugin(PluginSuperClass):
             # old session lingers until its keepalive expires (1.5x) and its retained
             # "offline" will then overwrites the "online" we just published, leaving every
             # HA entity unavailable while we carry on publishing state.
-            device_id = self.get_config("device_id")
-            self.mqtt_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-                                           client_id=f"openeo-{device_id}")
+            client_id = f"openeo-{self.get_config('device_id')}"
+            if hasattr(mqtt, "CallbackAPIVersion"):
+                self.mqtt_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
+                on_connect, on_disconnect = self._on_connect, self._on_disconnect
+            else:
+                # paho-mqtt 1.x (Debian bookworm and older): v1 callbacks, adapted to the v2 signatures.
+                self.mqtt_client = mqtt.Client(client_id=client_id)
+                on_connect = lambda c, u, flags, rc: self._on_connect(c, u, flags, rc, None)
+                on_disconnect = lambda c, u, rc: self._on_disconnect(c, u, None, rc, None)
             self.mqtt_client.enable_logger(_PAHO_LOGGER)
 
             # Set authentication if provided
@@ -119,9 +125,9 @@ class homeassistantClassPlugin(PluginSuperClass):
                 self.mqtt_client.username_pw_set(username, password)
             
             # Set callbacks
-            self.mqtt_client.on_connect = self._on_connect
-            self.mqtt_client.on_disconnect = self._on_disconnect
-            self.mqtt_client.on_connect_fail = self._on_connect_fail
+            self.mqtt_client.on_connect = on_connect
+            self.mqtt_client.on_disconnect = on_disconnect
+            self.mqtt_client.on_connect_fail = self._on_connect_fail  # paho >= 1.6
             self.mqtt_client.on_message = self._on_message
 
             self.mqtt_client.will_set(
@@ -173,16 +179,20 @@ class homeassistantClassPlugin(PluginSuperClass):
         if not getattr(reason_code, "is_failure", reason_code != 0):
             self.connected = True
             self._log_connected(now)
-            self.mqtt_client.publish(
-                self._get_availability_topic(),
-                payload="online",
-                qos=1,
-                retain=True,
-            )
-            # Subscribe to command topics
-            self._subscribe_to_commands()
-            # Send discovery messages after connection
-            threading.Thread(target=self._send_discovery, daemon=True).start()
+            # An exception here would kill paho's network thread and stop reconnects for good.
+            try:
+                self.mqtt_client.publish(
+                    self._get_availability_topic(),
+                    payload="online",
+                    qos=1,
+                    retain=True,
+                )
+                # Subscribe to command topics
+                self._subscribe_to_commands()
+                # Send discovery messages after connection
+                threading.Thread(target=self._send_discovery, daemon=True).start()
+            except Exception:
+                _LOGGER.exception("Failed to finish MQTT connect setup")
         else:
             try:
                 self._start_outage(now)
@@ -200,11 +210,17 @@ class homeassistantClassPlugin(PluginSuperClass):
                 _LOGGER.info("Disconnected from MQTT broker")
                 return
             now = time.monotonic()
-            self._start_outage(now)
             from_broker = "yes" if getattr(disconnect_flags, "is_disconnect_packet_from_server", False) else "no"
-            up_for = "unknown" if self._up_since is None else _fmt_duration(now - self._up_since)
+            if self._down_since is not None:
+                # Already down: a doubled callback, or a reconnect attempt that died before CONNACK.
+                link = f"up_for=none down_for={_fmt_duration(now - self._down_since)}"
+            elif self._up_since is None:
+                link = "up_for=unknown"
+            else:
+                link = f"up_for={_fmt_duration(now - self._up_since)}"
+            self._start_outage(now)
             _LOGGER.warning(f"MQTT disconnected: {_reason_text(reason_code)} from_broker={from_broker} "
-                            f"broker={self._broker()} up_for={up_for}")
+                            f"broker={self._broker()} {link}")
         except Exception:
             _LOGGER.exception("Failed to log MQTT disconnect")
 

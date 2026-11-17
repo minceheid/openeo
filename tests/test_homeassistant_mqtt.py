@@ -59,6 +59,23 @@ class SetupTests(unittest.TestCase):
         self.assertEqual(homeassistant._PAHO_LOGGER.name, homeassistant._LOGGER.name + ".paho")
         self.assertEqual(homeassistant._PAHO_LOGGER.level, logging.DEBUG)  # testing build; Task 4 → WARNING
 
+    def test_setup_falls_back_to_v1_callbacks_on_paho_1x(self):
+        # Debian bookworm/bullseye ship paho 1.6/1.5, which has no CallbackAPIVersion.
+        fake_mqtt = mock.Mock(spec=["Client", "MQTT_ERR_SUCCESS"])
+        with mock.patch.object(homeassistant, "mqtt", fake_mqtt), \
+                mock.patch.object(homeassistant.threading, "Thread"):
+            p = make_plugin()
+            p._setup_mqtt()
+            fake_mqtt.Client.assert_called_once_with(client_id="openeo-openeo_charger_1")
+            c = fake_mqtt.Client.return_value
+            c.connect_async.assert_called_once_with(BROKER_HOST, BROKER_PORT, 60)
+            with self.assertLogs(homeassistant._LOGGER, level="INFO") as cm:
+                c.on_connect(c, None, {}, 0)          # v1 signature
+                c.on_disconnect(c, None, 7)           # v1 signature, MQTT_ERR_CONN_LOST
+        self.assertTrue(p.connected is False)
+        self.assertTrue(any("MQTT connected to 192.168.1.20:1883" in l for l in cm.output))
+        self.assertTrue(any("MQTT disconnected: reason=7" in l for l in cm.output))
+
     def test_connect_success_still_announces_online_and_subscribes(self):
         p = make_plugin()
         with mock.patch.object(homeassistant.threading, "Thread"):
@@ -151,6 +168,20 @@ class OutageLoggingTests(unittest.TestCase):
     def test_expected_disconnect_is_info(self):
         p = make_plugin(); connect(p, at=0); disconnect(p, "Success", at=5)
         self.assertIn("INFO:lib.homeassistant:Disconnected from MQTT broker", self.logs)
+
+    def test_disconnect_during_outage_reports_down_for_not_uptime(self):
+        # A reconnect whose TCP connect works but dies before CONNACK fires on_disconnect, not on_connect_fail.
+        p = make_plugin(); connect(p, at=0); disconnect(p, "Unspecified error", at=100)
+        fail(p, at=110); disconnect(p, "Unspecified error", at=160)
+        last = [l for l in self.logs if "MQTT disconnected" in l][-1]
+        self.assertIn("up_for=none down_for=1m00s", last)
+        self.assertEqual(p._down_since, 100)
+
+    def test_connect_success_side_effects_cannot_raise_into_paho(self):
+        p = make_plugin()
+        with mock.patch.object(p, "_subscribe_to_commands", side_effect=RuntimeError("boom")):
+            connect(p, at=0)  # must not raise
+        self.assertTrue(any(l.startswith("ERROR") and "boom" in l for l in self.logs))
 
     def test_no_credentials_in_logs(self):
         with mock.patch.object(homeassistant.mqtt, "Client"):
