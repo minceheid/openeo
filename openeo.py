@@ -251,8 +251,7 @@ def main():
             if "logger" in globalState.stateDict["_moduleDict"]:
                 globalState.stateDict["_moduleDict"]["logger"].late_poll()
 
-            # And make a snapshot of the stateDict for the configserver module to refer to
-            globalState.stateSnapshot=copy.copy(globalState.stateDict)
+
 
         else:
             _LOGGER.debug("Ignoring State Update, we probably had a serial overrun")
@@ -268,7 +267,11 @@ def main():
         globalState.stateDict["sys_1m_load_average"]=psutil.getloadavg()[1]
         
         globalState.stateDict["eo_connected_to_controller"] = charger.connected
-        
+        #print(f"openeo.py: Connected to controller: {globalState.stateDict['eo_connected_to_controller']}")
+
+        # And make a snapshot of the stateDict for the configserver module to refer to
+        globalState.stateSnapshot=copy.copy(globalState.stateDict)
+
         # Notify submodules about new state.  Not all modules want to hear about state changes.
         # @TODO: actually -track- changes and only generate an event when something relevant changes
         for module,modulename in globalState.stateDict["_moduleDict"].items():

@@ -7,7 +7,7 @@ the serial number of the EO controller board and setting the maximum charging ra
 
 """
 #################################################################################
-import logging,time,math
+import logging,time,math,datetime
 import RPi.GPIO as GPIO
 from EO_comms.HomeHub import HomeHub
 from EO_comms.MiniPro2 import MiniPro2
@@ -70,20 +70,28 @@ class openeoChargerClass:
         checksum2 = int(self.generateChecksum(text[:-3]), 16)
         return checksum1 == checksum2
 
+
+    def minute_toggle_wallclock(self) -> bool:
+        return datetime.datetime.now().minute % 2 == 0
+
     def sendSerialCommand(self, packet = ""):
         """
         Sends a serial command to the contoller, adding a checksum. Recieves response,
         checks the checksum, then strips the checksum off and returns the result
         """
+        #print(f"Sending serial command: {packet}")
         packet=packet+self.generateChecksum(packet)
         self.rs485.tx(packet)
         response = self.rs485.rx(recv_delay=0.5)
         if not response:
             _LOGGER.info("Response from serial was empty - possible serial overrun")
+            #print("Response from serial was empty - possible serial overrun")
             self.connected = False
             return None
         else:
             self.connected = True
+            #self.connected = self.minute_toggle_wallclock()  # Toggle the connected state every minute for testing purposes
+            #print(f"Connected state: {self.connected}")
         try:
             response = response.decode("ascii")
         except UnicodeDecodeError:
@@ -115,11 +123,22 @@ class openeoChargerClass:
         packet="+"+self.EO_COMMAND["SET_LIMIT"]+self.my_address+f'{duty:03X}'
         result = self.sendSerialCommand(packet)
 
+        #if self.minute_toggle_wallclock():
+        #    # Simulate a failure to communicate with the main board every other minute, for testing purposes
+        #    self.connected = False
+        #    print("Simulating a failure to communicate with the main board for testing purposes")
+        #    return None
+        
         if result is None: #and self.using_spi:
             # try again
             result = self.sendSerialCommand(packet)
 
-        if result is not None:
+        if result is None:
+            self.connected = False
+            _LOGGER.error("No comms with main board, cannot change current limit!")
+            return None
+
+        else:
             # Perhaps stupidly, we've already stripped off the prefix, which puts the positions
             # for slicing the result string out by one, so let's put that prefix back on..
             result="!"+result
