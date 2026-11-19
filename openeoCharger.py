@@ -86,6 +86,7 @@ class openeoChargerClass:
         if not response:
             _LOGGER.info("Response from serial was empty - possible serial overrun")
             #print("Response from serial was empty - possible serial overrun")
+
             self.connected = False
             return None
         else:

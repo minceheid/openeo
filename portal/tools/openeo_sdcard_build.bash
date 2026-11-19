@@ -10,6 +10,21 @@ exec > >(tee file.log)
 
 # === CONFIGURATION ===
 BASE_IMAGE_URL="https://downloads.raspberrypi.org/raspios_lite_armhf_latest"
+QEMU_BIN="qemu-arm-static"
+
+for arg in "$@"; do
+  case "$arg" in
+    --64bit)
+      BASE_IMAGE_URL="https://downloads.raspberrypi.org/raspios_lite_arm64_latest"
+      QEMU_BIN="qemu-aarch64-static"
+      ;;
+    *)
+      echo "Usage: $0 [--64bit]" >&2
+      exit 1
+      ;;
+  esac
+done
+
 IMAGE_NAME="/tmp/openeo.img"
 MOUNT_DIR="/tmp/rpi.$$"
 
@@ -37,7 +52,7 @@ sudo cp /etc/resolv.conf "$MOUNT_DIR/etc/resolv.conf"
 
 # === QEMU SETUP ===
 echo ">> Copying QEMU binary..."
-sudo cp /usr/bin/qemu-arm-static $MOUNT_DIR/usr/bin/
+sudo cp /usr/bin/$QEMU_BIN $MOUNT_DIR/usr/bin/
 
 echo ">> Binding system folders..."
 for dir in proc sys dev; do
