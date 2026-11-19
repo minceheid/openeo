@@ -36,9 +36,14 @@ jobs:
             gzip \
             xz-utils \
             coreutils \
-            qemu-user-static \
+            qemu-user \
+            qemu-user-binfmt \
             binfmt-support \
             gh
+          # qemu-user-static is no longer a real package; recreate the old names
+          for a in arm aarch64; do
+            [ -e /usr/bin/qemu-$a-static ] || sudo ln -s /usr/bin/qemu-$a /usr/bin/qemu-$a-static
+          done
       - name: Build SD card image
         run: |
           chmod +x ./portal/tools/openeo_sdcard_build.bash
