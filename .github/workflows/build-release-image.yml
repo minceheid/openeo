@@ -13,6 +13,17 @@ jobs:
   build-image:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: 32bit
+            build_args: ""
+            suffix: ""
+          - arch: 64bit
+            build_args: "--64bit"
+            suffix: "_64bit"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,7 +43,7 @@ jobs:
         run: |
           chmod +x ./portal/tools/openeo_sdcard_build.bash
           TMP_IMG="/tmp/openeo.img"
-          ./portal/tools/openeo_sdcard_build.bash
+          ./portal/tools/openeo_sdcard_build.bash ${{ matrix.build_args }}
           if [ ! -f "$TMP_IMG" ] || [ ! -s "$TMP_IMG" ]; then
             echo "Error: SD card image not created or empty!"
             exit 1
@@ -50,15 +61,15 @@ jobs:
           #echo "$RELEASE_TAG" | sudo tee /tmp/openeo_mount/etc/openeo-image-release > /dev/null || true
           #sudo umount /tmp/openeo_mount || true
           # Compress versioned image
-          VERSIONED_IMG="/tmp/openeo_${RELEASE_TAG}.img.xz"
+          VERSIONED_IMG="/tmp/openeo_${RELEASE_TAG}${{ matrix.suffix }}.img.xz"
           xz -T0 -9 -c "$TMP_IMG" > "$VERSIONED_IMG"
           # Compress stable latest image (only after successful build)
-          LATEST_IMG="/tmp/openeo_latest.img.xz"
+          LATEST_IMG="/tmp/openeo_latest${{ matrix.suffix }}.img.xz"
           ln "$VERSIONED_IMG" "$LATEST_IMG"
       - name: Generate checksums
         run: |
-          sha256sum /tmp/openeo_${RELEASE_TAG}.img.xz > /tmp/openeo_${RELEASE_TAG}.img.xz.sha256
-          sha256sum /tmp/openeo_latest.img.xz > /tmp/openeo_latest.img.xz.sha256
+          sha256sum /tmp/openeo_${RELEASE_TAG}${{ matrix.suffix }}.img.xz > /tmp/openeo_${RELEASE_TAG}${{ matrix.suffix }}.img.xz.sha256
+          sha256sum /tmp/openeo_latest${{ matrix.suffix }}.img.xz > /tmp/openeo_latest${{ matrix.suffix }}.img.xz.sha256
       - name: Delete previous latest assets from release
         if: github.event_name == 'release'
         env:
@@ -68,24 +79,23 @@ jobs:
           RELEASE_ID=$(gh release view "${RELEASE_TAG}" --json id -q ".id")
           ASSETS=$(gh release view "${RELEASE_TAG}" --json assets -q ".assets[].name")
           for asset in $ASSETS; do
-            if [[ "$asset" == "openeo_latest.img.xz" || "$asset" == "openeo_latest.img.xz.sha256" ]]; then
+            if [[ "$asset" == "openeo_latest${{ matrix.suffix }}.img.xz" || "$asset" == "openeo_latest${{ matrix.suffix }}.img.xz.sha256" ]]; then
               echo "Deleting previous asset: $asset"
               gh release delete-asset "$asset" --release-id $RELEASE_ID -y
             fi
           done
       - name: Upload images and checksums to release
-        env:
-          RELEASE_TAG: ${{ env.RELEASE_TAG }}
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            /tmp/openeo_${RELEASE_TAG}.img.xz
-            /tmp/openeo_${RELEASE_TAG}.img.xz.sha256
-            /tmp/openeo_latest.img.xz
-            /tmp/openeo_latest.img.xz.sha256
+            /tmp/openeo_${{ env.RELEASE_TAG }}${{ matrix.suffix }}.img.xz
+            /tmp/openeo_${{ env.RELEASE_TAG }}${{ matrix.suffix }}.img.xz.sha256
+            /tmp/openeo_latest${{ matrix.suffix }}.img.xz
+            /tmp/openeo_latest${{ matrix.suffix }}.img.xz.sha256
+      # Only one matrix leg should commit to main, otherwise the pushes race
       - name: Update README badge with latest version
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' && matrix.arch == '32bit'
         run: |
           # Update README badge (replace OpenEO-latest with actual tag)
           sed -i "s/OpenEO-latest/OpenEO-${RELEASE_TAG}/g" README.md
@@ -101,5 +111,5 @@ jobs:
         if: github.event_name != 'release'
         uses: actions/upload-artifact@v4
         with:
-          name: openeo_sdcard_image
-          path: /tmp/openeo_latest.img.xz
+          name: openeo_sdcard_image${{ matrix.suffix }}
+          path: /tmp/openeo_latest${{ matrix.suffix }}.img.xz
