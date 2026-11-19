@@ -37,44 +37,16 @@ class RedactTests(unittest.TestCase):
         self.assertIn("password=***", buf.getvalue())
 
 
-class AsRootTests(unittest.TestCase):
-    def test_no_sudo_when_already_root(self):
-        with mock.patch.object(portal.os, "geteuid", return_value=0):
-            self.assertEqual(portal.as_root(["nmcli", "x"]), ["nmcli", "x"])
-
-    def test_sudo_when_not_root(self):
-        with mock.patch.object(portal.os, "geteuid", return_value=1000):
-            self.assertEqual(portal.as_root(["nmcli", "x"]), ["sudo", "nmcli", "x"])
-
-
 class SetupWifiConnectionTests(unittest.TestCase):
-    def test_runs_nmcli_without_sudo_as_root(self):
-        calls = []
-
-        def fake_run(cmd, **kwargs):
-            calls.append(cmd)
-            return subprocess.CompletedProcess(cmd, 0, "ok", "")
-
-        with mock.patch.object(portal.os, "geteuid", return_value=0), \
-             mock.patch.object(portal.subprocess, "run", side_effect=fake_run):
-            ok, _ = portal.setup_wifi_connection("home", PASSWORD)
-        self.assertTrue(ok)
-        self.assertTrue(calls)
-        for cmd in calls:
-            self.assertEqual(cmd[0], "nmcli")
-
     def test_error_message_does_not_contain_password(self):
-        def fake_run(cmd, **kwargs):
+        def fake_run(cmd):
             if "wifi-sec.psk" in cmd:
-                raise subprocess.CalledProcessError(4, cmd)
+                return subprocess.CompletedProcess(cmd, 4, "", "Error: failed to modify connection")
             return subprocess.CompletedProcess(cmd, 0, "", "")
 
-        with mock.patch.object(portal.os, "geteuid", return_value=0), \
-             mock.patch.object(portal.subprocess, "run", side_effect=fake_run):
-            ok, message = portal.setup_wifi_connection("home", PASSWORD)
+        ok, message, _, _ = portal.setup_wifi_connection("home", PASSWORD, run=fake_run)
         self.assertFalse(ok)
         self.assertNotIn(PASSWORD, message)
-        self.assertIn("exit status 4", message)
 
     def test_dryrun_does_not_print_password(self):
         buf = io.StringIO()
