@@ -948,14 +948,14 @@ class homeassistantClassPlugin(PluginSuperClass):
         return 0
     
     def get_user_settings(self):
-        return [{"type": "textinput", "name": "mqtt_host", "label": "MQTT Broker Host", "default":self.pluginConfig.get("mqtt_host",""), "note":"MQTT Broker Host."},
-                {"type": "textinput", "name": "mqtt_port", "label": "MQTT Broker Port", "default":self.pluginConfig.get("mqtt_port",""), "note":"MQTT Broker Port."},
-                {"type": "textinput", "name": "mqtt_username",  "default":self.pluginConfig.get("mqtt_username",""), "label": "MQTT Username (optional)"},
-                {"type": "textinput", "name": "mqtt_password",  "default":self.pluginConfig.get("mqtt_password",""), "label": "MQTT Password (optional)"},
-                {"type": "textinput", "name": "mqtt_discovery_prefix", "label": "HA Discovery Prefix", "default":self.pluginConfig.get("mqtt_discovery_prefix","")},
-                {"type": "textinput", "name": "device_name", "label": "Device Name in HA", "default":self.pluginConfig.get("device_name","")},
-                {"type": "textinput", "name": "device_id", "label": "Device ID", "default":self.pluginConfig.get("device_id","")},
-                {"type": "slider", "name": "publish_interval", "label": "Publish Interval (seconds)",  "default":self.pluginConfig.get("publish_interval","300"), "range": [5,3600], "step":5, "value_unit":"s"}
+        return [{"type": "textinput", "name": "mqtt_host", "label": "MQTT Broker Host", "default":self.pluginConfig.get("mqtt_host",""), "note":"Hostname or IP address of the MQTT broker that Home Assistant is connected to, for example the Mosquitto add-on on your Home Assistant server."},
+                {"type": "textinput", "name": "mqtt_port", "label": "MQTT Broker Port", "default":self.pluginConfig.get("mqtt_port",""), "note":"The port the broker accepts MQTT connections on, normally 1883. Encrypted (TLS) connections, usually on port 8883, are not supported."},
+                {"type": "textinput", "name": "mqtt_username",  "default":self.pluginConfig.get("mqtt_username",""), "label": "MQTT Username (optional)", "note":"Username for the MQTT broker. Leave blank if your broker accepts connections without a login. With the Home Assistant Mosquitto add-on, use a Home Assistant user or a login set in the add-on's configuration."},
+                {"type": "textinput", "name": "mqtt_password",  "default":self.pluginConfig.get("mqtt_password",""), "label": "MQTT Password (optional)", "note":"Password for the MQTT username above. Leave blank if you have not set a username."},
+                {"type": "textinput", "name": "mqtt_discovery_prefix", "label": "HA Discovery Prefix", "default":self.pluginConfig.get("mqtt_discovery_prefix",""), "note":"The MQTT topic prefix Home Assistant watches to discover new devices. Leave this as homeassistant unless you have changed the discovery prefix in Home Assistant's MQTT integration."},
+                {"type": "textinput", "name": "device_name", "label": "Device Name in HA", "default":self.pluginConfig.get("device_name",""), "note":"The name Home Assistant shows for this charger. Home Assistant also uses it to name the charger's entities when they are first created. Renaming it later does not change existing entity IDs."},
+                {"type": "textinput", "name": "device_id", "label": "Device ID", "default":self.pluginConfig.get("device_id",""), "pattern":'([A-Za-z0-9_])+', "note":"Identifies this charger in its MQTT topics and to Home Assistant. Each charger connected to the same broker needs a different Device ID. Letters, numbers and underscores only. Changing it creates a new device in Home Assistant."},
+                {"type": "slider", "name": "publish_interval", "label": "Publish Interval (seconds)",  "default":self.pluginConfig.get("publish_interval","300"), "range": [5,3600], "step":5, "value_unit":"s", "note":"How often the charger's status (charging state, current, power and energy) is sent to Home Assistant. A shorter interval keeps Home Assistant more up to date but sends more MQTT messages."}
                 ];
 
     
