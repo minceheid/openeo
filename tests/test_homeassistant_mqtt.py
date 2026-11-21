@@ -57,7 +57,7 @@ class SetupTests(unittest.TestCase):
             make_plugin()._setup_mqtt()
         Client.return_value.enable_logger.assert_called_once_with(homeassistant._PAHO_LOGGER)
         self.assertEqual(homeassistant._PAHO_LOGGER.name, homeassistant._LOGGER.name + ".paho")
-        self.assertEqual(homeassistant._PAHO_LOGGER.level, logging.DEBUG)  # testing build; Task 4 → WARNING
+        self.assertEqual(homeassistant._PAHO_LOGGER.level, logging.WARNING)
 
     def test_setup_falls_back_to_v1_callbacks_on_paho_1x(self):
         # Debian bookworm/bullseye ship paho 1.6/1.5, which has no CallbackAPIVersion.

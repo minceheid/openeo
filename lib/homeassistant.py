@@ -38,8 +38,9 @@ except ImportError:
 _LOGGER = logging.getLogger(__name__)
 
 # paho's own log (keepalive pings, socket errors, retries) goes to a child logger.
-# Its level is set here because the root logger runs at INFO.
-PAHO_LOG_LEVEL = logging.DEBUG
+# Only its warnings and errors are kept. To see every keepalive ping, set this to
+# logging.DEBUG: the root logger runs at INFO, so the child's level must be set here.
+PAHO_LOG_LEVEL = logging.WARNING
 _PAHO_LOGGER = _LOGGER.getChild("paho")
 _PAHO_LOGGER.setLevel(PAHO_LOG_LEVEL)
 
