@@ -259,6 +259,38 @@ Export charger data for Home Assistant integration:
 - Endpoint: `http://<charger-ip>/api`
 - Provides current charger state, power metrics, and session data
 
+### Live tariff rate from Home Assistant
+Cost sessions at a live price (for example Intelligent Octopus or Agile) instead of the fixed tariff schedule. Home Assistant pushes the current rate to the charger over MQTT; the charger never holds an HA credential.
+
+**Enable it**
+1. Make sure the Home Assistant plugin is enabled and connected to your MQTT broker.
+2. In Settings → Session, turn on **Use live rate from Home Assistant**. It takes effect from the next session. **HA rate stale after** (5-60 min, default 15) sets how long a rate is trusted without an update.
+3. Import the blueprint: [![Open your Home Assistant instance and import the blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fminceheid%2Fopeneo%2Fmain%2Fhomeassistant%2Fblueprints%2Fopeneo_tariff_rate.yaml)
+4. Create an automation from it, choose your rate sensor, and leave the device id as `openeo_charger_1` unless you changed it.
+
+The blueprint publishes (not retained) to `openeo/<device_id>/command/tariff_rate/set` on every sensor change, every 5 minutes, when HA starts and when the charger comes online. For manual testing you can publish a bare number (major currency per kWh), or `unavailable`.
+
+**Supported units** are read from the sensor's unit of measurement (case and spaces ignored):
+
+| Unit | Treated as |
+|---|---|
+| `GBP/kWh`, `EUR/kWh` (any 3-letter currency) | used as is |
+| `p/kWh`, `pence/kWh`, `c/kWh`, `ct/kWh`, `¢/kWh`, `öre/kWh` | divided by 100 |
+| `GBP/MWh` (any 3-letter currency) | divided by 1000 |
+
+A missing or unrecognised unit is treated as unavailable: the schedule rate is used and a warning is logged once per unit. A rate below -1 or above 5 per kWh also logs a warning once per value, but is still used (negative Agile prices are valid).
+
+**Half-hour settlement.** Suppliers settle in half-hour periods, and Intelligent Octopus prices a whole half-hour at the off-peak rate when a dispatch overlaps it. So energy costed from HA is settled per half-hour slot (HH:00-HH:29, HH:30-HH:59) at the last HA rate received in that slot. The live session cost is provisional for the open slot and can drop partway through it when the rate flips. Energy costed at the schedule rate is never deferred.
+
+**Fallback.** The charger uses the schedule rate whenever the HA rate is stale (no update for the configured time), the sensor is unavailable, Home Assistant is reported offline, or MQTT is disconnected. Fallback is visible in:
+- System Logs → App Events (and the journal), for example `Tariff: HA rate stale (no update for 15m) - falling back to schedule rate 0.27048`, and `Tariff: HA rate restored 0.07000`
+- the session table detail: "x kWh costed at schedule rate (HA rate unavailable)"
+- the Home Assistant **Rate Source** sensor (`ha` or `schedule`); **Current Rate** shows the rate in use
+
+**Optional Mosquitto ACL.** The charger only ever accepts a rate on its own topic. If your broker supports ACLs (such as the Mosquitto add-on), you can also restrict the charger's login to `openeo/#`, plus read access to `<discovery prefix>/status` (default `homeassistant/status`) so it can see HA go offline.
+
+**Session Cost sensor.** Its state class changed from `total_increasing` to `total` (with a `last_reset`) so that cost can fall during a slot. Home Assistant may show a one-time state class repair notice; long-term statistics sums are unaffected.
+
 ### Prometheus
 Export metrics in Prometheus format for time-series monitoring:
 - Endpoint: `http://<charger-ip>/metrics`

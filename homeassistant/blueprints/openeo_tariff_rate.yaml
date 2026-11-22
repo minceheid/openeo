@@ -1,0 +1,56 @@
+blueprint:
+  name: OpenEO live tariff rate
+  description: >
+    Sends the current value of a rate sensor (for example the Octopus Energy
+    "current rate" sensor) to an OpenEO charger over MQTT, so session costs use
+    the live price. The sensor's unit of measurement is sent along and detected
+    by the charger (GBP/kWh, p/kWh, GBP/MWh and similar). The rate is sent on
+    every change, every 5 minutes as a heartbeat, when Home Assistant starts, and
+    when the charger comes online. Enable "Use live rate from Home Assistant" in
+    the charger's Session settings.
+  domain: automation
+  input:
+    rate_entity:
+      name: Rate sensor
+      description: Sensor whose state is the current price per kWh.
+      selector:
+        entity:
+          domain: sensor
+    device_id:
+      name: OpenEO device id
+      description: The device id of the charger's Home Assistant plugin.
+      default: openeo_charger_1
+      selector:
+        text:
+
+mode: queued
+max_exceeded: silent
+
+trigger_variables:
+  device_id: !input device_id
+
+variables:
+  rate_entity: !input rate_entity
+
+triggers:
+  - trigger: state
+    entity_id: !input rate_entity
+  - trigger: time_pattern
+    minutes: "/5"
+  - trigger: homeassistant
+    event: start
+  - trigger: mqtt
+    topic: "openeo/{{ device_id }}/availability"
+    payload: "online"
+
+actions:
+  - action: mqtt.publish
+    data:
+      topic: "openeo/{{ device_id }}/command/tariff_rate/set"
+      retain: false
+      payload: >-
+        {% if states(rate_entity) | is_number -%}
+        {{ {'rate': states(rate_entity), 'unit': state_attr(rate_entity, 'unit_of_measurement')} | to_json }}
+        {%- else -%}
+        unavailable
+        {%- endif %}
