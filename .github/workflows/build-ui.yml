@@ -1,0 +1,97 @@
+name: Build UI
+
+# Rebuilds openeo-ui (React/Vite) into lib/configserver/static/ui.js + ui.css
+# whenever UI source changes, and commits the result back to the branch.
+#
+# Requires a repo secret UI_BUILD_TOKEN: a PAT (classic or fine-grained with
+# Contents: read+write) that can push to THIS repository. Without the secret
+# the workflow still runs as a CI check (build must succeed) but skips the
+# commit step.
+#
+# The committed files live under lib/configserver/static/, which is outside
+# the openeo-ui/** path filter, so this never re-triggers itself.
+#
+# Note: lib/configserver/static/index.html is hand-maintained (it references
+# the stable ui.js/ui.css names and strips dev-only links) and is intentionally
+# NOT overwritten by the build.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "openeo-ui/**"
+      - ".github/workflows/build-ui.yml"
+  pull_request:
+    paths:
+      - "openeo-ui/**"
+      - ".github/workflows/build-ui.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: openeo-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: openeo-ui
+        run: npm ci --no-audit --no-fund
+
+      - name: Build
+        working-directory: openeo-ui
+        run: npm run build
+
+      - name: Stage built assets
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          js=(openeo-ui/dist/assets/*.js)
+          css=(openeo-ui/dist/assets/*.css)
+          [ "${#js[@]}" -eq 1 ]  || { echo "::error::Expected exactly one JS bundle, found ${#js[@]}";  exit 1; }
+          [ "${#css[@]}" -eq 1 ] || { echo "::error::Expected exactly one CSS bundle, found ${#css[@]}"; exit 1; }
+          cp "${js[0]}"  lib/configserver/static/ui.js
+          cp "${css[0]}" lib/configserver/static/ui.css
+
+      - name: Commit and push rebuilt assets
+        # Note: the `secrets` context is not allowed in step `if:` conditions,
+        # so the "secret present?" check happens inside the script.
+        env:
+          UI_BUILD_TOKEN: ${{ secrets.UI_BUILD_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${UI_BUILD_TOKEN:-}" ]; then
+            echo "UI_BUILD_TOKEN secret not set - skipping commit (CI check only)."
+            exit 0
+          fi
+          if [ -z "$(git status --porcelain lib/configserver/static)" ]; then
+            echo "Built assets are unchanged - nothing to commit."
+            exit 0
+          fi
+          git config user.name  "ui-build"
+          git config user.email "ui-build[bot]@users.noreply.github.com"
+          git add lib/configserver/static/ui.js lib/configserver/static/ui.css
+          git commit -m "chore(ui): rebuild static assets from openeo-ui"
+          # Works for both push events (GITHUB_HEAD_REF empty -> branch name)
+          # and PRs (commits to the PR head branch).
+          BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          # actions/checkout injects the (read-only, per `permissions:`)
+          # GITHUB_TOKEN as http.https://github.com/.extraheader in the local
+          # .git/config. That header wins over URL-embedded credentials, so
+          # every push would authenticate as the read-only bot and fail with
+          # "Write access to repository not granted". Remove it first.
+          git config --unset-all http.https://github.com/.extraheader || true
+          git config credential.helper \
+            "!f() { echo username=x-access-token; echo password=\$UI_BUILD_TOKEN; }; f"
+          git push origin "HEAD:refs/heads/${BRANCH}"
+          echo "Committed rebuilt assets to ${BRANCH}"
