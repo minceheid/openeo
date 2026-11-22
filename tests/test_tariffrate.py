@@ -101,6 +101,25 @@ class ApplyRateMessageTests(unittest.TestCase):
         self.assertEqual(logs[0][1], "Tariff: invalid HA rate payload '{bad' - using schedule rate")
         self.assertIsNone(state["eo_ha_rate"]["value"])
 
+    def test_invalid_payload_truncated(self):
+        logs = []
+        apply_rate_message("x" * 500, 2.0, {}, set(), lambda l, m: logs.append(m))
+        self.assertEqual(logs[0], "Tariff: invalid HA rate payload " + repr("x" * 64) + " - using schedule rate")
+
+    def test_unit_truncated(self):
+        logs = []
+        apply_rate_message('{"rate": "1", "unit": "%s"}' % ("u" * 200), 2.0, {}, set(), lambda l, m: logs.append(m))
+        self.assertEqual(len(logs), 1)
+        self.assertIn("'" + "u" * 32 + "'", logs[0])
+        self.assertNotIn("u" * 33, logs[0])
+
+    def test_warned_units_capped(self):
+        warned, logs = set(), []
+        for i in range(30):
+            apply_rate_message('{"rate": "1", "unit": "bad%d"}' % i, 1.0, {}, warned, lambda l, m: logs.append(m))
+        self.assertEqual(len(logs), 20)
+        self.assertEqual(len(warned), 20)
+
     def test_unavailable_no_log(self):
         state, logs = {}, []
         apply_rate_message("unavailable", 3.0, state, set(), lambda l, m: logs.append(m))
@@ -171,6 +190,13 @@ class SessionCostAccumulatorTests(unittest.TestCase):
         a.settle()
         self.assertEqual(a.cost_by_tariff(), {0.27: 3_600_000, 0.07: 3_600_000})
 
+    def test_negative_zero_rate_normalised(self):
+        a = SessionCostAccumulator()
+        a.add(dt(5, 0), 10, -0.000001, "ha")
+        self.assertEqual(str(a.last_ha_rate), "0.0")
+        a.settle()
+        self.assertEqual([str(k) for k in a.cost_by_tariff()], ["0.0"])
+
     def test_ha_rate_rounded_schedule_not(self):
         a = SessionCostAccumulator()
         a.add(dt(5, 0), 1, 0.1234567, "ha")
@@ -192,6 +218,31 @@ class TransitionMessageTests(unittest.TestCase):
     def test_waiting_for_first(self):
         self.assertEqual(transition_message(None, ("schedule", "no_data"), 0.27048, False, 15),
                          (logging.INFO, "Tariff: waiting for first HA rate - using schedule rate 0.27048"))
+
+    def test_startup_mqtt_disconnected_is_waiting(self):
+        for reason in ("mqtt_disconnected", "ha_offline", "no_data"):
+            self.assertEqual(transition_message(None, ("schedule", reason), 0.27048, False, 15),
+                             (logging.INFO, "Tariff: waiting for first HA rate - using schedule rate 0.27048"))
+
+    def test_moving_between_waiting_reasons_is_silent(self):
+        self.assertIsNone(transition_message(("schedule", "mqtt_disconnected"), ("schedule", "no_data"), 0.27, False, 15))
+        self.assertIsNone(transition_message(("schedule", "ha_offline"), ("schedule", "mqtt_disconnected"), 0.27, False, 15))
+
+    def test_entering_waiting_from_other_reason_logs_info(self):
+        self.assertEqual(transition_message(("schedule", "unavailable"), ("schedule", "no_data"), 0.27, False, 15)[0],
+                         logging.INFO)
+
+    def test_stale_and_unavailable_still_warn_before_first_ha(self):
+        for reason in ("stale", "unavailable"):
+            self.assertEqual(transition_message(None, ("schedule", reason), 0.27, False, 15)[0], logging.WARNING)
+
+    def test_mqtt_disconnected_warns_after_having_ha(self):
+        self.assertEqual(transition_message(None, ("schedule", "mqtt_disconnected"), 0.27, True, 15)[0], logging.WARNING)
+
+    def test_unknown_reason_does_not_crash(self):
+        level, msg = transition_message(self.HA, ("schedule", "brand_new"), 0.27, True, 15)
+        self.assertEqual(level, logging.WARNING)
+        self.assertIn("brand_new", msg)
 
     def test_no_data_after_having_ha_warns(self):
         level, msg = transition_message(self.HA, ("schedule", "no_data"), 0.27048, True, 15)

@@ -324,7 +324,7 @@ def test_user_settings_controls(env):
     assert controls["ha_rate_enabled"]["default"] is False
     slider = controls["ha_rate_stale_minutes"]
     assert slider["type"] == "slider"
-    assert slider["range"] == [5, 60] and slider["step"] == 5 and slider["default"] == 15
+    assert slider["range"] == [10, 60] and slider["step"] == 5 and slider["default"] == 15
 
 
 def test_cost_reset_unchanged_by_idle_polls(env, clock, state):
@@ -348,3 +348,16 @@ def test_cost_reset_moves_when_session_with_energy_resets(env, clock, state):
     plugin.poll()
     assert state["eo_session_cost_reset"] == clock.dt.astimezone().isoformat(timespec="seconds")
     assert state["eo_session_cost_reset"] != first
+
+
+def test_startup_mqtt_disconnected_logs_info_waiting_not_warning(env, clock, state, config_db, caplog):
+    state["eo_mqtt_connected"] = False
+    p = make_plugin(True)
+    with caplog.at_level(logging.INFO):
+        run_polls(p, clock, 2)
+        state["eo_mqtt_connected"] = True
+        run_polls(p, clock, 2)
+    assert not warnings(caplog, "falling back")
+    waiting = [r for r in caplog.records
+               if r.levelno == logging.INFO and "waiting for first HA rate" in r.getMessage()]
+    assert len(waiting) == 1

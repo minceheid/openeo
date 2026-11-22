@@ -3,7 +3,6 @@
 No MQTT, sqlite or globalState imports; callers pass state and a log callable.
 """
 
-import datetime
 import json
 import logging
 import math
@@ -12,6 +11,10 @@ import re
 _UNAVAILABLE = {"unavailable", "unknown", "none"}
 _MINOR_UNITS = {"p", "pence", "c", "ct", "¢", "öre"}
 _DENOMINATORS = {"kwh": 1.0, "mwh": 0.001}
+_WAITING_REASONS = {"mqtt_disconnected", "ha_offline", "no_data"}
+_MAX_WARNED_UNITS = 20
+_MAX_PAYLOAD_LOG = 64
+_MAX_UNIT_LOG = 32
 
 
 def normalise_rate(value, unit):
@@ -90,11 +93,13 @@ def apply_rate_message(payload, now, state, warned_units, log):
     """
     rate, unit, status = parse_rate_payload(payload)
     if status == "bad_unit":
-        if unit not in warned_units:
+        if unit not in warned_units and len(warned_units) < _MAX_WARNED_UNITS:
             warned_units.add(unit)
-            log(logging.WARNING, f"Tariff: unrecognised unit '{unit}' from HA - using schedule rate")
+            shown = str(unit)[:_MAX_UNIT_LOG]
+            log(logging.WARNING, f"Tariff: unrecognised unit '{shown}' from HA - using schedule rate")
     elif status == "invalid":
-        log(logging.WARNING, f"Tariff: invalid HA rate payload '{payload}' - using schedule rate")
+        shown = payload[:_MAX_PAYLOAD_LOG] if isinstance(payload, str) else str(payload)[:_MAX_PAYLOAD_LOG]
+        log(logging.WARNING, f"Tariff: invalid HA rate payload {shown!r} - using schedule rate")
     state["eo_ha_rate"] = {"value": rate if status == "ok" else None, "received_at": now}
 
 
@@ -131,7 +136,8 @@ _FALLBACK_TEXT = {
 def transition_message(prev, new, rate, ever_had_ha, stale_minutes):
     """Return (level, message) to log when the (source, reason) pair changes, else None.
 
-    Silent when nothing changed or the feature is disabled. ever_had_ha means a fresh HA rate
+    Silent when nothing changed or the feature is disabled. Until a fresh HA rate has been
+    selected, mqtt_disconnected / ha_offline / no_data are one INFO "waiting" state. ever_had_ha means a fresh HA rate
     has been selected at least once before this call.
     """
     if new == prev or new[1] == "disabled":
@@ -141,11 +147,14 @@ def transition_message(prev, new, rate, ever_had_ha, stale_minutes):
         if ever_had_ha:
             return logging.WARNING, f"Tariff: HA rate restored {rate:.5f}"
         return logging.INFO, f"Tariff: HA rate received {rate:.5f}"
-    if reason == "no_data":
-        if ever_had_ha:
-            return logging.WARNING, f"Tariff: no HA rate since reconnect - using schedule rate {rate}"
+    if not ever_had_ha and reason in _WAITING_REASONS:
+        # Startup: MQTT, HA and the first rate arrive in any order, so these reasons are one state.
+        if prev is not None and prev[0] == "schedule" and prev[1] in _WAITING_REASONS:
+            return None
         return logging.INFO, f"Tariff: waiting for first HA rate - using schedule rate {rate}"
-    text = _FALLBACK_TEXT[reason].format(stale_minutes=stale_minutes)
+    if reason == "no_data":
+        return logging.WARNING, f"Tariff: no HA rate since reconnect - using schedule rate {rate}"
+    text = _FALLBACK_TEXT.get(reason, reason).format(stale_minutes=stale_minutes)
     return logging.WARNING, f"Tariff: HA rate {text} - falling back to schedule rate {rate}"
 
 
@@ -175,7 +184,7 @@ class SessionCostAccumulator:
             self.settle()
             self._slot = key
         if source == "ha":
-            self.last_ha_rate = round(rate, 5)
+            self.last_ha_rate = round(rate, 5) + 0.0  # + 0.0 turns -0.0 into 0.0
             self.pending_joules += joules
         else:
             self.settled[rate] = self.settled.get(rate, 0) + joules

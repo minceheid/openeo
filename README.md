@@ -264,7 +264,7 @@ Cost sessions at a live price (for example Intelligent Octopus or Agile) instead
 
 **Enable it**
 1. Make sure the Home Assistant plugin is enabled and connected to your MQTT broker.
-2. In Settings → Session, turn on **Use live rate from Home Assistant**. It takes effect from the next session. **HA rate stale after** (5-60 min, default 15) sets how long a rate is trusted without an update.
+2. In Settings → Session, turn on **Use live rate from Home Assistant**. It takes effect from the next session or daily row. **HA rate stale after** (10-60 min, default 15) sets how long a rate is trusted without an update; it must be longer than the blueprint's 5-minute heartbeat.
 3. Import the blueprint: [![Open your Home Assistant instance and import the blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fminceheid%2Fopeneo%2Fmain%2Fhomeassistant%2Fblueprints%2Fopeneo_tariff_rate.yaml)
 4. Create an automation from it, choose your rate sensor, and leave the device id as `openeo_charger_1` unless you changed it.
 

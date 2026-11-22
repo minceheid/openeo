@@ -74,6 +74,8 @@ class chargersessionClassPlugin(PluginSuperClass):
         # Snapshot whether this session is costed from the live HA rate, so a settings change
         # takes effect from the next session. The old accumulator is settled before it is replaced.
         if self._accumulator is not None:
+            # Only updates memory: the row already holds the pending energy at the last rate
+            # from the last once-a-minute write.
             self._accumulator.settle()
         self._ha_enabled=bool(self.pluginConfig.get("ha_rate_enabled",False))
         self._accumulator=SessionCostAccumulator()
@@ -365,5 +367,5 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
 
     def get_user_settings(self):
         return [{"type": "tariff", "name": "tariff", "label": "Tariff", "default":self.pluginConfig.get("tariff",""),"note":"Set the tariff for your electricity supply. The full 24 hour period must be specified with no gaps. The cost is measured per kWh. This control may be difficult to use on mobile devices - use from a larger screen if difficulty is experienced."},
-            {"type": "boolean", "name": "ha_rate_enabled", "label": "Use live rate from Home Assistant", "default":self.pluginConfig.get("ha_rate_enabled",False), "note":"Costs charging at a rate pushed from Home Assistant by the OpenEO tariff blueprint, settled per half-hour. The tariff above is used whenever the HA rate is stale or unavailable. Takes effect from the next session."},
-            {"type": "slider", "name": "ha_rate_stale_minutes", "label": "HA rate stale after", "default":self.pluginConfig.get("ha_rate_stale_minutes",15), "range": [5,60], "step":5, "value_unit":"min", "note":"Fall back to the tariff if no rate has arrived from Home Assistant for this long."}];
+            {"type": "boolean", "name": "ha_rate_enabled", "label": "Use live rate from Home Assistant", "default":self.pluginConfig.get("ha_rate_enabled",False), "note":"Costs charging at a rate pushed from Home Assistant by the OpenEO tariff blueprint, settled per half-hour. The tariff above is used whenever the HA rate is stale or unavailable. Takes effect from the next session or daily row."},
+            {"type": "slider", "name": "ha_rate_stale_minutes", "label": "HA rate stale after", "default":self.pluginConfig.get("ha_rate_stale_minutes",15), "range": [10,60], "step":5, "value_unit":"min", "note":"Fall back to the tariff if no rate has arrived from Home Assistant for this long. Must be longer than the blueprint's 5 minute heartbeat."}];
