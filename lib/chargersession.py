@@ -11,6 +11,7 @@ import globalState
 import datetime,time
 import sqlite3,logging,re,json
 from threading import Lock
+from lib.tariffrate import select_rate, SessionCostAccumulator, transition_message
 
 
 # logging for use in this module
@@ -23,7 +24,9 @@ class chargersessionClassPlugin(PluginSuperClass):
     pluginParamSpec={ "enabled": {"type": "bool","default": True},
 			"tariff": {
                 "type": "json",
-                "default":'[{"start": "0000", "end": "0029", "cost": 0.27048},{"start": "0030", "end": "0529", "cost": 0.04998},{"start": "0530", "end": "2359", "cost": 0.27048}]'}}
+                "default":'[{"start": "0000", "end": "0029", "cost": 0.27048},{"start": "0030", "end": "0529", "cost": 0.04998},{"start": "0530", "end": "2359", "cost": 0.27048}]'},
+            "ha_rate_enabled": {"type": "bool", "default": False},
+            "ha_rate_stale_minutes": {"type": "int", "default": 15}}
             
     lastloop=datetime.datetime.now()
 
@@ -39,6 +42,13 @@ class chargersessionClassPlugin(PluginSuperClass):
     SESSION_TABLE_3="session_v3"
     SESSION_TABLE_4="session_v4"
     SESSION_TABLE_5="session_v5"
+    SESSION_TABLE_6="session_v6"
+
+    # Live HA tariff rate state. _accumulator is per session; the rest is per process.
+    _accumulator=None
+    _ha_enabled=False
+    _tariff_state=None
+    _ever_had_ha=False
         
     def reset_session(self):
         # Reset all session counters
@@ -57,6 +67,55 @@ class chargersessionClassPlugin(PluginSuperClass):
         for x in self.pluginConfig.get("tariff",[]):
             globalState.stateDict["session_tariff"].append({"start":x["start"],"end":x["end"],"cost":x["cost"],"joules":0})
 
+        self._reset_ha_rate_accounting()
+
+    def _reset_ha_rate_accounting(self):
+        # Snapshot whether this session is costed from the live HA rate, so a settings change
+        # takes effect from the next session. The old accumulator is settled before it is replaced.
+        if self._accumulator is not None:
+            self._accumulator.settle()
+        self._ha_enabled=bool(self.pluginConfig.get("ha_rate_enabled",False))
+        self._accumulator=SessionCostAccumulator()
+        if not self._ha_enabled:
+            globalState.stateDict["eo_tariff_rate_source"]="schedule"
+        globalState.stateDict["eo_session_cost_reset"]=datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+
+    def _tariff_log(self, level, msg):
+        _LOGGER.log(level, msg)
+        if globalState.configDB is not None:
+            globalState.configDB.logwrite(msg)
+
+    def _schedule_rate(self, current_hhmm):
+        # Same band lookup as poll(). Energy in a gap in the tariff is not costed on the
+        # schedule path either, so a gap costs 0.
+        for x in globalState.stateDict["session_tariff"]:
+            if x["start"]<=current_hhmm<=x["end"]:
+                return x["cost"]
+        return 0.0
+
+    def _update_ha_rate(self, current_hhmm):
+        # Choose the live HA rate or the schedule rate, and log transitions between them.
+        stale_minutes=self.pluginConfig.get("ha_rate_stale_minutes",15)
+        rate, source, reason = select_rate(time.time(),
+            globalState.stateDict.get("eo_ha_rate"),
+            globalState.stateDict.get("eo_ha_online"),
+            globalState.stateDict.get("eo_mqtt_connected",False),
+            self._ha_enabled, stale_minutes, self._schedule_rate(current_hhmm))
+
+        transition=transition_message(self._tariff_state, (source, reason), rate, self._ever_had_ha, stale_minutes)
+        if transition:
+            self._tariff_log(*transition)
+        self._tariff_state=(source, reason)
+
+        if source=="ha":
+            self._ever_had_ha=True
+            if not -1<=rate<=5 and rate not in self._warned_rates:
+                self._warned_rates.add(rate)
+                self._tariff_log(logging.WARNING, f"Tariff: HA rate {rate} is outside the expected range -1..5 per kWh - check the entity unit")
+
+        globalState.stateDict["eo_session_current_tariff"]=rate
+        globalState.stateDict["eo_tariff_rate_source"]=source
+
     def poll(self):
         # If charger state indicates that the car might be disconnected, then
         # we reset the session kWh count, otherwise we calculate how many additional
@@ -68,6 +127,8 @@ class chargersessionClassPlugin(PluginSuperClass):
             if x["start"]<=current_hhmm<=x["end"]:
                 globalState.stateDict["eo_session_current_tariff"]=x["cost"]
                 break
+        if self._ha_enabled:
+            self._update_ha_rate(current_hhmm)
 
         # Test flag used for development testing. Set to False for production use
         # When set to True, then there will be repeated (fictonal) sessions generated
@@ -109,10 +170,15 @@ class chargersessionClassPlugin(PluginSuperClass):
                 joulesThisLoop = int(globalState.stateDict["eo_live_voltage"] * globalState.stateDict["eo_current_vehicle"] * secondsSinceLastLoop)
 
             globalState.stateDict["eo_session_joules"]+= joulesThisLoop
-            for x in globalState.stateDict["session_tariff"]:
-                if x["start"]<=current_hhmm<=x["end"]:
-                    x["joules"]+=joulesThisLoop
-                    break
+            if self._ha_enabled:
+                self._accumulator.add(thisloop, joulesThisLoop,
+                    globalState.stateDict["eo_session_current_tariff"],
+                    globalState.stateDict["eo_tariff_rate_source"])
+            else:
+                for x in globalState.stateDict["session_tariff"]:
+                    if x["start"]<=current_hhmm<=x["end"]:
+                        x["joules"]+=joulesThisLoop
+                        break
 
             # If eo_current_vehicle is >=2, then the last cycle is counted against the number of seconds that this session has been actively
             # trying to charge
@@ -122,13 +188,17 @@ class chargersessionClassPlugin(PluginSuperClass):
             globalState.stateDict["eo_session_kwh"]= round(globalState.stateDict["eo_session_joules"] / 3600000,2)
             # Calculate cost of the session so far, by multiplying the joules charged during each tariff period by the cost of that tariff, 
             # and summing across all tariff periods.
-            cost=0
-            joules_by_tariff={}
-            for x in globalState.stateDict["session_tariff"]:
-                cost+=x["cost"] * (x["joules"] / 3600000)
-                joules_by_tariff[x["cost"]] = joules_by_tariff.get(x["cost"], 0) + x["joules"]
+            if self._ha_enabled:
+                globalState.stateDict["eo_session_cost"]=round(self._accumulator.cost(),2)
+                joules_by_tariff=self._accumulator.cost_by_tariff()
+            else:
+                cost=0
+                joules_by_tariff={}
+                for x in globalState.stateDict["session_tariff"]:
+                    cost+=x["cost"] * (x["joules"] / 3600000)
+                    joules_by_tariff[x["cost"]] = joules_by_tariff.get(x["cost"], 0) + x["joules"]
 
-            globalState.stateDict["eo_session_cost"]=round(cost,2)
+                globalState.stateDict["eo_session_cost"]=round(cost,2)
 
             # Debug Logging
             if (TEST==True):
@@ -139,11 +209,19 @@ class chargersessionClassPlugin(PluginSuperClass):
                 if (TEST==True):
                     print(f"Sessionlog {globalState.stateDict['eo_session_timestamp']} writing")
 
-                self.writesessionlog(globalState.stateDict["eo_session_timestamp"],
-                    globalState.stateDict["eo_session_joules"],
-                    globalState.stateDict["eo_session_seconds_charged"],
-                    globalState.stateDict["eo_session_cost"],
-                    json.dumps(joules_by_tariff))
+                if self._ha_enabled:
+                    self.writesessionlog(globalState.stateDict["eo_session_timestamp"],
+                        globalState.stateDict["eo_session_joules"],
+                        globalState.stateDict["eo_session_seconds_charged"],
+                        globalState.stateDict["eo_session_cost"],
+                        json.dumps(joules_by_tariff),
+                        self._accumulator.fallback_joules)
+                else:
+                    self.writesessionlog(globalState.stateDict["eo_session_timestamp"],
+                        globalState.stateDict["eo_session_joules"],
+                        globalState.stateDict["eo_session_seconds_charged"],
+                        globalState.stateDict["eo_session_cost"],
+                        json.dumps(joules_by_tariff))
 
         # Reset the time counter for next time.
         self.lastloop=thisloop
@@ -164,11 +242,11 @@ class chargersessionClassPlugin(PluginSuperClass):
 
 
     # Write session log to sqlite3 db
-    def writesessionlog(self,timestamp,joules,seconds_charged,cost=0.0,cost_by_tariff=""):
+    def writesessionlog(self,timestamp,joules,seconds_charged,cost=0.0,cost_by_tariff="",fallback_joules=0):
         with self.lock:
             now=int(time.time())
-            sql=f'''REPLACE INTO {self.SESSION_TABLE_5} (first_timestamp, last_timestamp, day_timestamp, joules,seconds_charged, cost,cost_by_tariff) \
-VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds_charged},{cost},\'{cost_by_tariff}\')
+            sql=f'''REPLACE INTO {self.SESSION_TABLE_6} (first_timestamp, last_timestamp, day_timestamp, joules,seconds_charged, cost,cost_by_tariff,fallback_joules) \
+VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds_charged},{cost},\'{cost_by_tariff}\',{int(fallback_joules)})
 -- {self.timestamp_text(timestamp)} {self.timestamp_text(now)} {self.timestamp_text(self.timestamp_start_of_today())}'''
             #print(sql)
             self.cursor.execute(sql)
@@ -181,8 +259,8 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
         six_months_ago=int(time.time()) - 60*60*24*180
         with self.lock:
             # Only retrieve sizeable sessions to remove any noise from short term connections from plug/unplug
-            self.cursor.execute(f"SELECT first_timestamp, last_timestamp, day_timestamp, joules, seconds_charged, cost, cost_by_tariff \
-            FROM {self.SESSION_TABLE_5} \
+            self.cursor.execute(f"SELECT first_timestamp, last_timestamp, day_timestamp, joules, seconds_charged, cost, cost_by_tariff, fallback_joules \
+            FROM {self.SESSION_TABLE_6} \
             where first_timestamp>{six_months_ago}")
             rows = self.cursor.fetchall()
 
@@ -194,7 +272,8 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
                "joules":x[3],
                "seconds_charged":x[4],
                "cost":x[5],
-               "cost_by_tariff":x[6]}
+               "cost_by_tariff":x[6],
+               "fallback_joules":x[7]}
                )
         
         # iterate over the data structure and generate a dict of first_timestamp and the sum of joules for that first_timestamp.
@@ -218,11 +297,15 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
     def __init__(self,configParam):
         super().__init__(configParam)
 
+        # Out-of-range HA rates already warned about, so each distinct rate is logged once.
+        self._warned_rates=set()
+
         # Reset session counters on startup, to ensure that we start with a clean session. This is important because 
         # if the software is restarted during a charging session, we don't want to carry over the old session data 
         # into the new session.
         self.reset_session()
         globalState.stateDict["eo_session_timestamp"]=int(time.time())
+        self._warn_if_ha_plugin_disabled()
 
         # Create mutex lock for protecting transactions - noting that the get_sessions() method will be called from
         # another thread in configserver.
@@ -235,7 +318,7 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
         self.cursor = self.conn.cursor()
         
         self.cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS {self.SESSION_TABLE_5} (
+            CREATE TABLE IF NOT EXISTS {self.SESSION_TABLE_6} (
                 first_timestamp INTEGER NOT NULL,
                 day_timestamp INTEGER NOT NULL,
                 last_timestamp INTEGER,
@@ -243,26 +326,24 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
                 seconds_charged INTEGER NOT NULL,
                 cost REAL NOT NULL,
                 cost_by_tariff text not null,
+                fallback_joules INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (first_timestamp, day_timestamp)
             )
         ''')
 
-        # v5.8 session log db format no longer supported for migration - installation will just create an empty log
-        # v5.9 had a different format session table, so if it exists, then
+        # session_v4 session log db format no longer supported for migration - installation will just create an empty log
+        # session_v5 had no fallback_joules column, so if it exists, then
         #      we migrate the data across to the new table and drop the old table
         with self.lock:
             try:
-                sql=f"SELECT first_timestamp, last_timestamp, day_timestamp, joules, seconds_charged,cost FROM {self.SESSION_TABLE_4}"
+                sql=f"SELECT first_timestamp, last_timestamp, day_timestamp, joules, seconds_charged, cost, cost_by_tariff FROM {self.SESSION_TABLE_5}"
                 self.cursor.execute(sql)
                 rows = self.cursor.fetchall()
-                print("Migrating v3 session log data")
+                print("Migrating v5 session log data")
                 for x in rows:
-                    now=datetime.datetime.fromtimestamp(x[0]).astimezone()
-                    sql=f"REPLACE INTO {self.SESSION_TABLE_5} (first_timestamp, last_timestamp, day_timestamp, joules,seconds_charged,cost,cost_by_tariff) VALUES ({x[0]}, {x[1]}, {x[2]}, {x[3]}, {x[4]},{x[5]},'')"
-                    self.cursor.execute(sql)
-                    #print(sql)
+                    self.cursor.execute(f"REPLACE INTO {self.SESSION_TABLE_6} (first_timestamp, last_timestamp, day_timestamp, joules,seconds_charged,cost,cost_by_tariff,fallback_joules) VALUES (?,?,?,?,?,?,?,0)", x)
 
-                self.cursor.execute(f"drop table {self.SESSION_TABLE_4}")
+                self.cursor.execute(f"drop table {self.SESSION_TABLE_5}")
                 self.conn.commit()
             except Exception as err:
                 if re.search("^no such table:",str(err)):
@@ -271,5 +352,14 @@ VALUES ({timestamp}, {now}, {self.timestamp_start_of_today()}, {joules},{seconds
                 else:
                     print("Error migrating old session data: ",err)
 
+    def _warn_if_ha_plugin_disabled(self):
+        if not self.pluginConfig.get("ha_rate_enabled",False) or globalState.configDB is None:
+            return
+        ha_enabled=globalState.configDB.get("homeassistant","enabled")
+        if ha_enabled not in (True,"True","true","1",1):
+            self._tariff_log(logging.WARNING, "Tariff: live HA rate enabled but the Home Assistant plugin is disabled - using schedule rate")
+
     def get_user_settings(self):
-        return [{"type": "tariff", "name": "tariff", "label": "Tariff", "default":self.pluginConfig.get("tariff",""),"note":"Set the tariff for your electricity supply. The full 24 hour period must be specified with no gaps. The cost is measured per kWh. This control may be difficult to use on mobile devices - use from a larger screen if difficulty is experienced."}];
+        return [{"type": "tariff", "name": "tariff", "label": "Tariff", "default":self.pluginConfig.get("tariff",""),"note":"Set the tariff for your electricity supply. The full 24 hour period must be specified with no gaps. The cost is measured per kWh. This control may be difficult to use on mobile devices - use from a larger screen if difficulty is experienced."},
+            {"type": "boolean", "name": "ha_rate_enabled", "label": "Use live rate from Home Assistant", "default":self.pluginConfig.get("ha_rate_enabled",False), "note":"Costs charging at a rate pushed from Home Assistant by the OpenEO tariff blueprint, settled per half-hour. The tariff above is used whenever the HA rate is stale or unavailable. Takes effect from the next session."},
+            {"type": "slider", "name": "ha_rate_stale_minutes", "label": "HA rate stale after", "default":self.pluginConfig.get("ha_rate_stale_minutes",15), "range": [5,60], "step":5, "value_unit":"min", "note":"Fall back to the tariff if no rate has arrived from Home Assistant for this long."}];
