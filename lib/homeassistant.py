@@ -44,6 +44,11 @@ PAHO_LOG_LEVEL = logging.WARNING
 _PAHO_LOGGER = _LOGGER.getChild("paho")
 _PAHO_LOGGER.setLevel(PAHO_LOG_LEVEL)
 
+# During an outage, log the first few failed reconnects one by one, then one
+# "still down" line per interval until it reconnects.
+CONNECT_FAILS_LOGGED = 5
+STILL_DOWN_LOG_INTERVAL = 30 * 60  # seconds
+
 
 def _fmt_duration(seconds):
     """42 -> '42s', 282 -> '4m42s', 7980 -> '2h13m'"""
@@ -91,6 +96,8 @@ class homeassistantClassPlugin(PluginSuperClass):
         self._down_since = None
         self._failed_attempts = 0
         self._failed_publishes = 0
+        self._outage_events = 0      # failures logged or suppressed in this outage
+        self._still_down_logged = 0  # "still down" lines written in this outage
         super().__init__(configParam)
         
         if not MQTT_AVAILABLE:
@@ -173,6 +180,8 @@ class homeassistantClassPlugin(PluginSuperClass):
         self._down_since = None
         self._failed_attempts = 0
         self._failed_publishes = 0
+        self._outage_events = 0
+        self._still_down_logged = 0
 
     def _on_connect(self, client, userdata, connect_flags, reason_code, properties):
         """Callback for MQTT connection"""
@@ -219,9 +228,17 @@ class homeassistantClassPlugin(PluginSuperClass):
                 link = "up_for=unknown"
             else:
                 link = f"up_for={_fmt_duration(now - self._up_since)}"
-            self._start_outage(now)
-            _LOGGER.warning(f"MQTT disconnected: {_reason_text(reason_code)} from_broker={from_broker} "
-                            f"broker={self._broker()} {link}")
+            if from_broker == "no" and getattr(reason_code, "value", None) == 128:
+                # paho v2 reports a dropped socket as 128 "Unspecified error"; nothing came from the broker.
+                reason = 'reason="Connection lost"'
+            else:
+                reason = _reason_text(reason_code)
+            message = f"MQTT disconnected: {reason} from_broker={from_broker} broker={self._broker()} {link}"
+            if self._down_since is None:
+                self._start_outage(now)
+                _LOGGER.warning(message)
+            else:
+                self._log_outage_event(now, message)
         except Exception:
             _LOGGER.exception("Failed to log MQTT disconnect")
 
@@ -231,10 +248,27 @@ class homeassistantClassPlugin(PluginSuperClass):
             now = time.monotonic()
             self._start_outage(now)
             self._failed_attempts += 1
-            _LOGGER.warning(f"MQTT connect attempt {self._failed_attempts} failed, "
-                            f"down for {_fmt_duration(now - self._down_since)}")
+            self._log_outage_event(now, f"MQTT connect attempt {self._failed_attempts} failed, "
+                                        f"down for {_fmt_duration(now - self._down_since)}")
         except Exception:
             _LOGGER.exception("Failed to log MQTT connect failure")
+
+    def _log_outage_event(self, now, message):
+        """Log a failure during an outage: the first few one by one, then a 'still down' line per interval.
+
+        paho keeps retrying every 2 minutes at most, which would be ~720 lines a day in a long outage.
+        """
+        self._outage_events += 1
+        if self._outage_events < CONNECT_FAILS_LOGGED:
+            _LOGGER.warning(message)
+        elif self._outage_events == CONNECT_FAILS_LOGGED:
+            _LOGGER.warning(f"{message}; further failures summarised every {_fmt_duration(STILL_DOWN_LOG_INTERVAL)}")
+        else:
+            down_for = now - self._down_since
+            if down_for >= STILL_DOWN_LOG_INTERVAL * (self._still_down_logged + 1):
+                self._still_down_logged = int(down_for // STILL_DOWN_LOG_INTERVAL)
+                _LOGGER.warning(f"MQTT still down after {_fmt_duration(down_for)}, "
+                                f"{self._failed_attempts} failed attempt(s)")
 
     def _subscribe_to_commands(self):
         """Subscribe to MQTT command topics for control"""

@@ -146,6 +146,55 @@ class OutageLoggingTests(unittest.TestCase):
         fail(p, at=11); fail(p, at=13)
         self.assertIn("WARNING:lib.homeassistant:MQTT connect attempt 2 failed, down for 3s", self.logs)
 
+    def test_lost_connection_says_connection_lost_not_unspecified_error(self):
+        # paho v2 reports a dropped socket as reason 128 with no DISCONNECT from the broker.
+        p = make_plugin(); connect(p, at=0); disconnect(p, "Unspecified error", at=60)
+        self.assertIn('WARNING:lib.homeassistant:MQTT disconnected: reason="Connection lost" '
+                      'from_broker=no broker=192.168.1.20:1883 up_for=1m00s', self.logs)
+
+    def test_broker_sent_unspecified_error_keeps_its_code(self):
+        p = make_plugin(); connect(p, at=0); disconnect(p, "Unspecified error", at=60, from_broker=True)
+        self.assertTrue(any('reason="Unspecified error" (code 128) from_broker=yes' in l for l in self.logs))
+
+    def test_only_first_connect_failures_logged_one_by_one(self):
+        p = make_plugin(); connect(p, at=0); disconnect(p, "Unspecified error", at=10)
+        for i in range(1, 9):
+            fail(p, at=10 + i)
+        attempts = [l for l in self.logs if "connect attempt" in l]
+        self.assertEqual(len(attempts), homeassistant.CONNECT_FAILS_LOGGED)
+        self.assertIn("further failures summarised every 30m00s", attempts[-1])
+        self.assertEqual(p._failed_attempts, 8)
+
+    def test_long_outage_logs_still_down_every_interval(self):
+        p = make_plugin(); connect(p, at=0); disconnect(p, "Unspecified error", at=0)
+        t = 0
+        for _ in range(40):  # 40 attempts, 120 s apart = 80 minutes down
+            t += 120
+            fail(p, at=t)
+        still = [l for l in self.logs if "still down" in l]
+        self.assertEqual(len(still), 2)  # after 30 and 60 minutes, measured from the drop
+        self.assertIn("WARNING:lib.homeassistant:MQTT still down after 30m00s, 15 failed attempt(s)", still[0])
+
+    def test_disconnects_before_connack_are_throttled_too(self):
+        p = make_plugin(); connect(p, at=0); disconnect(p, "Unspecified error", at=0)
+        for i in range(1, 11):
+            disconnect(p, "Unspecified error", at=i * 5)
+        self.assertEqual(len([l for l in self.logs if "MQTT disconnected" in l]),
+                         1 + homeassistant.CONNECT_FAILS_LOGGED)
+
+    def test_throttle_resets_after_reconnect(self):
+        p = make_plugin(); connect(p, at=0); disconnect(p, "Unspecified error", at=0)
+        for i in range(1, 9):
+            fail(p, at=i)
+        connect(p, at=20); disconnect(p, "Unspecified error", at=30); fail(p, at=31)
+        self.assertIn("WARNING:lib.homeassistant:MQTT connect attempt 1 failed, down for 1s", self.logs)
+
+    def test_broker_refusals_always_logged(self):
+        p = make_plugin()
+        for i in range(10):
+            connect(p, at=i, reason="Not authorized")
+        self.assertEqual(len([l for l in self.logs if "refused connection" in l]), 10)
+
     def test_reconnect_reports_outage_attempts_and_failed_publishes(self):
         p = make_plugin(); connect(p, at=0); disconnect(p, "Unspecified error", at=10)
         fail(p, at=11)
