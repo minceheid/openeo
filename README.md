@@ -35,6 +35,7 @@ Smart charging based on solar generation with:
 
 ### 💰 Electricity Cost Tracking
 - Automatic cost calculation based on configurable electricity tariffs
+- Optional live pricing from Home Assistant (e.g. Intelligent Octopus or Agile), settled per half-hour, with automatic fallback to the tariff schedule ([details](#live-tariff-rate-from-home-assistant))
 - Session logs with switchable kWh/cost views
 - CSV export for detailed analysis and record-keeping
 - Support for complex tariff structures
@@ -43,7 +44,7 @@ Smart charging based on solar generation with:
 - **Load Balancing**: Manage total site current draw to prevent circuit breaker trips
 - **CT Calibration**: Fine-tune current transformer readings with offset and scaling adjustments
 - **Statistics Dashboard**: Comprehensive visualizations of charger operations
-- **Home Assistant Integration**: Export data via `/api` endpoint
+- **Home Assistant Integration**: MQTT auto-discovery with sensors, schedule and charging controls, and live tariff input
 - **Prometheus Metrics**: Export operational metrics via `/metrics` endpoint
 
 ### 🌍 Remote Access (Optional)
@@ -191,6 +192,7 @@ Access your charging history with:
 - Go to Settings → Session section
 - Due to complexity, use a tablet or laptop for better visibility
 - Defines cost per kWh based on time periods
+- To cost sessions at a live rate from Home Assistant instead, turn on **Use live rate from Home Assistant** in the same section, or the charger's **Use Live Rate** switch in Home Assistant (see [Live tariff rate from Home Assistant](#live-tariff-rate-from-home-assistant))
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/721c6756-efaa-4548-bb86-0f258b9ddb57" style="width:50%; height:auto;"/>
@@ -255,18 +257,56 @@ Fine-tune current transformer readings (recommended from tablet/laptop):
 ## 🔌 Integration with Home Automation
 
 ### Home Assistant
-Export charger data for Home Assistant integration:
-- Endpoint: `http://<charger-ip>/api`
-- Provides current charger state, power metrics, and session data
+OpenEO connects to Home Assistant over MQTT. It uses MQTT discovery, so the charger appears in Home Assistant as a device with its sensors and controls, with no YAML to write.
+
+**Set up**
+1. In Home Assistant, set up an MQTT broker (for example the Mosquitto add-on) and the MQTT integration.
+2. On the charger, in Settings → Home Assistant MQTT, set "Enable Module" to "Yes" and enter the broker host, port (normally 1883; TLS is not supported), and username and password if your broker needs them.
+3. Optionally, change:
+   - **Device Name in HA**: the name Home Assistant shows for the charger.
+   - **Device ID**: must be unique for each charger on the same broker. Changing it creates a new device in Home Assistant.
+   - **HA Discovery Prefix**: leave it as `homeassistant` unless you changed it in Home Assistant.
+   - **Publish Interval**: 5-3600 seconds, default 300.
+
+The charger then appears under Settings → Devices & services → MQTT. Its entities show as unavailable if the charger loses its MQTT connection.
+
+**Sensors**
+| Entity | What it shows |
+|---|---|
+| Charger State | the charger's current state, e.g. `idle`, `car-connected`, `charging` |
+| Vehicle Connected, Cable Connected, Charging Active | binary sensors derived from the charger state |
+| Amps Requested, Amps Limit | current requested from the car and the limit in force |
+| Power Delivered, Power Requested | power to the car |
+| Voltage, Mains Frequency | supply readings |
+| Site Current, Vehicle Current, Solar Current | CT clamp readings |
+| Session KWh, Session Cost | energy and cost for the current session |
+| Current Rate, Rate Source, HA Rate Received | tariff rate in use and where it came from (see [Live tariff rate from Home Assistant](#live-tariff-rate-from-home-assistant)) |
+| Wi-Fi Health | Wi-Fi status, with `code`, `message` and `since` attributes |
+| Wi-Fi Pinned AP | the access point the charger is pinned to, or `none` |
+
+**Controls**
+- **Charging** switch: starts charging now at the **Current Limit** current, whatever the schedules say. Turning it off only stops this manual charge: charge and solar schedules still run while their own switches (**Timers**, **Solar Charging**) are on.
+- **Current Limit**: the current the **Charging** switch charges at, from 6 A up to the charger's overall current limit. It does not limit schedules.
+- **Timers** switch: turns the Scheduler module on or off.
+- **Charge Schedule N Start / End / Current**, **Delete Charge Schedule N** and **Add Charge Schedule**: edit charging schedules. These are only available while Timers is on.
+- **Solar Charging** switch: turns solar charging on or off (Site and Solar Load Management).
+- **Solar Schedule N Start / End / Reservation**, **Delete Solar Schedule N** and **Add Solar Schedule**: edit solar schedules. These are only available while Solar Charging is on.
+- **Use Live Rate** switch: see [Live tariff rate from Home Assistant](#live-tariff-rate-from-home-assistant).
+
+When more than one of these asks to charge at the same time, the charger uses the highest current requested, capped by the overall current limit and site load management. To stop all charging, turn off **Charging**, **Timers** and **Solar Charging**.
+
+Schedules added or removed in the charger's web UI appear in Home Assistant automatically.
+
+**REST API.** If you don't use MQTT, `http://<charger-ip>/api` returns the charger state, power readings and session data as JSON.
 
 ### Live tariff rate from Home Assistant
-Cost sessions at a live price (for example Intelligent Octopus or Agile) instead of the fixed tariff schedule. Home Assistant pushes the current rate to the charger over MQTT; the charger never holds an HA credential.
+Cost sessions at a live price (for example Intelligent Octopus or Agile) instead of the fixed tariff schedule. Home Assistant pushes the current rate to the charger over MQTT.
 
 **Enable it**
-1. Make sure the Home Assistant plugin is enabled and connected to your MQTT broker.
-2. In Settings → Session, turn on **Use live rate from Home Assistant**. It takes effect from the next session or daily row. **HA rate stale after** (10-60 min, default 15) sets how long a rate is trusted without an update; it must be longer than the blueprint's 5-minute heartbeat.
+1. Set up the [Home Assistant](#home-assistant) module first.
+2. In Settings → Session, turn on **Use live rate from Home Assistant**, or turn on the charger's **Use Live Rate** switch in Home Assistant (it is the same setting). The change takes effect the next time the car is plugged in. If the car is already plugged in, unplug and re-plug it, or the change applies from midnight. **HA rate stale after** (10-60 min, default 15) sets how long a rate is trusted without an update; it must be longer than the blueprint's 5-minute heartbeat.
 3. Import the blueprint: [![Open your Home Assistant instance and import the blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fminceheid%2Fopeneo%2Fmain%2Fhomeassistant%2Fblueprints%2Fopeneo_tariff_rate.yaml)
-4. Create an automation from it, choose your rate sensor, and pick your charger from the **OpenEO charger** dropdown (no device id to type).
+4. Create an automation from it, choose your rate sensor, and pick your charger from the **OpenEO charger** dropdown.
 
 The blueprint publishes (not retained) to `openeo/<device_id>/command/tariff_rate/set` on every sensor change, every 5 minutes, when HA starts, and whenever the charger's MQTT `online` availability message arrives (so a restarted charger gets the rate within seconds). For manual testing you can publish a bare number (major currency per kWh), or `unavailable`.
 
@@ -288,10 +328,10 @@ A missing or unrecognised unit is treated as unavailable: the schedule rate is u
 - the Home Assistant **Rate Source** sensor (`ha` or `schedule`), whose `reason` attribute says why the schedule is in use (`stale`, `unavailable`, `ha_offline`, `mqtt_disconnected`, `no_data` or `disabled`); **Current Rate** shows the rate in use
 
 **Home Assistant entities.** Besides **Rate Source** and **Current Rate**, the charger exposes:
-- **Use Live Rate** switch: the same setting as Settings → Session; a change takes effect from the next session or daily row.
+- **Use Live Rate** switch: the same setting as Settings → Session; a change takes effect the next time the car is plugged in (or from midnight if it stays plugged in).
 - **HA Rate Received** sensor: the last rate the charger received (GBP/kWh), with a `received_at` attribute. Check it after creating the automation to confirm the blueprint is working before you enable the feature.
 
-**Optional Mosquitto ACL.** The charger holds no HA token, only its MQTT login. If your broker supports ACLs (such as the Mosquitto add-on), you can restrict that login so it cannot touch other devices' topics:
+**Optional Mosquitto ACL.** If your broker supports ACLs (such as the Mosquitto add-on), you can restrict that login so it cannot touch other devices' topics:
 ```
 user <charger-mqtt-user>
 topic readwrite openeo/#
