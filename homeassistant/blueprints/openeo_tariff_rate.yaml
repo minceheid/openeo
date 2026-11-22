@@ -16,22 +16,22 @@ blueprint:
       selector:
         entity:
           domain: sensor
-    device_id:
-      name: OpenEO device id
-      description: The device id of the charger's Home Assistant plugin.
-      default: openeo_charger_1
+    charger:
+      name: OpenEO charger
+      description: The charger to send the rate to.
       selector:
-        text:
+        device:
+          filter:
+            - integration: mqtt
+              manufacturer: OpenEO
 
 mode: queued
 max_exceeded: silent
 
-trigger_variables:
-  device_id: !input device_id
-
 variables:
-  device_id: !input device_id
   rate_entity: !input rate_entity
+  charger: !input charger
+  device_id: "{{ device_attr(charger, 'identifiers') | list | first | list | last }}"
 
 triggers:
   - trigger: state
@@ -41,8 +41,13 @@ triggers:
   - trigger: homeassistant
     event: start
   - trigger: mqtt
-    topic: "openeo/{{ device_id }}/availability"
+    topic: "openeo/+/availability"
     payload: "online"
+    id: charger_online
+
+conditions:
+  - condition: template
+    value_template: "{{ trigger.id != 'charger_online' or trigger.topic == 'openeo/' ~ device_id ~ '/availability' }}"
 
 actions:
   - action: mqtt.publish

@@ -266,7 +266,7 @@ Cost sessions at a live price (for example Intelligent Octopus or Agile) instead
 1. Make sure the Home Assistant plugin is enabled and connected to your MQTT broker.
 2. In Settings → Session, turn on **Use live rate from Home Assistant**. It takes effect from the next session or daily row. **HA rate stale after** (10-60 min, default 15) sets how long a rate is trusted without an update; it must be longer than the blueprint's 5-minute heartbeat.
 3. Import the blueprint: [![Open your Home Assistant instance and import the blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fminceheid%2Fopeneo%2Fmain%2Fhomeassistant%2Fblueprints%2Fopeneo_tariff_rate.yaml)
-4. Create an automation from it, choose your rate sensor, and leave the device id as `openeo_charger_1` unless you changed it.
+4. Create an automation from it, choose your rate sensor, and pick your charger from the **OpenEO charger** dropdown (no device id to type).
 
 The blueprint publishes (not retained) to `openeo/<device_id>/command/tariff_rate/set` on every sensor change, every 5 minutes, when HA starts, and whenever the charger's MQTT `online` availability message arrives (so a restarted charger gets the rate within seconds). For manual testing you can publish a bare number (major currency per kWh), or `unavailable`.
 
@@ -285,7 +285,11 @@ A missing or unrecognised unit is treated as unavailable: the schedule rate is u
 **Fallback.** The charger uses the schedule rate whenever the HA rate is stale (no update for the configured time), the sensor is unavailable, Home Assistant is reported offline, or MQTT is disconnected. Fallback is visible in:
 - System Logs → App Events (and the journal), for example `Tariff: HA rate stale (no update for 15m) - falling back to schedule rate 0.27048`, and `Tariff: HA rate restored 0.07000`
 - the session table detail: "x kWh costed at schedule rate (HA rate unavailable)"
-- the Home Assistant **Rate Source** sensor (`ha` or `schedule`); **Current Rate** shows the rate in use
+- the Home Assistant **Rate Source** sensor (`ha` or `schedule`), whose `reason` attribute says why the schedule is in use (`stale`, `unavailable`, `ha_offline`, `mqtt_disconnected`, `no_data` or `disabled`); **Current Rate** shows the rate in use
+
+**Home Assistant entities.** Besides **Rate Source** and **Current Rate**, the charger exposes:
+- **Use Live Rate** switch: the same setting as Settings → Session; a change takes effect from the next session or daily row.
+- **HA Rate Received** sensor: the last rate the charger received (GBP/kWh), with a `received_at` attribute. Check it after creating the automation to confirm the blueprint is working before you enable the feature.
 
 **Optional Mosquitto ACL.** The charger holds no HA token, only its MQTT login. If your broker supports ACLs (such as the Mosquitto add-on), you can restrict that login so it cannot touch other devices' topics:
 ```
