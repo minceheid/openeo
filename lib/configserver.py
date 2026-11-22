@@ -236,6 +236,8 @@ class configserverClassPlugin(PluginSuperClass):
                 source, lines = lib.logviewer.parse_log_query(self.path)
                 if source == "journal":
                     content = lib.logviewer.read_journal(lines)
+                elif source == "wifi":
+                    content = lib.logviewer.read_wifi_log(lines)
                 else:
                     content = globalState.configDB.logget(limit=lines)
 

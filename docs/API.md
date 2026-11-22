@@ -384,7 +384,7 @@ Retrieves system debug information and logs for troubleshooting.
 Retrieves recent log lines for the System Logs page in the web UI.
 
 **Query Parameters**:
-- `source` (optional): `app` for the application event log (the sqlite `log` table, purged after `chargeroptions.log_purge_ttl`, 24h by default), or `journal` for the openeo service journal (`journalctl -u openeo`, persists across reboots). Unknown values fall back to `app`. Default `app`.
+- `source` (optional): `app` for the application event log (the sqlite `log` table, purged after `chargeroptions.log_purge_ttl`, 24h by default), or `journal` for the openeo service journal (`journalctl -u openeo`, persists across reboots). `wifi` returns only Wi-Fi event lines from the watchdog, setup-portal and wpa_supplicant journals (an allowlist of known event names, so request lines that could contain credentials are never returned); `lines` counts the event lines returned and is capped at 1000 for this source. Unknown values fall back to `app`. Default `app`.
 - `lines` (optional): number of most recent lines to return, clamped to 50–5000. Non-numeric values fall back to the default. Default `500`.
 
 **Example Request**:
