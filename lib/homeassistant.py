@@ -25,6 +25,7 @@ import threading
 from lib.PluginSuperClass import PluginSuperClass
 import globalState
 import util
+from lib import wifi_status
 
 try:
     import paho.mqtt.client as mqtt
@@ -782,6 +783,8 @@ class homeassistantClassPlugin(PluginSuperClass):
             },
         ]
 
+        sensors += wifi_status.ha_entities(f"openeo/{device_id}/state")
+
         # Combine sensors and control entities for discovery
         all_entities = sensors + control_entities + schedule_entities + solar_schedule_entities
         
@@ -798,7 +801,8 @@ class homeassistantClassPlugin(PluginSuperClass):
             # Add optional fields if present
             for field in ["value_template", "unit_of_measurement", "device_class", "state_class",
                          "icon", "payload_on", "payload_off", "payload_press", "state_on", "state_off",
-                         "command_topic", "min", "max", "step", "options"]:
+                         "command_topic", "min", "max", "step", "options",
+                         "json_attributes_topic", "json_attributes_template"]:
                 if field in entity:
                     config[field] = entity[field]
 
@@ -910,6 +914,8 @@ class homeassistantClassPlugin(PluginSuperClass):
             state_payload[f"solar_schedule_{n}_start"] = s.get("start", "0000")
             state_payload[f"solar_schedule_{n}_end"] = s.get("end", "2359")
             state_payload[f"solar_schedule_{n}_amps"] = s.get("amps", 0)
+
+        state_payload.update(wifi_status.ha_payload(globalState.stateDict))
 
         device_id = self.get_config("device_id")
         topic = f"openeo/{device_id}/state"

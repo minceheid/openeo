@@ -98,3 +98,47 @@ def test_plugin_poll_never_raises():
                                return_value={"level": "ok", "code": "ok", "message": "m"}):
             assert plugin.poll() == 0
         sys.modules.pop("lib.wifi_health", None)
+
+
+def test_ha_payload_defaults_and_values():
+    assert wifi_status.ha_payload({}) == {"wifi_health": "unknown", "wifi_health_code": "", "wifi_health_message": "",
+                                          "wifi_health_since": None, "wifi_pinned_bssid": "", "wifi_rssi": None}
+    p = wifi_status.ha_payload({"eo_wifi_health": "problem", "eo_wifi_pinned_bssid": "02:EC:DA:FD:20:A6", "eo_wifi_rssi": -64})
+    assert p["wifi_health"] == "problem" and p["wifi_pinned_bssid"] == "02:EC:DA:FD:20:A6" and p["wifi_rssi"] == -64
+
+
+def test_ha_entities():
+    ents = {e["object_id"]: e for e in wifi_status.ha_entities("openeo/dev1/state")}
+    assert set(ents) == {"wifi_health", "wifi_pinned_ap"}
+    assert ents["wifi_health"]["json_attributes_topic"] == "openeo/dev1/state"
+    assert "'none'" in ents["wifi_pinned_ap"]["value_template"]
+
+
+def test_ha_wifi_health_is_an_enum_of_every_published_level():
+    # An enum sensor lets HA offer the values in automations; HA flags a state that isn't
+    # among the options, so they must cover every level read_status/state_fields can publish
+    health = {e["object_id"]: e for e in wifi_status.ha_entities("t")}["wifi_health"]
+    assert health["device_class"] == "enum"
+    assert health["options"] == ["ok", "warning", "problem", "unknown"]
+    assert set(health["options"]) == set(wifi_status.LEVELS)
+    pinned = {e["object_id"]: e for e in wifi_status.ha_entities("t")}["wifi_pinned_ap"]
+    assert "device_class" not in pinned          # a MAC address is free text, not an enum
+
+
+def test_ha_templates_render():
+    import json
+    import pytest
+    jinja2 = pytest.importorskip("jinja2")
+    env = jinja2.Environment()
+    env.filters["tojson"] = json.dumps
+    ents = {e["object_id"]: e for e in wifi_status.ha_entities("t")}
+
+    def pinned_ap(value_json):
+        return env.from_string(ents["wifi_pinned_ap"]["value_template"]).render(value_json=value_json)
+
+    assert pinned_ap(wifi_status.ha_payload({})) == "none"
+    assert pinned_ap(wifi_status.ha_payload({"eo_wifi_pinned_bssid": "02:EC:DA:FD:20:A6"})) == "02:EC:DA:FD:20:A6"
+    assert env.from_string(ents["wifi_health"]["value_template"]).render(value_json=wifi_status.ha_payload({})) == "unknown"
+    attrs = env.from_string(ents["wifi_health"]["json_attributes_template"]).render(
+        value_json=wifi_status.ha_payload({"eo_wifi_health_code": "x", "eo_wifi_health_message": "m", "eo_wifi_health_since": 5}))
+    assert json.loads(attrs) == {"code": "x", "message": "m", "since": 5}

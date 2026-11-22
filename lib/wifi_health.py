@@ -2,7 +2,7 @@
 """
 OpenEO Module: wifi_health
 Reads the Wi-Fi health status written by the root Wi-Fi watchdog and publishes it
-in stateDict (so /getstatus, the portal UI and the cloud proxy see
+in stateDict (so /getstatus, the portal UI, the cloud proxy and Home Assistant see
 it). Changes are written to the App Events log.
 
 poll() never raises: a problem here must not become a new failure mode in the charger app.

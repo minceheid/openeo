@@ -67,3 +67,42 @@ def log_lines(prev, cur):
         if (prev.get("last_event"), prev.get("last_event_at")) != (cur["last_event"], cur.get("last_event_at")):
             lines.append(f"wifi: {cur['last_event']}")
     return lines
+
+
+def ha_payload(state):
+    """Wi-Fi fields for the Home Assistant state topic, read from the eo_wifi_* state keys."""
+    return {
+        "wifi_health": state.get("eo_wifi_health", "unknown"),
+        "wifi_health_code": state.get("eo_wifi_health_code", ""),
+        "wifi_health_message": state.get("eo_wifi_health_message", ""),
+        "wifi_health_since": state.get("eo_wifi_health_since"),
+        "wifi_pinned_bssid": state.get("eo_wifi_pinned_bssid", ""),
+        "wifi_rssi": state.get("eo_wifi_rssi"),
+    }
+
+
+def ha_entities(state_topic):
+    """Discovery entries (in homeassistant.py's `sensors` shape) for the Wi-Fi health and pinned-AP sensors."""
+    return [
+        {
+            "component": "sensor",
+            "object_id": "wifi_health",
+            "name": "Wi-Fi Health",
+            "state_topic": state_topic,
+            "value_template": "{{ value_json.wifi_health }}",
+            # enum: HA offers these values in automation editors; states stay lowercase machine values
+            "device_class": "enum",
+            "options": list(LEVELS),
+            "json_attributes_topic": state_topic,
+            "json_attributes_template": "{{ {'code': value_json.wifi_health_code, 'message': value_json.wifi_health_message, 'since': value_json.wifi_health_since} | tojson }}",
+            "icon": "mdi:wifi-alert",
+        },
+        {
+            "component": "sensor",
+            "object_id": "wifi_pinned_ap",
+            "name": "Wi-Fi Pinned AP",
+            "state_topic": state_topic,
+            "value_template": "{{ value_json.wifi_pinned_bssid if value_json.wifi_pinned_bssid else 'none' }}",
+            "icon": "mdi:access-point",
+        },
+    ]
