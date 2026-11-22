@@ -136,6 +136,7 @@ defaultConfig = {
         "chargeroptions" : { "enabled" : True },
         "loadmanagement" : { "enabled" : True },
         "os_metrics" : { "enabled" : True },
+        "wifi_health" : { "enabled" : True },
         "homeassistant" : { "enabled" : False },
         "cloud" : {"enabled": True},
         }

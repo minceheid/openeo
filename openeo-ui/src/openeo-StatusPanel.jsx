@@ -1,11 +1,21 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
-import { Sun, CloudSun } from "lucide-react";
+import { Sun, CloudSun, Wifi, WifiOff } from "lucide-react";
 import { getControllerConnectionStatus } from './utils/funcs';
 
 export default function StatusPanel(
   {status}
 ) {
   const [error, setError] = useState(null);
+  const [wifiOpen, setWifiOpen] = useState(false);
+
+  const WIFI_COLOURS = { ok: "text-green-500", warning: "text-amber-500", problem: "text-red-500" };
+  const wifiHealth = status?.eo_wifi_health;
+  const showWifi = wifiHealth !== undefined && wifiHealth !== null && wifiHealth !== "unknown";
+  const WifiIcon = status?.eo_wifi_health_code === "offline" ? WifiOff : Wifi;
+  const wifiColour = status?.eo_wifi_health_code === "offline" ? "text-red-500" : (WIFI_COLOURS[wifiHealth] || "text-gray-400");
+  const wifiSince = status?.eo_wifi_health_since
+    ? new Date(status.eo_wifi_health_since * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : null;
 
 
   function FriendlyState(status) {
@@ -92,6 +102,21 @@ export default function StatusPanel(
           <span className="status-item">{Number(Math.round(10*status.eo_power_delivered)/10).toFixed(1)}kW</span>
           <span className="status-item">{Number(Math.round(10*status.eo_session_kwh)/10).toFixed(1)}kWh</span>
           <span className="status-item">{status.eo_localtime}</span>
+          {showWifi && (
+            <span className="status-item">
+              <div className="relative group inline-block" onClick={() => setWifiOpen(!wifiOpen)}>
+                <WifiIcon size={18} className={`${wifiColour} cursor-pointer`} />
+                <span className={`absolute bottom-full right-0 mb-2 text-left z-50
+                   w-max max-w-xs bg-gray-800 text-white text-xs rounded px-2 py-1
+                   transition-opacity group-hover:opacity-100 ${wifiOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
+                  {status.eo_wifi_health_message}
+                  {wifiSince && <><br />since {wifiSince}</>}
+                  <br />
+                  <a href="?r=logs&source=wifi" className="underline" onClick={(e) => e.stopPropagation()}>View Wi-Fi log</a>
+                </span>
+              </div>
+            </span>
+          )}
         </div>
         <div id="version-info" className="version-info">
           {status.openeo_latest_version === undefined || status.app_version === status.openeo_latest_version ? (
