@@ -311,15 +311,16 @@ class homeassistantClassPlugin(PluginSuperClass):
             
             prefix = self.get_config("mqtt_discovery_prefix")
 
-            # The blueprint heartbeats every few minutes, so these are logged at DEBUG only.
+            # Logged at INFO so the incoming rate can be checked in the journal. The payload is
+            # truncated because the topic is writable by anything with broker credentials.
             if topic == f"openeo/{device_id}/command/tariff_rate/set":
-                _LOGGER.debug(f"Received tariff rate on {topic}: {payload}")
+                _LOGGER.info(f"Received tariff rate on {topic}: {payload[:64]!r}")
                 tariffrate.apply_rate_message(
                     payload, time.time(), globalState.stateDict,
                     self._tariff_warned_units, self._tariff_log)
                 return
             if topic == f"{prefix}/status":
-                _LOGGER.debug(f"Received HA status on {topic}: {payload}")
+                _LOGGER.info(f"Received HA status on {topic}: {payload[:64]!r}")
                 status = payload.lower()
                 if status in ("online", "offline"):
                     globalState.stateDict["eo_ha_online"] = (status == "online")

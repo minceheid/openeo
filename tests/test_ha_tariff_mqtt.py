@@ -67,14 +67,23 @@ def test_ha_status_ignores_other_payloads(plugin, state):
     assert state["eo_ha_online"] is True
 
 
-def test_receipt_logged_at_debug_not_info(plugin, state, caplog):
-    with caplog.at_level(logging.DEBUG):
+def test_receipt_logged_at_info(plugin, state, caplog):
+    with caplog.at_level(logging.INFO):
         plugin._on_message(None, None, msg(RATE_TOPIC, "0.07"))
         plugin._on_message(None, None, msg(STATUS_TOPIC, "online"))
-    received = [r for r in caplog.records if "Received command" in r.getMessage()]
-    assert received == []
-    assert not [r for r in caplog.records if r.levelno >= logging.INFO
-                and ("tariff_rate" in r.getMessage() or "status" in r.getMessage())]
+    info = [r.getMessage() for r in caplog.records if r.levelno == logging.INFO]
+    assert f"Received tariff rate on {RATE_TOPIC}: '0.07'" in info
+    assert f"Received HA status on {STATUS_TOPIC}: 'online'" in info
+    # Routed before the generic command handler, so no "Received command" line.
+    assert not [m for m in info if "Received command" in m]
+
+
+def test_receipt_log_truncates_payload(plugin, state, caplog):
+    with caplog.at_level(logging.INFO):
+        plugin._on_message(None, None, msg(RATE_TOPIC, "9" * 500))
+    line = [r.getMessage() for r in caplog.records
+            if r.getMessage().startswith("Received tariff rate")][0]
+    assert line == f"Received tariff rate on {RATE_TOPIC}: {('9' * 64)!r}"
 
 
 def test_warning_goes_to_logger_and_app_events(plugin, state):
