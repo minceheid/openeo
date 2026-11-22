@@ -81,6 +81,7 @@ class chargersessionClassPlugin(PluginSuperClass):
         self._accumulator=SessionCostAccumulator()
         if not self._ha_enabled:
             globalState.stateDict["eo_tariff_rate_source"]="schedule"
+            globalState.stateDict["eo_tariff_rate_reason"]="disabled"
         # reset_session() runs on every idle poll. HA's last_reset must only move when the
         # session cost actually drops back to 0, so stamp at startup or when energy was cleared.
         if had_energy or globalState.stateDict.get("eo_session_cost_reset") is None:
@@ -121,6 +122,7 @@ class chargersessionClassPlugin(PluginSuperClass):
 
         globalState.stateDict["eo_session_current_tariff"]=rate
         globalState.stateDict["eo_tariff_rate_source"]=source
+        globalState.stateDict["eo_tariff_rate_reason"]=reason
 
     def poll(self):
         # If charger state indicates that the car might be disconnected, then

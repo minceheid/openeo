@@ -198,3 +198,85 @@ def test_session_cost_sensor_state_class(plugin, state):
     cost = discovery_configs(plugin)["session_cost"]
     assert cost["state_class"] == "total"
     assert cost["last_reset_value_template"] == "{{ value_json.session_cost_reset }}"
+
+
+SWITCH_TOPIC = "openeo/eo1/command/ha_rate_enabled/set"
+
+
+def test_subscribes_ha_rate_enabled(plugin, state):
+    plugin._subscribe_to_commands()
+    topics = [c.args[0] for c in plugin.mqtt_client.subscribe.call_args_list]
+    assert SWITCH_TOPIC in topics
+
+
+@pytest.mark.parametrize("payload,expected", [
+    ("ON", True), ("true", True), ("1", True), ("OFF", False), ("0", False), ("false", False),
+])
+def test_ha_rate_enabled_command(plugin, state, payload, expected):
+    plugin._publish_state = mock.Mock()
+    plugin._on_message(None, None, msg(SWITCH_TOPIC, payload))
+    ha.globalState.configDB.set.assert_called_once_with("chargersession", "ha_rate_enabled", expected)
+    plugin._publish_state.assert_called_once_with()
+
+
+def test_state_payload_ha_rate_enabled(plugin, state):
+    ha.globalState.configDB.get.return_value = 10
+    plugin._get_schedules = lambda: []
+    plugin._get_solar_schedules = lambda: []
+    plugin._bool_config = lambda module, key, default=False: (module, key) == ("chargersession", "ha_rate_enabled")
+    plugin._publish_state()
+    call = [c for c in plugin.mqtt_client.publish.call_args_list if c.args[0] == "openeo/eo1/state"][-1]
+    payload = json.loads(call.args[1])
+    assert payload["ha_rate_enabled"] is True
+    assert payload["solar_enabled"] is False
+
+
+def test_state_payload_ha_rate_received(plugin, state):
+    import datetime
+    state.update(eo_ha_rate={"value": 0.07, "received_at": 1795341600.0}, eo_tariff_rate_reason="stale")
+    payload = published_state(plugin)
+    assert payload["ha_rate_received"] == 0.07
+    expected = datetime.datetime.fromtimestamp(1795341600.0).astimezone().isoformat(timespec="seconds")
+    assert payload["ha_rate_received_at"] == expected
+    assert payload["rate_reason"] == "stale"
+
+
+@pytest.mark.parametrize("rate", [None, {"value": None, "received_at": 1795341600.0}])
+def test_state_payload_ha_rate_received_none(plugin, state, rate):
+    state["eo_ha_rate"] = rate
+    payload = published_state(plugin)
+    assert payload["ha_rate_received"] is None
+    if rate is None:
+        assert payload["ha_rate_received_at"] is None
+    assert payload["rate_reason"] == ""
+    assert payload["ha_rate_enabled"] is False
+
+
+def test_discovery_has_use_live_rate_switch(plugin, state):
+    sw = discovery_configs(plugin)["ha_rate_enabled"]
+    solar = discovery_configs(plugin)["solar_enabled"]
+    assert sw["name"] == "Use Live Rate"
+    assert sw["command_topic"] == SWITCH_TOPIC
+    assert sw["state_topic"] == "openeo/eo1/state"
+    assert sw["value_template"] == "{{ 'ON' if value_json.ha_rate_enabled else 'OFF' }}"
+    assert sw["icon"] == "mdi:cash-sync"
+    for k in ("payload_on", "payload_off", "state_on", "state_off", "device_class"):
+        assert sw[k] == solar[k]
+    assert sw["unique_id"] == "eo1_ha_rate_enabled"
+
+
+def test_discovery_has_ha_rate_received_sensor(plugin, state):
+    s = discovery_configs(plugin)["ha_rate_received"]
+    assert s["name"] == "HA Rate Received"
+    assert s["value_template"] == "{{ value_json.ha_rate_received }}"
+    assert s["unit_of_measurement"] == "GBP/kWh"
+    assert s["state_class"] == "measurement"
+    assert s["icon"] == "mdi:cash-check"
+    assert s["json_attributes_topic"] == "openeo/eo1/state"
+    assert s["json_attributes_template"] == "{{ {'received_at': value_json.ha_rate_received_at} | tojson }}"
+
+
+def test_rate_source_has_reason_attribute(plugin, state):
+    s = discovery_configs(plugin)["rate_source"]
+    assert s["json_attributes_topic"] == "openeo/eo1/state"
+    assert s["json_attributes_template"] == "{{ {'reason': value_json.rate_reason} | tojson }}"

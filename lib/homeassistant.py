@@ -18,6 +18,7 @@ Configuration example:
 """
 #################################################################################
 
+import datetime
 import logging
 import json
 import time
@@ -291,6 +292,7 @@ class homeassistantClassPlugin(PluginSuperClass):
             f"openeo/{device_id}/command/schedule/#",
             f"openeo/{device_id}/command/solar_schedule/#",
             f"openeo/{device_id}/command/solar_enable/set",
+            f"openeo/{device_id}/command/ha_rate_enabled/set",
             f"openeo/{device_id}/command/tariff_rate/set",
             f"{self.get_config('mqtt_discovery_prefix')}/status",
         ]
@@ -341,6 +343,10 @@ class homeassistantClassPlugin(PluginSuperClass):
             elif topic == f"openeo/{device_id}/command/solar_enable/set":
                 enabled = payload.lower() in ["on", "true", "1"]
                 globalState.configDB.set("loadmanagement", "solar_enable", enabled)
+                self._publish_state()
+            elif topic == f"openeo/{device_id}/command/ha_rate_enabled/set":
+                enabled = payload.lower() in ["on", "true", "1"]
+                globalState.configDB.set("chargersession", "ha_rate_enabled", enabled)
                 self._publish_state()
             else:
                 _LOGGER.warning(f"Unknown command topic: {topic}")
@@ -746,7 +752,21 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "name": "Rate Source",
                 "state_topic": f"openeo/{device_id}/state",
                 "value_template": "{{ value_json.rate_source }}",
-                "icon": "mdi:swap-horizontal"
+                "icon": "mdi:swap-horizontal",
+                "json_attributes_topic": f"openeo/{device_id}/state",
+                "json_attributes_template": "{{ {'reason': value_json.rate_reason} | tojson }}"
+            },
+            {
+                "component": "sensor",
+                "object_id": "ha_rate_received",
+                "name": "HA Rate Received",
+                "state_topic": f"openeo/{device_id}/state",
+                "value_template": "{{ value_json.ha_rate_received }}",
+                "unit_of_measurement": "GBP/kWh",
+                "state_class": "measurement",
+                "icon": "mdi:cash-check",
+                "json_attributes_topic": f"openeo/{device_id}/state",
+                "json_attributes_template": "{{ {'received_at': value_json.ha_rate_received_at} | tojson }}"
             },
         ]
         
@@ -954,6 +974,20 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "device_class": "switch"
             },
             {
+                "component": "switch",
+                "object_id": "ha_rate_enabled",
+                "name": "Use Live Rate",
+                "state_topic": f"openeo/{device_id}/state",
+                "command_topic": f"openeo/{device_id}/command/ha_rate_enabled/set",
+                "value_template": "{{ 'ON' if value_json.ha_rate_enabled else 'OFF' }}",
+                "payload_on": "ON",
+                "payload_off": "OFF",
+                "state_on": "ON",
+                "state_off": "OFF",
+                "icon": "mdi:cash-sync",
+                "device_class": "switch"
+            },
+            {
                 "component": "button",
                 "object_id": "solar_schedule_add",
                 "name": "Add Solar Schedule",
@@ -1066,6 +1100,8 @@ class homeassistantClassPlugin(PluginSuperClass):
         charging_active = charger_state_id in [11, 12, 13, 14]
         
         
+        ha_rate = globalState.stateDict.get("eo_ha_rate")
+
         state_payload = {
             "charger_state": charger_state,
             "charger_state_id": charger_state_id,
@@ -1094,6 +1130,11 @@ class homeassistantClassPlugin(PluginSuperClass):
             "session_cost_reset":globalState.stateDict.get("eo_session_cost_reset"),
             "current_rate":globalState.stateDict.get("eo_session_current_tariff", 0.0),
             "rate_source":globalState.stateDict.get("eo_tariff_rate_source", "schedule"),
+            "rate_reason":globalState.stateDict.get("eo_tariff_rate_reason", ""),
+            "ha_rate_enabled": self._bool_config("chargersession", "ha_rate_enabled"),
+            "ha_rate_received": ha_rate.get("value") if ha_rate else None,
+            "ha_rate_received_at": (datetime.datetime.fromtimestamp(ha_rate["received_at"]).astimezone().isoformat(timespec="seconds")
+                                    if ha_rate and ha_rate.get("received_at") is not None else None),
             "timestamp": int(time.time())
         }
         

@@ -361,3 +361,25 @@ def test_startup_mqtt_disconnected_logs_info_waiting_not_warning(env, clock, sta
     waiting = [r for r in caplog.records
                if r.levelno == logging.INFO and "waiting for first HA rate" in r.getMessage()]
     assert len(waiting) == 1
+
+
+def test_reason_stale(env, clock, state):
+    plugin = make_plugin(True)
+    state["eo_ha_rate"] = {"value": 0.07, "received_at": clock.ts() - 3600}
+    run_polls(plugin, clock, 3, step=60)
+    assert state["eo_tariff_rate_reason"] == "stale"
+
+
+def test_reason_empty_when_ha_fresh(env, clock, state):
+    plugin = make_plugin(True)
+    state["eo_ha_rate"] = fresh_rate(clock, 0.07)
+    run_polls(plugin, clock, 3, step=60)
+    assert state["eo_tariff_rate_source"] == "ha"
+    assert state["eo_tariff_rate_reason"] == ""
+
+
+def test_reason_disabled(env, clock, state):
+    plugin = make_plugin(False)
+    run_polls(plugin, clock, 3, step=60)
+    assert state["eo_tariff_rate_source"] == "schedule"
+    assert state["eo_tariff_rate_reason"] == "disabled"
