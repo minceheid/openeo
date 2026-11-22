@@ -277,11 +277,6 @@ def test_no_startup_warning_otherwise(env, config_db, caplog, enabled, ha_enable
 
 def test_session_cost_reset_set(env, clock, state):
     plugin = make_plugin(True)
-    first = state["eo_session_cost_reset"]
-    assert first == clock.dt.astimezone().isoformat(timespec="seconds")
-    clock.dt += datetime.timedelta(minutes=5)
-    state["eo_charger_state_id"] = 1
-    plugin.poll()
     assert state["eo_session_cost_reset"] == clock.dt.astimezone().isoformat(timespec="seconds")
 
 
@@ -330,3 +325,26 @@ def test_user_settings_controls(env):
     slider = controls["ha_rate_stale_minutes"]
     assert slider["type"] == "slider"
     assert slider["range"] == [5, 60] and slider["step"] == 5 and slider["default"] == 15
+
+
+def test_cost_reset_unchanged_by_idle_polls(env, clock, state):
+    plugin = make_plugin(True)
+    first = state["eo_session_cost_reset"]
+    state["eo_charger_state_id"] = 1
+    for _ in range(3):
+        clock.dt += datetime.timedelta(minutes=5)
+        plugin.poll()
+    assert state["eo_session_cost_reset"] == first
+
+
+def test_cost_reset_moves_when_session_with_energy_resets(env, clock, state):
+    plugin = make_plugin(True)
+    first = state["eo_session_cost_reset"]
+    state["eo_ha_rate"] = fresh_rate(clock, 0.07)
+    run_polls(plugin, clock, 4, before_poll=lambda: state.update(eo_ha_rate=fresh_rate(clock, 0.07)))
+    assert state["eo_session_joules"] > 0
+    clock.dt += datetime.timedelta(minutes=5)
+    state["eo_charger_state_id"] = 1
+    plugin.poll()
+    assert state["eo_session_cost_reset"] == clock.dt.astimezone().isoformat(timespec="seconds")
+    assert state["eo_session_cost_reset"] != first

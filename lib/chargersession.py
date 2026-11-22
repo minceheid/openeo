@@ -52,6 +52,7 @@ class chargersessionClassPlugin(PluginSuperClass):
         
     def reset_session(self):
         # Reset all session counters
+        had_energy=globalState.stateDict.get("eo_session_joules",0)>0
         globalState.stateDict["eo_session_joules"]=0
         globalState.stateDict["eo_session_kwh"]=0
         globalState.stateDict["eo_session_seconds_charged"]=0
@@ -67,9 +68,9 @@ class chargersessionClassPlugin(PluginSuperClass):
         for x in self.pluginConfig.get("tariff",[]):
             globalState.stateDict["session_tariff"].append({"start":x["start"],"end":x["end"],"cost":x["cost"],"joules":0})
 
-        self._reset_ha_rate_accounting()
+        self._reset_ha_rate_accounting(had_energy)
 
-    def _reset_ha_rate_accounting(self):
+    def _reset_ha_rate_accounting(self, had_energy):
         # Snapshot whether this session is costed from the live HA rate, so a settings change
         # takes effect from the next session. The old accumulator is settled before it is replaced.
         if self._accumulator is not None:
@@ -78,7 +79,10 @@ class chargersessionClassPlugin(PluginSuperClass):
         self._accumulator=SessionCostAccumulator()
         if not self._ha_enabled:
             globalState.stateDict["eo_tariff_rate_source"]="schedule"
-        globalState.stateDict["eo_session_cost_reset"]=datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+        # reset_session() runs on every idle poll. HA's last_reset must only move when the
+        # session cost actually drops back to 0, so stamp at startup or when energy was cleared.
+        if had_energy or globalState.stateDict.get("eo_session_cost_reset") is None:
+            globalState.stateDict["eo_session_cost_reset"]=datetime.datetime.now().astimezone().isoformat(timespec="seconds")
 
     def _tariff_log(self, level, msg):
         _LOGGER.log(level, msg)
