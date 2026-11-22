@@ -1,4 +1,5 @@
 """Tariff rate and HA status wiring in the Home Assistant plugin."""
+import json
 import logging
 import os
 import sys
@@ -122,3 +123,69 @@ def test_disconnect_forgets_ha_online(plugin, state):
     state["eo_ha_online"] = False
     plugin._on_disconnect(None, None, mock.Mock(is_disconnect_packet_from_server=False), 1, None)
     assert state["eo_ha_online"] is None
+
+
+def discovery_configs(plugin):
+    configs = {}
+    ha.globalState.configDB.get.return_value = 10
+    ha.globalState.MAX_CHARGING_CURRENT = 32
+    ha.globalState.MIN_CHARGING_CURRENT = 6
+    plugin._get_device_info = lambda: {"identifiers": ["eo1"]}
+    plugin._get_availability_topic = lambda: "openeo/eo1/availability"
+    plugin._get_schedules = lambda: []
+    plugin._get_solar_schedules = lambda: []
+    plugin._published_schedule_count = 0
+    plugin._published_solar_schedule_count = 0
+    plugin._send_discovery()
+    for c in plugin.mqtt_client.publish.call_args_list:
+        topic, payload = c.args[0], c.args[1]
+        if topic.endswith("/config") and payload:
+            configs[topic.split("/")[-2]] = json.loads(payload)
+    return configs
+
+
+def published_state(plugin):
+    ha.globalState.configDB.get.return_value = 10
+    plugin._get_schedules = lambda: []
+    plugin._get_solar_schedules = lambda: []
+    plugin._bool_config = lambda *a: False
+    plugin._publish_state()
+    call = [c for c in plugin.mqtt_client.publish.call_args_list if c.args[0] == "openeo/eo1/state"][-1]
+    return json.loads(call.args[1])
+
+
+def test_state_payload_has_rate_fields(plugin, state):
+    state.update(eo_session_current_tariff=0.07, eo_tariff_rate_source="ha",
+                 eo_session_cost_reset="2026-11-22T10:00:00+00:00")
+    payload = published_state(plugin)
+    assert payload["current_rate"] == 0.07
+    assert payload["rate_source"] == "ha"
+    assert payload["session_cost_reset"] == "2026-11-22T10:00:00+00:00"
+
+
+def test_state_payload_rate_defaults(plugin, state):
+    payload = published_state(plugin)
+    assert payload["current_rate"] == 0.0
+    assert payload["rate_source"] == "schedule"
+    assert payload["session_cost_reset"] is None
+
+
+def test_discovery_has_rate_sensors(plugin, state):
+    configs = discovery_configs(plugin)
+    rate = configs["current_rate"]
+    assert rate["name"] == "Current Rate"
+    assert rate["value_template"] == "{{ value_json.current_rate }}"
+    assert rate["unit_of_measurement"] == "GBP/kWh"
+    assert rate["state_class"] == "measurement"
+    assert rate["icon"] == "mdi:cash"
+    assert "device_class" not in rate
+    source = configs["rate_source"]
+    assert source["name"] == "Rate Source"
+    assert source["value_template"] == "{{ value_json.rate_source }}"
+    assert source["icon"] == "mdi:swap-horizontal"
+
+
+def test_session_cost_sensor_state_class(plugin, state):
+    cost = discovery_configs(plugin)["session_cost"]
+    assert cost["state_class"] == "total"
+    assert cost["last_reset_value_template"] == "{{ value_json.session_cost_reset }}"

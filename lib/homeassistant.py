@@ -725,8 +725,27 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "value_template": "{{ value_json.session_cost | round(2)}}",
                 "unit_of_measurement": "GBP",
                 "device_class": "monetary",
-                "state_class": "total_increasing",
+                "state_class": "total",
+                "last_reset_value_template": "{{ value_json.session_cost_reset }}",
                 "icon": "mdi:currency-gbp"
+            },
+            {
+                "component": "sensor",
+                "object_id": "current_rate",
+                "name": "Current Rate",
+                "state_topic": f"openeo/{device_id}/state",
+                "value_template": "{{ value_json.current_rate }}",
+                "unit_of_measurement": "GBP/kWh",
+                "state_class": "measurement",
+                "icon": "mdi:cash"
+            },
+            {
+                "component": "sensor",
+                "object_id": "rate_source",
+                "name": "Rate Source",
+                "state_topic": f"openeo/{device_id}/state",
+                "value_template": "{{ value_json.rate_source }}",
+                "icon": "mdi:swap-horizontal"
             },
         ]
         
@@ -968,7 +987,7 @@ class homeassistantClassPlugin(PluginSuperClass):
 
             # Add optional fields if present
             for field in ["value_template", "unit_of_measurement", "device_class", "state_class",
-                         "icon", "payload_on", "payload_off", "payload_press", "state_on", "state_off",
+                         "last_reset_value_template", "icon", "payload_on", "payload_off", "payload_press", "state_on", "state_off",
                          "command_topic", "min", "max", "step", "options",
                          "json_attributes_topic", "json_attributes_template"]:
                 if field in entity:
@@ -1071,6 +1090,9 @@ class homeassistantClassPlugin(PluginSuperClass):
             "openeo_latest_version": globalState.stateDict.get("openeo_latest_version", "unknown"),
             "session_kwh":globalState.stateDict.get("eo_session_kwh", 0.0),
             "session_cost":globalState.stateDict.get("eo_session_cost", 0.0),
+            "session_cost_reset":globalState.stateDict.get("eo_session_cost_reset"),
+            "current_rate":globalState.stateDict.get("eo_session_current_tariff", 0.0),
+            "rate_source":globalState.stateDict.get("eo_tariff_rate_source", "schedule"),
             "timestamp": int(time.time())
         }
         
