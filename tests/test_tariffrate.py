@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """Tests for lib/tariffrate.py: HA rate payload parsing and unit normalisation."""
 
-import os, sys, unittest
+import datetime, os, sys, unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from lib.tariffrate import normalise_rate, parse_rate_payload, apply_rate_message
+from lib.tariffrate import (normalise_rate, parse_rate_payload, apply_rate_message,
+                            select_rate, slot_key, SessionCostAccumulator)
+
+
+def dt(h, m):
+    return datetime.datetime(2026, 11, 22, h, m)
 
 
 class NormaliseRateTests(unittest.TestCase):
@@ -101,6 +106,76 @@ class ApplyRateMessageTests(unittest.TestCase):
         self.assertEqual(logs, [])
         self.assertEqual(state["eo_ha_rate"], {"value": None, "received_at": 3.0})
 
+
+class SelectRateTests(unittest.TestCase):
+    def test_select_fresh(self):
+        self.assertEqual(select_rate(1000, {"value": 0.07, "received_at": 900}, True, True, True, 15, 0.27), (0.07, "ha", ""))
+
+    def test_select_reasons_in_order(self):
+        r = {"value": 0.07, "received_at": 0}
+        self.assertEqual(select_rate(10, r, True, True, False, 15, 0.27)[2], "disabled")
+        self.assertEqual(select_rate(10, r, False, False, True, 15, 0.27)[2], "mqtt_disconnected")
+        self.assertEqual(select_rate(10, r, False, True, True, 15, 0.27)[2], "ha_offline")
+        self.assertEqual(select_rate(10, None, None, True, True, 15, 0.27)[2], "no_data")
+        self.assertEqual(select_rate(10, {"value": None, "received_at": 0}, True, True, True, 15, 0.27)[2], "unavailable")
+
+    def test_stale_boundary(self):
+        r = {"value": 0.07, "received_at": 0}
+        self.assertEqual(select_rate(900, r, True, True, True, 15, 0.27)[1], "ha")
+        self.assertEqual(select_rate(901, r, True, True, True, 15, 0.27), (0.27, "schedule", "stale"))
+
+
+class SessionCostAccumulatorTests(unittest.TestCase):
+    def test_slot_key(self):
+        self.assertEqual(slot_key(dt(1, 29)), (datetime.date(2026, 11, 22), 2))
+        self.assertEqual(slot_key(dt(1, 30)), (datetime.date(2026, 11, 22), 3))
+
+    def test_midslot_drop_recosts_slot(self):
+        a = SessionCostAccumulator()
+        a.add(dt(1, 0), 3_600_000, 0.27, "ha")
+        a.add(dt(1, 10), 3_600_000, 0.07, "ha")
+        self.assertAlmostEqual(a.cost(), 0.14)
+        self.assertEqual(a.cost_by_tariff(), {0.07: 7_200_000})
+        a.add(dt(1, 30), 0, 0.07, "ha")
+        self.assertEqual(a.cost_by_tariff(), {0.07: 7_200_000})
+
+    def test_cost_by_tariff_returns_copy_and_no_zero_keys(self):
+        a = SessionCostAccumulator()
+        a.add(dt(1, 0), 0, 0.07, "ha")
+        self.assertEqual(a.cost_by_tariff(), {})
+        a.add(dt(1, 1), 10, 0.07, "ha")
+        a.cost_by_tariff()[0.07] = 99
+        self.assertEqual(a.cost_by_tariff(), {0.07: 10})
+
+    def test_mixed_ha_and_fallback_slot(self):
+        a = SessionCostAccumulator()
+        a.add(dt(2, 0), 3_600_000, 0.07, "ha")
+        a.add(dt(2, 5), 3_600_000, 0.27048, "schedule")
+        a.settle()
+        self.assertAlmostEqual(a.cost(), 0.07 + 0.27048)
+        self.assertEqual(a.fallback_joules, 3_600_000)
+
+    def test_stale_gap_within_slot(self):
+        a = SessionCostAccumulator()
+        a.add(dt(3, 0), 3_600_000, 0.27, "ha")
+        a.add(dt(3, 5), 3_600_000, 0.30, "schedule")
+        a.add(dt(3, 10), 3_600_000, 0.07, "ha")
+        a.settle()
+        self.assertEqual(a.cost_by_tariff(), {0.07: 7_200_000, 0.30: 3_600_000})
+
+    def test_slot_boundary(self):
+        a = SessionCostAccumulator()
+        a.add(dt(4, 29), 3_600_000, 0.27, "ha")
+        a.add(dt(4, 30), 3_600_000, 0.07, "ha")
+        a.settle()
+        self.assertEqual(a.cost_by_tariff(), {0.27: 3_600_000, 0.07: 3_600_000})
+
+    def test_ha_rate_rounded_schedule_not(self):
+        a = SessionCostAccumulator()
+        a.add(dt(5, 0), 1, 0.1234567, "ha")
+        a.add(dt(5, 0), 1, 0.2704812345, "schedule")
+        a.settle()
+        self.assertEqual(set(a.cost_by_tariff()), {0.12346, 0.2704812345})
 
 if __name__ == "__main__":
     unittest.main()

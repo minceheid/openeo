@@ -1,8 +1,9 @@
-"""Pure helpers for the live HA tariff rate: payload parsing and unit normalisation.
+"""Pure helpers for the live HA tariff rate: payload parsing, rate selection and half-hour settlement.
 
 No MQTT, sqlite or globalState imports; callers pass state and a log callable.
 """
 
+import datetime
 import json
 import logging
 import math
@@ -95,3 +96,79 @@ def apply_rate_message(payload, now, state, warned_units, log):
     elif status == "invalid":
         log(logging.WARNING, f"Tariff: invalid HA rate payload '{payload}' - using schedule rate")
     state["eo_ha_rate"] = {"value": rate if status == "ok" else None, "received_at": now}
+
+
+def select_rate(now, ha_rate, ha_online, mqtt_connected, enabled, stale_minutes, schedule_rate):
+    """Choose the rate to cost with; returns (rate, source, reason).
+
+    source is "ha" or "schedule"; reason is "" for ha, else why the schedule was used.
+    """
+    if not enabled:
+        reason = "disabled"
+    elif not mqtt_connected:
+        reason = "mqtt_disconnected"
+    elif ha_online is False:
+        reason = "ha_offline"
+    elif ha_rate is None:
+        reason = "no_data"
+    elif ha_rate.get("value") is None:
+        reason = "unavailable"
+    elif now - ha_rate["received_at"] > stale_minutes * 60:
+        reason = "stale"
+    else:
+        return ha_rate["value"], "ha", ""
+    return schedule_rate, "schedule", reason
+
+
+def slot_key(dt):
+    """Return the half-hour settlement slot (date, 0-47) for a local datetime."""
+    return (dt.date(), dt.hour * 2 + dt.minute // 30)
+
+
+class SessionCostAccumulator:
+    """Costs a session in half-hour settlement slots.
+
+    HA-rate energy is provisional within a slot: the whole slot's HA joules are costed at the
+    latest HA rate seen, and settle into the per-tariff totals when the slot ends. Schedule
+    (fallback) energy is settled immediately at its own rate.
+    """
+
+    def __init__(self):
+        self.settled = {}
+        self.pending_joules = 0
+        self.last_ha_rate = None
+        self.fallback_joules = 0
+        self._slot = None
+
+    def add(self, dt, joules, rate, source):
+        key = slot_key(dt)
+        if key != self._slot:
+            self.settle()
+            self._slot = key
+        if source == "ha":
+            self.last_ha_rate = round(rate, 5)
+            self.pending_joules += joules
+        else:
+            self.settled[rate] = self.settled.get(rate, 0) + joules
+            self.fallback_joules += joules
+
+    def settle(self):
+        """Move the pending HA joules into the settled totals at the last HA rate."""
+        if self.pending_joules and self.last_ha_rate is not None:
+            self.settled[self.last_ha_rate] = self.settled.get(self.last_ha_rate, 0) + self.pending_joules
+        self.pending_joules = 0
+        self.last_ha_rate = None
+
+    def cost(self):
+        """Settled plus provisional cost, unrounded."""
+        total = sum(rate * joules for rate, joules in self.settled.items())
+        if self.pending_joules and self.last_ha_rate is not None:
+            total += self.pending_joules * self.last_ha_rate
+        return total / 3_600_000
+
+    def cost_by_tariff(self):
+        """Return a new {rate: joules} map including pending HA joules (if any)."""
+        result = dict(self.settled)
+        if self.pending_joules and self.last_ha_rate is not None:
+            result[self.last_ha_rate] = result.get(self.last_ha_rate, 0) + self.pending_joules
+        return result
