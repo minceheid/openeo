@@ -221,6 +221,8 @@ class homeassistantClassPlugin(PluginSuperClass):
         # Rates are not retained, so a rate held across a disconnect cannot be trusted.
         globalState.stateDict["eo_mqtt_connected"] = False
         globalState.stateDict["eo_ha_rate"] = None
+        # HA's birth message is not retained, so its status is unknown until the next one.
+        globalState.stateDict["eo_ha_online"] = None
         try:
             if reason_code == 0:
                 _LOGGER.info("Disconnected from MQTT broker")

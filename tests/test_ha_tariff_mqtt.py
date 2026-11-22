@@ -115,3 +115,10 @@ def test_connect_sets_flag(plugin, state):
 def test_failed_connect_leaves_flag(plugin, state):
     plugin._on_connect(None, None, mock.Mock(), 5, None)
     assert state["eo_mqtt_connected"] is False
+
+
+def test_disconnect_forgets_ha_online(plugin, state):
+    # The HA birth message is not retained, so an old False must not survive a reconnect.
+    state["eo_ha_online"] = False
+    plugin._on_disconnect(None, None, mock.Mock(is_disconnect_packet_from_server=False), 1, None)
+    assert state["eo_ha_online"] is None
