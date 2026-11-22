@@ -30,6 +30,7 @@ trigger_variables:
   device_id: !input device_id
 
 variables:
+  device_id: !input device_id
   rate_entity: !input rate_entity
 
 triggers:
