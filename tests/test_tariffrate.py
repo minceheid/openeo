@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Tests for lib/tariffrate.py: HA rate payload parsing and unit normalisation."""
 
-import datetime, os, sys, unittest
+import datetime, logging, os, sys, unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from lib.tariffrate import (normalise_rate, parse_rate_payload, apply_rate_message,
-                            select_rate, slot_key, SessionCostAccumulator)
+                            select_rate, slot_key, SessionCostAccumulator,
+                            transition_message)
 
 
 def dt(h, m):
@@ -176,6 +177,46 @@ class SessionCostAccumulatorTests(unittest.TestCase):
         a.add(dt(5, 0), 1, 0.2704812345, "schedule")
         a.settle()
         self.assertEqual(set(a.cost_by_tariff()), {0.12346, 0.2704812345})
+
+class TransitionMessageTests(unittest.TestCase):
+    HA = ("ha", "")
+
+    def test_ha_first_received(self):
+        self.assertEqual(transition_message(None, self.HA, 0.358941, False, 15),
+                         (logging.INFO, "Tariff: HA rate received 0.35894"))
+
+    def test_ha_restored(self):
+        self.assertEqual(transition_message(("schedule", "stale"), self.HA, 0.25, True, 15),
+                         (logging.WARNING, "Tariff: HA rate restored 0.25000"))
+
+    def test_waiting_for_first(self):
+        self.assertEqual(transition_message(None, ("schedule", "no_data"), 0.27048, False, 15),
+                         (logging.INFO, "Tariff: waiting for first HA rate - using schedule rate 0.27048"))
+
+    def test_no_data_after_having_ha_warns(self):
+        level, msg = transition_message(self.HA, ("schedule", "no_data"), 0.27048, True, 15)
+        self.assertEqual(level, logging.WARNING)
+        self.assertIn("since reconnect", msg)
+        self.assertEqual(msg, "Tariff: no HA rate since reconnect - using schedule rate 0.27048")
+
+    def test_fallback_reasons(self):
+        texts = {"stale": "stale (no update for 15m)",
+                 "unavailable": "unavailable",
+                 "ha_offline": "unavailable (Home Assistant offline)",
+                 "mqtt_disconnected": "unavailable (MQTT disconnected)"}
+        for reason, text in texts.items():
+            self.assertEqual(transition_message(self.HA, ("schedule", reason), 0.27048, True, 15),
+                             (logging.WARNING,
+                              f"Tariff: HA rate {text} - falling back to schedule rate 0.27048"))
+
+    def test_no_change_returns_none(self):
+        self.assertIsNone(transition_message(self.HA, self.HA, 0.3, True, 15))
+        self.assertIsNone(transition_message(("schedule", "stale"), ("schedule", "stale"), 0.3, True, 15))
+
+    def test_disabled_silent(self):
+        self.assertIsNone(transition_message(self.HA, ("schedule", "disabled"), 0.3, True, 15))
+        self.assertIsNone(transition_message(None, ("schedule", "disabled"), 0.3, False, 15))
+
 
 if __name__ == "__main__":
     unittest.main()

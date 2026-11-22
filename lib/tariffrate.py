@@ -120,6 +120,35 @@ def select_rate(now, ha_rate, ha_online, mqtt_connected, enabled, stale_minutes,
     return schedule_rate, "schedule", reason
 
 
+_FALLBACK_TEXT = {
+    "stale": "stale (no update for {stale_minutes}m)",
+    "unavailable": "unavailable",
+    "ha_offline": "unavailable (Home Assistant offline)",
+    "mqtt_disconnected": "unavailable (MQTT disconnected)",
+}
+
+
+def transition_message(prev, new, rate, ever_had_ha, stale_minutes):
+    """Return (level, message) to log when the (source, reason) pair changes, else None.
+
+    Silent when nothing changed or the feature is disabled. ever_had_ha means a fresh HA rate
+    has been selected at least once before this call.
+    """
+    if new == prev or new[1] == "disabled":
+        return None
+    source, reason = new
+    if source == "ha":
+        if ever_had_ha:
+            return logging.WARNING, f"Tariff: HA rate restored {rate:.5f}"
+        return logging.INFO, f"Tariff: HA rate received {rate:.5f}"
+    if reason == "no_data":
+        if ever_had_ha:
+            return logging.WARNING, f"Tariff: no HA rate since reconnect - using schedule rate {rate}"
+        return logging.INFO, f"Tariff: waiting for first HA rate - using schedule rate {rate}"
+    text = _FALLBACK_TEXT[reason].format(stale_minutes=stale_minutes)
+    return logging.WARNING, f"Tariff: HA rate {text} - falling back to schedule rate {rate}"
+
+
 def slot_key(dt):
     """Return the half-hour settlement slot (date, 0-47) for a local datetime."""
     return (dt.date(), dt.hour * 2 + dt.minute // 30)
