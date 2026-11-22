@@ -26,6 +26,7 @@ from lib.PluginSuperClass import PluginSuperClass
 import globalState
 import util
 from lib import wifi_status
+from lib import tariffrate
 
 try:
     import paho.mqtt.client as mqtt
@@ -98,6 +99,7 @@ class homeassistantClassPlugin(PluginSuperClass):
         self._failed_publishes = 0
         self._outage_events = 0      # failures logged or suppressed in this outage
         self._still_down_logged = 0  # "still down" lines written in this outage
+        self._tariff_warned_units = set()
         super().__init__(configParam)
         
         if not MQTT_AVAILABLE:
@@ -188,6 +190,7 @@ class homeassistantClassPlugin(PluginSuperClass):
         now = time.monotonic()
         if not getattr(reason_code, "is_failure", reason_code != 0):
             self.connected = True
+            globalState.stateDict["eo_mqtt_connected"] = True
             self._log_connected(now)
             # An exception here would kill paho's network thread and stop reconnects for good.
             try:
@@ -215,6 +218,9 @@ class homeassistantClassPlugin(PluginSuperClass):
         """Callback for MQTT disconnection"""
         self.connected = False
         self.discovery_sent = False
+        # Rates are not retained, so a rate held across a disconnect cannot be trusted.
+        globalState.stateDict["eo_mqtt_connected"] = False
+        globalState.stateDict["eo_ha_rate"] = None
         try:
             if reason_code == 0:
                 _LOGGER.info("Disconnected from MQTT broker")
@@ -283,6 +289,8 @@ class homeassistantClassPlugin(PluginSuperClass):
             f"openeo/{device_id}/command/schedule/#",
             f"openeo/{device_id}/command/solar_schedule/#",
             f"openeo/{device_id}/command/solar_enable/set",
+            f"openeo/{device_id}/command/tariff_rate/set",
+            f"{self.get_config('mqtt_discovery_prefix')}/status",
         ]
         
         for topic in command_topics:
@@ -299,6 +307,22 @@ class homeassistantClassPlugin(PluginSuperClass):
             payload = msg.payload.decode('utf-8').strip()
             device_id = self.get_config("device_id")
             
+            prefix = self.get_config("mqtt_discovery_prefix")
+
+            # The blueprint heartbeats every few minutes, so these are logged at DEBUG only.
+            if topic == f"openeo/{device_id}/command/tariff_rate/set":
+                _LOGGER.debug(f"Received tariff rate on {topic}: {payload}")
+                tariffrate.apply_rate_message(
+                    payload, time.time(), globalState.stateDict,
+                    self._tariff_warned_units, self._tariff_log)
+                return
+            if topic == f"{prefix}/status":
+                _LOGGER.debug(f"Received HA status on {topic}: {payload}")
+                status = payload.lower()
+                if status in ("online", "offline"):
+                    globalState.stateDict["eo_ha_online"] = (status == "online")
+                return
+
             _LOGGER.info(f"Received command on {topic}: {payload}")
             
             if topic == f"openeo/{device_id}/command/switch/set":
@@ -321,6 +345,15 @@ class homeassistantClassPlugin(PluginSuperClass):
         except Exception as e:
             _LOGGER.error(f"Error processing MQTT command: {e}")
     
+    @staticmethod
+    def _tariff_log(level, message):
+        """Log to the journal and to System Logs (App Events)."""
+        _LOGGER.log(level, message)
+        try:
+            globalState.configDB.logwrite(message)
+        except Exception as e:
+            _LOGGER.debug(f"Could not write tariff message to app events: {e}")
+
     def _handle_switch_command(self, payload):
         """Handle switch on/off commands"""
         try:
