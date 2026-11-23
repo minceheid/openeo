@@ -134,10 +134,43 @@ class SelectRateTests(unittest.TestCase):
     def test_select_reasons_in_order(self):
         r = {"value": 0.07, "received_at": 0}
         self.assertEqual(select_rate(10, r, True, True, False, 15, 0.27)[2], "disabled")
-        self.assertEqual(select_rate(10, r, False, False, True, 15, 0.27)[2], "mqtt_disconnected")
-        self.assertEqual(select_rate(10, r, False, True, True, 15, 0.27)[2], "ha_offline")
         self.assertEqual(select_rate(10, None, None, True, True, 15, 0.27)[2], "no_data")
         self.assertEqual(select_rate(10, {"value": None, "received_at": 0}, True, True, True, 15, 0.27)[2], "unavailable")
+
+    def test_disconnected_uses_fresh_rate(self):
+        # A held rate stays in use while MQTT is down, until the stale timer expires.
+        r = {"value": 0.07, "received_at": 0}
+        self.assertEqual(select_rate(900, r, None, False, True, 15, 0.27), (0.07, "ha", ""))
+
+    def test_disconnected_and_stale_reports_disconnected(self):
+        r = {"value": 0.07, "received_at": 0}
+        self.assertEqual(select_rate(901, r, None, False, True, 15, 0.27), (0.27, "schedule", "mqtt_disconnected"))
+
+    def test_disconnected_without_rate_reports_disconnected(self):
+        self.assertEqual(select_rate(10, None, None, False, True, 15, 0.27), (0.27, "schedule", "mqtt_disconnected"))
+
+    def test_disconnected_with_unavailable_rate(self):
+        r = {"value": None, "received_at": 5}
+        self.assertEqual(select_rate(10, r, None, False, True, 15, 0.27)[2], "unavailable")
+
+    def test_ha_offline_uses_fresh_rate(self):
+        # An HA restart reports offline; the held rate stays in use until the stale timer expires.
+        r = {"value": 0.07, "received_at": 0}
+        self.assertEqual(select_rate(900, r, False, True, True, 15, 0.27), (0.07, "ha", ""))
+
+    def test_ha_offline_and_stale_reports_offline(self):
+        r = {"value": 0.07, "received_at": 0}
+        self.assertEqual(select_rate(901, r, False, True, True, 15, 0.27), (0.27, "schedule", "ha_offline"))
+
+    def test_ha_offline_without_rate_reports_offline(self):
+        self.assertEqual(select_rate(10, None, False, True, True, 15, 0.27), (0.27, "schedule", "ha_offline"))
+
+    def test_ha_offline_with_unavailable_rate(self):
+        r = {"value": None, "received_at": 5}
+        self.assertEqual(select_rate(10, r, False, True, True, 15, 0.27)[2], "unavailable")
+
+    def test_mqtt_disconnected_reported_over_ha_offline(self):
+        self.assertEqual(select_rate(10, None, False, False, True, 15, 0.27)[2], "mqtt_disconnected")
 
     def test_stale_boundary(self):
         r = {"value": 0.07, "received_at": 0}
@@ -244,17 +277,11 @@ class TransitionMessageTests(unittest.TestCase):
         self.assertEqual(level, logging.WARNING)
         self.assertIn("brand_new", msg)
 
-    def test_no_data_after_having_ha_warns(self):
-        level, msg = transition_message(self.HA, ("schedule", "no_data"), 0.27048, True, 15)
-        self.assertEqual(level, logging.WARNING)
-        self.assertIn("since reconnect", msg)
-        self.assertEqual(msg, "Tariff: no HA rate since reconnect - using schedule rate 0.27048")
-
     def test_fallback_reasons(self):
         texts = {"stale": "stale (no update for 15m)",
                  "unavailable": "unavailable",
-                 "ha_offline": "unavailable (Home Assistant offline)",
-                 "mqtt_disconnected": "unavailable (MQTT disconnected)"}
+                 "ha_offline": "stale (no update for 15m, Home Assistant offline)",
+                 "mqtt_disconnected": "stale (no update for 15m, MQTT disconnected)"}
         for reason, text in texts.items():
             self.assertEqual(transition_message(self.HA, ("schedule", reason), 0.27048, True, 15),
                              (logging.WARNING,

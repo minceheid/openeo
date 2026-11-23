@@ -219,9 +219,9 @@ class homeassistantClassPlugin(PluginSuperClass):
         """Callback for MQTT disconnection"""
         self.connected = False
         self.discovery_sent = False
-        # Rates are not retained, so a rate held across a disconnect cannot be trusted.
+        # The last rate is kept: the stale timer decides when it is too old to use, so a brief
+        # broker blip does not drop costing to the schedule rate.
         globalState.stateDict["eo_mqtt_connected"] = False
-        globalState.stateDict["eo_ha_rate"] = None
         # HA's birth message is not retained, so its status is unknown until the next one.
         globalState.stateDict["eo_ha_online"] = None
         try:

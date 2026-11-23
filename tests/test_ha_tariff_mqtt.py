@@ -98,19 +98,20 @@ def test_missing_configdb_cannot_raise(plugin, state):
     assert state["eo_ha_rate"]["value"] is None
 
 
-def test_disconnect_clears_rate(plugin, state):
+def test_disconnect_keeps_rate(plugin, state):
+    # The stale timer decides when a held rate is too old, so a brief broker blip does not fall back.
     state["eo_ha_rate"] = {"value": 0.07, "received_at": 1.0}
     state["eo_mqtt_connected"] = True
     plugin._on_disconnect(None, None, mock.Mock(is_disconnect_packet_from_server=False), 1, None)
-    assert state["eo_ha_rate"] is None
+    assert state["eo_ha_rate"] == {"value": 0.07, "received_at": 1.0}
     assert state["eo_mqtt_connected"] is False
 
 
-def test_clean_disconnect_also_clears(plugin, state):
+def test_clean_disconnect_also_keeps_rate(plugin, state):
     state["eo_ha_rate"] = {"value": 0.07, "received_at": 1.0}
     state["eo_mqtt_connected"] = True
     plugin._on_disconnect(None, None, mock.Mock(is_disconnect_packet_from_server=False), 0, None)
-    assert state["eo_ha_rate"] is None
+    assert state["eo_ha_rate"] == {"value": 0.07, "received_at": 1.0}
     assert state["eo_mqtt_connected"] is False
 
 

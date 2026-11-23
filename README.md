@@ -322,7 +322,7 @@ A missing or unrecognised unit is treated as unavailable: the schedule rate is u
 
 **Half-hour settlement.** Suppliers settle in half-hour periods, and Intelligent Octopus prices a whole half-hour at the off-peak rate when a dispatch overlaps it. So energy costed from HA is settled per half-hour slot (HH:00-HH:29, HH:30-HH:59) at the last HA rate received in that slot. The live session cost is provisional for the open slot and can drop partway through it when the rate flips. Energy costed at the schedule rate is never deferred.
 
-**Fallback.** The charger uses the schedule rate whenever the HA rate is stale (no update for the configured time), the sensor is unavailable, Home Assistant is reported offline, or MQTT is disconnected. Fallback is visible in:
+**Fallback.** The charger uses the schedule rate whenever the HA rate is stale (no update for the configured time) or the sensor is unavailable. An MQTT disconnect or a Home Assistant restart does not cause fallback on its own: the last rate stays in use until it goes stale, and the reason is then reported as `mqtt_disconnected` or `ha_offline`. Fallback is visible in:
 - System Logs → App Events (and the journal), for example `Tariff: HA rate stale (no update for 15m) - falling back to schedule rate 0.27048`, and `Tariff: HA rate restored 0.07000`
 - the session table detail: "x kWh costed at schedule rate (HA rate unavailable)"
 - the Home Assistant **Rate Source** sensor (`ha` or `schedule`), whose `reason` attribute says why the schedule is in use (`stale`, `unavailable`, `ha_offline`, `mqtt_disconnected`, `no_data` or `disabled`); **Current Rate** shows the rate in use

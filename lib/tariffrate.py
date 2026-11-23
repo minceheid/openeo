@@ -107,29 +107,30 @@ def select_rate(now, ha_rate, ha_online, mqtt_connected, enabled, stale_minutes,
     """Choose the rate to cost with; returns (rate, source, reason).
 
     source is "ha" or "schedule"; reason is "" for ha, else why the schedule was used.
+    An MQTT disconnect or HA restart alone does not cause fallback: a held rate is used until
+    it goes stale. mqtt_disconnected, else ha_offline, is reported in place of no_data / stale
+    while that condition holds.
     """
     if not enabled:
-        reason = "disabled"
-    elif not mqtt_connected:
+        return schedule_rate, "schedule", "disabled"
+    if ha_rate is not None and ha_rate.get("value") is None:
+        return schedule_rate, "schedule", "unavailable"
+    if ha_rate is not None and now - ha_rate["received_at"] <= stale_minutes * 60:
+        return ha_rate["value"], "ha", ""
+    if not mqtt_connected:
         reason = "mqtt_disconnected"
     elif ha_online is False:
         reason = "ha_offline"
-    elif ha_rate is None:
-        reason = "no_data"
-    elif ha_rate.get("value") is None:
-        reason = "unavailable"
-    elif now - ha_rate["received_at"] > stale_minutes * 60:
-        reason = "stale"
     else:
-        return ha_rate["value"], "ha", ""
+        reason = "no_data" if ha_rate is None else "stale"
     return schedule_rate, "schedule", reason
 
 
 _FALLBACK_TEXT = {
     "stale": "stale (no update for {stale_minutes}m)",
     "unavailable": "unavailable",
-    "ha_offline": "unavailable (Home Assistant offline)",
-    "mqtt_disconnected": "unavailable (MQTT disconnected)",
+    "ha_offline": "stale (no update for {stale_minutes}m, Home Assistant offline)",
+    "mqtt_disconnected": "stale (no update for {stale_minutes}m, MQTT disconnected)",
 }
 
 
@@ -152,8 +153,6 @@ def transition_message(prev, new, rate, ever_had_ha, stale_minutes):
         if prev is not None and prev[0] == "schedule" and prev[1] in _WAITING_REASONS:
             return None
         return logging.INFO, f"Tariff: waiting for first HA rate - using schedule rate {rate}"
-    if reason == "no_data":
-        return logging.WARNING, f"Tariff: no HA rate since reconnect - using schedule rate {rate}"
     text = _FALLBACK_TEXT.get(reason, reason).format(stale_minutes=stale_minutes)
     return logging.WARNING, f"Tariff: HA rate {text} - falling back to schedule rate {rate}"
 
