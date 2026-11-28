@@ -383,3 +383,17 @@ def test_reason_disabled(env, clock, state):
     run_polls(plugin, clock, 3, step=60)
     assert state["eo_tariff_rate_source"] == "schedule"
     assert state["eo_tariff_rate_reason"] == "disabled"
+
+
+def test_disable_reset_poll_reports_schedule_rate(env, clock, state):
+    # The poll that ends a session latches the switch off; it must not leave the HA rate
+    # beside a "schedule" source for that one update.
+    plugin = make_plugin(True)
+    run_polls(plugin, clock, 2, before_poll=lambda: state.update(eo_ha_rate=fresh_rate(clock, 0.07)))
+    assert state["eo_session_current_tariff"] == 0.07
+    plugin.pluginConfig["ha_rate_enabled"] = False
+    state["eo_charger_state_id"] = 1   # unplugged: this poll resets the session
+    run_polls(plugin, clock, 1, before_poll=lambda: state.update(eo_ha_rate=fresh_rate(clock, 0.07)))
+    assert state["eo_tariff_rate_source"] == "schedule"
+    assert state["eo_tariff_rate_reason"] == "disabled"
+    assert state["eo_session_current_tariff"] == 0.27048

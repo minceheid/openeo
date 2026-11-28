@@ -80,6 +80,8 @@ class chargersessionClassPlugin(PluginSuperClass):
         self._ha_enabled=bool(self.pluginConfig.get("ha_rate_enabled",False))
         self._accumulator=SessionCostAccumulator()
         if not self._ha_enabled:
+            # Earlier in this poll the HA rate may have been written; replace it so the rate matches the source.
+            globalState.stateDict["eo_session_current_tariff"]=self._schedule_rate(self.timestamp_hhmm(int(time.time())))
             globalState.stateDict["eo_tariff_rate_source"]="schedule"
             globalState.stateDict["eo_tariff_rate_reason"]="disabled"
         # reset_session() runs on every idle poll. HA's last_reset must only move when the
