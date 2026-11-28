@@ -30,6 +30,7 @@ def plugin():
     p.discovery_sent = False
     p.get_config = lambda k: {"device_id": "eo1", "mqtt_discovery_prefix": "homeassistant"}[k]
     p._tariff_warned_units = set()
+    p._up_since = p._down_since = None  # connection bookkeeping from #287
     return p
 
 
@@ -281,3 +282,16 @@ def test_rate_source_has_reason_attribute(plugin, state):
     s = discovery_configs(plugin)["rate_source"]
     assert s["json_attributes_topic"] == "openeo/eo1/state"
     assert s["json_attributes_template"] == "{{ {'reason': value_json.rate_reason} | tojson }}"
+
+
+def test_connect_subscribes_before_announcing_online(plugin, state):
+    # HA's blueprint answers "online" with the rate at once, and the rate is not retained,
+    # so the command topics must be subscribed before "online" goes out.
+    plugin._get_availability_topic = lambda: "openeo/eo1/availability"
+    calls = []
+    plugin.mqtt_client.subscribe.side_effect = lambda *a, **k: calls.append(("subscribe", a[0])) or (0, 1)
+    plugin.mqtt_client.publish.side_effect = lambda *a, **k: calls.append(("publish", a[0]))
+    with mock.patch.object(ha.threading, "Thread"):
+        plugin._on_connect(None, None, mock.Mock(), 0, None)
+    online = calls.index(("publish", "openeo/eo1/availability"))
+    assert any(c[0] == "subscribe" and c[1].endswith("tariff_rate/set") for c in calls[:online])

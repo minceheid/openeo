@@ -195,14 +195,15 @@ class homeassistantClassPlugin(PluginSuperClass):
             self._log_connected(now)
             # An exception here would kill paho's network thread and stop reconnects for good.
             try:
+                # Subscribe before announcing "online": HA's tariff blueprint answers "online" with
+                # the rate at once, and the rate is not retained, so it would be lost otherwise.
+                self._subscribe_to_commands()
                 self.mqtt_client.publish(
                     self._get_availability_topic(),
                     payload="online",
                     qos=1,
                     retain=True,
                 )
-                # Subscribe to command topics
-                self._subscribe_to_commands()
                 # Send discovery messages after connection
                 threading.Thread(target=self._send_discovery, daemon=True).start()
             except Exception:
