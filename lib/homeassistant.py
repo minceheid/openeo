@@ -18,6 +18,7 @@ Configuration example:
 """
 #################################################################################
 
+import datetime
 import logging
 import json
 import time
@@ -26,6 +27,7 @@ from lib.PluginSuperClass import PluginSuperClass
 import globalState
 import util
 from lib import wifi_status
+from lib import tariffrate
 
 try:
     import paho.mqtt.client as mqtt
@@ -98,6 +100,7 @@ class homeassistantClassPlugin(PluginSuperClass):
         self._failed_publishes = 0
         self._outage_events = 0      # failures logged or suppressed in this outage
         self._still_down_logged = 0  # "still down" lines written in this outage
+        self._tariff_warned_units = set()
         super().__init__(configParam)
         
         if not MQTT_AVAILABLE:
@@ -188,17 +191,19 @@ class homeassistantClassPlugin(PluginSuperClass):
         now = time.monotonic()
         if not getattr(reason_code, "is_failure", reason_code != 0):
             self.connected = True
+            globalState.stateDict["eo_mqtt_connected"] = True
             self._log_connected(now)
             # An exception here would kill paho's network thread and stop reconnects for good.
             try:
+                # Subscribe before announcing "online": HA's tariff blueprint answers "online" with
+                # the rate at once, and the rate is not retained, so it would be lost otherwise.
+                self._subscribe_to_commands()
                 self.mqtt_client.publish(
                     self._get_availability_topic(),
                     payload="online",
                     qos=1,
                     retain=True,
                 )
-                # Subscribe to command topics
-                self._subscribe_to_commands()
                 # Send discovery messages after connection
                 threading.Thread(target=self._send_discovery, daemon=True).start()
             except Exception:
@@ -215,6 +220,11 @@ class homeassistantClassPlugin(PluginSuperClass):
         """Callback for MQTT disconnection"""
         self.connected = False
         self.discovery_sent = False
+        # The last rate is kept: the stale timer decides when it is too old to use, so a brief
+        # broker blip does not drop costing to the schedule rate.
+        globalState.stateDict["eo_mqtt_connected"] = False
+        # HA's birth message is not retained, so its status is unknown until the next one.
+        globalState.stateDict["eo_ha_online"] = None
         try:
             if reason_code == 0:
                 _LOGGER.info("Disconnected from MQTT broker")
@@ -283,6 +293,9 @@ class homeassistantClassPlugin(PluginSuperClass):
             f"openeo/{device_id}/command/schedule/#",
             f"openeo/{device_id}/command/solar_schedule/#",
             f"openeo/{device_id}/command/solar_enable/set",
+            f"openeo/{device_id}/command/ha_rate_enabled/set",
+            f"openeo/{device_id}/command/tariff_rate/set",
+            f"{self.get_config('mqtt_discovery_prefix')}/status",
         ]
         
         for topic in command_topics:
@@ -299,6 +312,23 @@ class homeassistantClassPlugin(PluginSuperClass):
             payload = msg.payload.decode('utf-8').strip()
             device_id = self.get_config("device_id")
             
+            prefix = self.get_config("mqtt_discovery_prefix")
+
+            # Logged at INFO so the incoming rate can be checked in the journal. The payload is
+            # truncated because the topic is writable by anything with broker credentials.
+            if topic == f"openeo/{device_id}/command/tariff_rate/set":
+                _LOGGER.info(f"Received tariff rate on {topic}: {payload[:64]!r}")
+                tariffrate.apply_rate_message(
+                    payload, time.time(), globalState.stateDict,
+                    self._tariff_warned_units, self._tariff_log)
+                return
+            if topic == f"{prefix}/status":
+                _LOGGER.info(f"Received HA status on {topic}: {payload[:64]!r}")
+                status = payload.lower()
+                if status in ("online", "offline"):
+                    globalState.stateDict["eo_ha_online"] = (status == "online")
+                return
+
             _LOGGER.info(f"Received command on {topic}: {payload}")
             
             if topic == f"openeo/{device_id}/command/switch/set":
@@ -315,12 +345,25 @@ class homeassistantClassPlugin(PluginSuperClass):
                 enabled = payload.lower() in ["on", "true", "1"]
                 globalState.configDB.set("loadmanagement", "solar_enable", enabled)
                 self._publish_state()
+            elif topic == f"openeo/{device_id}/command/ha_rate_enabled/set":
+                enabled = payload.lower() in ["on", "true", "1"]
+                globalState.configDB.set("chargersession", "ha_rate_enabled", enabled)
+                self._publish_state()
             else:
                 _LOGGER.warning(f"Unknown command topic: {topic}")
                 
         except Exception as e:
             _LOGGER.error(f"Error processing MQTT command: {e}")
     
+    @staticmethod
+    def _tariff_log(level, message):
+        """Log to the journal and to System Logs (App Events)."""
+        _LOGGER.log(level, message)
+        try:
+            globalState.configDB.logwrite(message)
+        except Exception as e:
+            _LOGGER.debug(f"Could not write tariff message to app events: {e}")
+
     def _handle_switch_command(self, payload):
         """Handle switch on/off commands"""
         try:
@@ -690,8 +733,41 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "value_template": "{{ value_json.session_cost | round(2)}}",
                 "unit_of_measurement": "GBP",
                 "device_class": "monetary",
-                "state_class": "total_increasing",
+                "state_class": "total",
+                "last_reset_value_template": "{{ value_json.session_cost_reset }}",
                 "icon": "mdi:currency-gbp"
+            },
+            {
+                "component": "sensor",
+                "object_id": "current_rate",
+                "name": "Current Rate",
+                "state_topic": f"openeo/{device_id}/state",
+                "value_template": "{{ value_json.current_rate }}",
+                "unit_of_measurement": "GBP/kWh",
+                "state_class": "measurement",
+                "icon": "mdi:cash"
+            },
+            {
+                "component": "sensor",
+                "object_id": "rate_source",
+                "name": "Rate Source",
+                "state_topic": f"openeo/{device_id}/state",
+                "value_template": "{{ value_json.rate_source }}",
+                "icon": "mdi:swap-horizontal",
+                "json_attributes_topic": f"openeo/{device_id}/state",
+                "json_attributes_template": "{{ {'reason': value_json.rate_reason} | tojson }}"
+            },
+            {
+                "component": "sensor",
+                "object_id": "ha_rate_received",
+                "name": "HA Rate Received",
+                "state_topic": f"openeo/{device_id}/state",
+                "value_template": "{{ value_json.ha_rate_received }}",
+                "unit_of_measurement": "GBP/kWh",
+                "state_class": "measurement",
+                "icon": "mdi:cash-check",
+                "json_attributes_topic": f"openeo/{device_id}/state",
+                "json_attributes_template": "{{ {'received_at': value_json.ha_rate_received_at} | tojson }}"
             },
         ]
         
@@ -899,6 +975,20 @@ class homeassistantClassPlugin(PluginSuperClass):
                 "device_class": "switch"
             },
             {
+                "component": "switch",
+                "object_id": "ha_rate_enabled",
+                "name": "Use Live Rate",
+                "state_topic": f"openeo/{device_id}/state",
+                "command_topic": f"openeo/{device_id}/command/ha_rate_enabled/set",
+                "value_template": "{{ 'ON' if value_json.ha_rate_enabled else 'OFF' }}",
+                "payload_on": "ON",
+                "payload_off": "OFF",
+                "state_on": "ON",
+                "state_off": "OFF",
+                "icon": "mdi:cash-sync",
+                "device_class": "switch"
+            },
+            {
                 "component": "button",
                 "object_id": "solar_schedule_add",
                 "name": "Add Solar Schedule",
@@ -933,7 +1023,7 @@ class homeassistantClassPlugin(PluginSuperClass):
 
             # Add optional fields if present
             for field in ["value_template", "unit_of_measurement", "device_class", "state_class",
-                         "icon", "payload_on", "payload_off", "payload_press", "state_on", "state_off",
+                         "last_reset_value_template", "icon", "payload_on", "payload_off", "payload_press", "state_on", "state_off",
                          "command_topic", "min", "max", "step", "options",
                          "json_attributes_topic", "json_attributes_template"]:
                 if field in entity:
@@ -1011,6 +1101,8 @@ class homeassistantClassPlugin(PluginSuperClass):
         charging_active = charger_state_id in [11, 12, 13, 14]
         
         
+        ha_rate = globalState.stateDict.get("eo_ha_rate")
+
         state_payload = {
             "charger_state": charger_state,
             "charger_state_id": charger_state_id,
@@ -1036,6 +1128,14 @@ class homeassistantClassPlugin(PluginSuperClass):
             "openeo_latest_version": globalState.stateDict.get("openeo_latest_version", "unknown"),
             "session_kwh":globalState.stateDict.get("eo_session_kwh", 0.0),
             "session_cost":globalState.stateDict.get("eo_session_cost", 0.0),
+            "session_cost_reset":globalState.stateDict.get("eo_session_cost_reset"),
+            "current_rate":globalState.stateDict.get("eo_session_current_tariff", 0.0),
+            "rate_source":globalState.stateDict.get("eo_tariff_rate_source", "schedule"),
+            "rate_reason":globalState.stateDict.get("eo_tariff_rate_reason", ""),
+            "ha_rate_enabled": self._bool_config("chargersession", "ha_rate_enabled"),
+            "ha_rate_received": ha_rate.get("value") if ha_rate else None,
+            "ha_rate_received_at": (datetime.datetime.fromtimestamp(ha_rate["received_at"]).astimezone().isoformat(timespec="seconds")
+                                    if ha_rate and ha_rate.get("received_at") is not None else None),
             "timestamp": int(time.time())
         }
         

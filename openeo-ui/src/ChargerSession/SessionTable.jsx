@@ -48,7 +48,9 @@ export default function SessionTable({ tabledata, narrow }) {
         </thead>
         <tbody>
           {tabledata.map((row, i) => {
-            const hasBreakdown = Object.values(row.cost_by_tariff || {}).some((j) => j > 0);
+            const hasBreakdown =
+              Object.values(row.cost_by_tariff || {}).some((j) => j > 0) ||
+              (row.fallback_joules || 0) > 0;
             const expanded = expandedKey === row.first_timestamp;
             return (
               <Fragment key={row.first_timestamp}>
@@ -80,7 +82,7 @@ function CostCell({ row, expanded, onToggle }) {
   const entries = Object.entries(row.cost_by_tariff || {}).filter(
     ([, joules]) => joules > 0
   );
-  const hasBreakdown = entries.length > 0;
+  const hasBreakdown = entries.length > 0 || (row.fallback_joules || 0) > 0;
 
   return (
     <td style={{
@@ -150,6 +152,8 @@ function TariffBreakdownRow({ row, colSpan, expanded, narrow }) {
   const fontSize = narrow ? "0.7rem" : "0.78rem";
   const headerFontSize = narrow ? "0.62rem" : "0.68rem";
   const rowGap = narrow ? 10 : 16;
+  const fallbackJoules = row.fallback_joules || 0;
+  const fallbackKwh = Math.round(fallbackJoules / 360000) / 10;
 
   return (
     <tr>
@@ -202,6 +206,15 @@ function TariffBreakdownRow({ row, colSpan, expanded, narrow }) {
                 </div>
               );
             })}
+            {fallbackJoules > 0 && (
+              <div style={{
+                fontSize,
+                color: "#8ba3b8",
+                textAlign: "right",
+              }}>
+                {fallbackKwh} kWh costed at schedule rate (HA rate unavailable)
+              </div>
+            )}
           </div>
         </div>
       </td>

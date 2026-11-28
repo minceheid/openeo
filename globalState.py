@@ -123,6 +123,13 @@ stateDict={
     # Counter of the number of serial overruns
     "eo_serial_errors": 0,
 
+    # Live tariff rate pushed by Home Assistant over MQTT: {"value", "received_at"} or None.
+    "eo_ha_rate": None,
+    # Home Assistant availability from <discovery_prefix>/status: True, False or None (unknown).
+    "eo_ha_online": None,
+    # Whether the HA plugin is currently connected to the MQTT broker.
+    "eo_mqtt_connected": False,
+
 }
 
 

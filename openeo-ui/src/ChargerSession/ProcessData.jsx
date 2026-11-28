@@ -14,6 +14,7 @@ export default function processSessionData(raw) {
     kwh: Math.round(x.joules / 360000) / 10 + " kWh",
     kwh_number: Math.round(x.joules / 360000) / 10,
     cost: x.cost ?? 0,
+    fallback_joules: x.fallback_joules ?? 0,
     cost_by_tariff: (() => { try { return JSON.parse(x.cost_by_tariff || "{}"); } catch { return {}; } })(),
     duration: Math.round(
       (x.last_timestamp - Math.max(x.first_timestamp, x.day_timestamp)) / 60
@@ -63,6 +64,7 @@ export default function processSessionData(raw) {
       row.duration += x.duration;
       row.minutes_charged += x.minutes_charged;
       row.cost = (row.cost || 0) + (x.cost || 0);
+      row.fallback_joules = (row.fallback_joules || 0) + (x.fallback_joules || 0);
 
       const currentTariffs = x.cost_by_tariff || {};
       Object.keys(currentTariffs).forEach((rate) => {
